@@ -12,7 +12,7 @@ MewHelp AI 是一个分章推进的电商智能客服系统学习/实战项目�
 
 1. `curl` 调对话接口能看到 SSE 流式回复(逐 token 推送)
 2. 连续问两轮,第二轮能续上第一轮的上下文(按 session_id)
-3. 发一段售后描述,能在同一条 SSE 流里拿到结构化 JSON(订单号、诉求类型、期望方案)
+3. 向结构化提取接口发一段售后描述,能拿到结构化 JSON(订单号、诉求类型、期望方案)
 
 ## 非目标 / 反目标
 
@@ -41,7 +41,6 @@ MewHelp AI 是一个分章推进的电商智能客服系统学习/实战项目�
 | 事件 type | data 内容 | 说明 |
 |---|---|---|
 | `token` | `{"content": "..."}` | 逐 token 的回复文本 |
-| `structured` | `{"order_id": ..., "request_type": ..., "expected_solution": ...}` | 仅当判定用户在描述售后问题时发送 |
 | `done` | `{}` | 流结束 |
 | `error` | `{"message": "..."}` | 出错时发送并以流终止 |
 
@@ -69,9 +68,11 @@ System Prompt 用 `ChatPromptTemplate`/`PromptTemplate` 模板化,要点(具体�
 - 行为约束:不编造订单/物流信息(本章无工具,拿不到数据,要引导用户提供)、不私自承诺退款赔付、超出范围转人工、回复简体中文、简洁
 - 模板变量:店铺名、客服名等,从 `.env` 注入,便于后续改
 
-### 结构化输出(嵌在对话流里)
+### 结构化输出(独立接口)
 
-Pydantic schema(**我的设计**):
+**定位**:独立端点,把一段售后描述提取成固定字段;输出供后续章节的 Agent 消费(本章只演示 `with_structured_output` 能力,不在对话链路里调用)。
+
+`POST /extract`,请求体 JSON:`{"message": "一段售后描述"}`,响应即 `AfterSalesInfo` 的 JSON:
 
 ```python
 class AfterSalesInfo(BaseModel):
@@ -81,9 +82,7 @@ class AfterSalesInfo(BaseModel):
     expected_solution: str | None  # 期望方案(用户原话归纳)
 ```
 
-流程:每收到用户消息,在流式生成回复的**同时**,对(本轮用户消息 + 最近少量上下文)发起一次 `with_structured_output(AfterSalesInfo, method="function_calling")` 调用;回复 token 流结束后,若 `is_after_sales=True` 且有有效字段,追加 `structured` 事件。每轮共两次模型调用。
-
-(实现提示:两次调用用 `asyncio` 并发;若并发实现复杂,退化成流结束后串行调用,功能等价只是慢一点 —— 计划阶段定。)
+实现:一次 `with_structured_output(AfterSalesInfo, method="function_calling")` 调用,不带对话历史(后续 Agent 自己决定喂什么进来,本章接口吃单条文本)。非售后文本靠 `is_after_sales=False` 表达,不做 HTTP 层拦截。
 
 ### 会话与上下文裁剪
 
@@ -126,7 +125,7 @@ pyproject.toml
 | 决策 | 内容 |
 |---|---|
 | 会话存储 | session_id 内存字典,后续章节换建库建表 |
-| 结构化输出位置 | 嵌在对话流里,非独立接口 |
+| 结构化输出位置 | 独立接口 `POST /extract`,输出供后续章节 Agent 消费(2026-10-14 临时改动:原定嵌在对话流里,用户改判为独立接口) |
 | 模型供应商 | DeepSeek 直连,关思考模式,function_calling 结构化 |
 | 流程要求 | Superpowers 全流程,dev-notes 留痕,Prompt 类产出用样例评估替代 TDD |
 | 验收执行 | 实现者持密钥真实跑通三条验收标准,交付后用户复验 |
