@@ -6,10 +6,10 @@ from fastapi.responses import StreamingResponse
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
 from app.config import get_settings
-from app.dependencies import get_chat_model
+from app.dependencies import get_chat_model, get_extractor
 from app.history import InMemorySessionStore, trim_history
 from app.prompts import build_system_prompt
-from app.schemas import ChatRequest
+from app.schemas import AfterSalesInfo, ChatRequest, ExtractRequest
 
 
 def _sse(payload: dict) -> str:
@@ -57,6 +57,13 @@ def create_app() -> FastAPI:
             yield _sse({"type": "done"})
 
         return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+    @application.post("/extract")
+    async def extract(
+        request: ExtractRequest,
+        extractor=Depends(get_extractor),
+    ) -> AfterSalesInfo:
+        return await extractor(request.message)
 
     return application
 
