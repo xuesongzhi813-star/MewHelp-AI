@@ -1,5 +1,3 @@
-import httpx
-import pytest
 from langchain_core.runnables import RunnableLambda
 
 from app.dependencies import get_extractor
@@ -17,14 +15,6 @@ class FakeExtractor:
     async def ainvoke(self, message: str) -> AfterSalesInfo:
         self.received.append(message)
         return self._result
-
-
-@pytest.fixture
-async def client():
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as ac:
-        yield ac
-    app.dependency_overrides.clear()
 
 
 async def test_extract_returns_after_sales_info(client):
@@ -49,6 +39,7 @@ async def test_extract_returns_after_sales_info(client):
         "request_type": "退货退款",
         "expected_solution": "退货退款",
     }
+    assert fake.received == ["订单SO202610买的鞋开胶了,我要退货退款"]
 
 
 async def test_extract_non_after_sales_text(client):

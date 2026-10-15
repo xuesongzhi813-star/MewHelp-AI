@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.schemas import ChatRequest, ExtractRequest, AfterSalesInfo
+from app.schemas import ChatRequest, AfterSalesInfo
 
 
 def test_chat_request_rejects_empty_fields():

@@ -1,7 +1,5 @@
 import json
 
-import httpx
-import pytest
 from langchain_core.messages import AIMessageChunk, HumanMessage, SystemMessage
 
 from app.dependencies import get_chat_model
@@ -22,14 +20,6 @@ class FakeChatModel:
             raise self._error
         for chunk in self._chunks:
             yield AIMessageChunk(content=chunk)
-
-
-@pytest.fixture
-async def client():
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as ac:
-        yield ac
-    app.dependency_overrides.clear()
 
 
 def parse_sse(text: str) -> list[dict]:

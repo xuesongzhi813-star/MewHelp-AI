@@ -7,7 +7,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 
 from app.config import get_settings
 from app.dependencies import get_chat_model, get_extractor
-from app.history import InMemorySessionStore, trim_history
+from app.history import InMemorySessionStore, SessionStore, trim_history
 from app.prompts import build_system_prompt
 from app.schemas import AfterSalesInfo, ChatRequest, ExtractRequest
 
@@ -32,7 +32,7 @@ def create_app() -> FastAPI:
         request: ChatRequest,
         llm=Depends(get_chat_model),
     ) -> StreamingResponse:
-        store: InMemorySessionStore = application.state.session_store
+        store: SessionStore = application.state.session_store
         history = store.get_history(request.session_id)
         store.append_message(request.session_id, HumanMessage(content=request.message))
 
@@ -56,7 +56,11 @@ def create_app() -> FastAPI:
             store.append_message(request.session_id, AIMessage(content=collected))
             yield _sse({"type": "done"})
 
-        return StreamingResponse(event_stream(), media_type="text/event-stream")
+        return StreamingResponse(
+            event_stream(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
 
     @application.post("/extract")
     async def extract(
