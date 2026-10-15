@@ -1,8 +1,9 @@
 import json
 from collections.abc import AsyncIterator
+from pathlib import Path
 
 from fastapi import Depends, FastAPI
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
 from app.config import get_settings
@@ -26,6 +27,10 @@ def create_app() -> FastAPI:
     @application.get("/health")
     async def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @application.get("/", include_in_schema=False)
+    async def index() -> FileResponse:
+        return FileResponse(Path(__file__).parent / "static" / "index.html")
 
     @application.post("/chat")
     async def chat(
