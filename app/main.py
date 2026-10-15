@@ -63,7 +63,7 @@ def create_app() -> FastAPI:
         request: ExtractRequest,
         extractor=Depends(get_extractor),
     ) -> AfterSalesInfo:
-        return await extractor(request.message)
+        return await extractor.ainvoke(request.message)
 
     return application
 
