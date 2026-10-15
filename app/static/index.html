@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MewHelp AI · 智能客服中枢</title>
+<title>Ethan_Leo · Thrift shopping 智能客服</title>
 <style>
   :root {
-    --bg: #070b14;
-    --bg-panel: rgba(13, 20, 38, 0.72);
-    --glass: rgba(148, 180, 255, 0.05);
-    --glass-border: rgba(120, 160, 255, 0.14);
-    --cyan: #22d3ee;
-    --violet: #818cf8;
-    --text: #dbe4ff;
-    --text-dim: #7c8ab5;
-    --user-grad: linear-gradient(135deg, #0ea5e9, #6366f1);
-    --assistant-grad: linear-gradient(135deg, #22d3ee, #818cf8);
+    --bg: #0d0a06;
+    --bg-panel: rgba(30, 24, 14, 0.78);
+    --glass: rgba(255, 200, 100, 0.045);
+    --glass-border: rgba(255, 190, 90, 0.16);
+    --amber: #fbbf24;
+    --teal: #2dd4bf;
+    --text: #f3ead7;
+    --text-dim: #a08c6a;
+    --user-grad: linear-gradient(135deg, #d97706, #ea580c);
+    --assistant-grad: linear-gradient(135deg, #fbbf24, #2dd4bf);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -29,15 +29,15 @@
     overflow: hidden;
   }
 
-  /* 网格 + 光晕背景 */
+  /* 网格 + 霓虹光晕背景(复古琥珀+青) */
   body::before {
     content: "";
     position: fixed; inset: 0;
     background:
-      radial-gradient(ellipse 60% 40% at 70% -10%, rgba(99, 102, 241, 0.18), transparent 60%),
-      radial-gradient(ellipse 50% 35% at 15% 110%, rgba(34, 211, 238, 0.12), transparent 60%),
-      linear-gradient(rgba(120, 160, 255, 0.045) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(120, 160, 255, 0.045) 1px, transparent 1px);
+      radial-gradient(ellipse 60% 40% at 72% -10%, rgba(251, 191, 36, 0.16), transparent 60%),
+      radial-gradient(ellipse 50% 35% at 12% 110%, rgba(45, 212, 191, 0.12), transparent 60%),
+      linear-gradient(rgba(255, 200, 100, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 200, 100, 0.04) 1px, transparent 1px);
     background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px;
     pointer-events: none;
   }
@@ -56,8 +56,8 @@
     display: grid; place-items: center;
     background: var(--assistant-grad);
     clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-    font-size: 18px; color: #06101f; font-weight: 700;
-    box-shadow: 0 0 18px rgba(34, 211, 238, 0.45);
+    font-size: 15px; color: #1a1206; font-weight: 800;
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.5);
   }
   .title { font-size: 16px; font-weight: 600; letter-spacing: 0.5px; }
   .title small { display: block; font-size: 11px; font-weight: 400; color: var(--text-dim); letter-spacing: 2px; }
@@ -77,14 +77,14 @@
 
   button.new-chat {
     font-size: 12px; letter-spacing: 1px;
-    color: var(--cyan);
+    color: var(--amber);
     background: transparent;
-    border: 1px solid rgba(34, 211, 238, 0.35);
+    border: 1px solid rgba(251, 191, 36, 0.4);
     padding: 6px 14px; border-radius: 999px;
     cursor: pointer;
     transition: all 0.2s;
   }
-  button.new-chat:hover { background: rgba(34, 211, 238, 0.12); box-shadow: 0 0 14px rgba(34, 211, 238, 0.25); }
+  button.new-chat:hover { background: rgba(251, 191, 36, 0.12); box-shadow: 0 0 14px rgba(251, 191, 36, 0.3); }
 
   /* ── 消息区 ───────────────────────── */
   main {
@@ -112,11 +112,11 @@
     flex-shrink: 0;
     width: 34px; height: 34px;
     display: grid; place-items: center;
-    font-size: 13px; font-weight: 700; color: #06101f;
+    font-size: 12px; font-weight: 800; color: #1a1206;
     clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
   }
-  .avatar.ai { background: var(--assistant-grad); box-shadow: 0 0 12px rgba(34, 211, 238, 0.35); }
-  .msg-row.user .avatar { background: #33415e; color: var(--text); clip-path: none; border-radius: 50%; }
+  .avatar.ai { background: var(--assistant-grad); box-shadow: 0 0 12px rgba(251, 191, 36, 0.4); }
+  .msg-row.user .avatar { background: #3d3421; color: var(--text); clip-path: none; border-radius: 50%; }
 
   .bubble-wrap { display: flex; flex-direction: column; max-width: 76%; }
   .msg-row.user .bubble-wrap { align-items: flex-end; }
@@ -144,23 +144,23 @@
   .msg-row.user .bubble {
     background: var(--user-grad);
     border-radius: 16px 4px 16px 16px;
-    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.25);
+    box-shadow: 0 4px 20px rgba(234, 88, 12, 0.28);
   }
   .bubble.error {
     border: 1px solid rgba(248, 113, 113, 0.4);
     background: rgba(248, 113, 113, 0.08);
     color: #fca5a5;
   }
-  .bubble strong { color: var(--cyan); font-weight: 600; }
+  .bubble strong { color: var(--amber); font-weight: 600; }
 
   /* 打字指示器 */
   .typing { display: inline-flex; gap: 5px; padding: 4px 0; }
   .typing i {
     width: 7px; height: 7px; border-radius: 50%;
-    background: var(--cyan);
+    background: var(--amber);
     animation: bounce 1.2s infinite;
   }
-  .typing i:nth-child(2) { animation-delay: 0.18s; background: var(--violet); }
+  .typing i:nth-child(2) { animation-delay: 0.18s; background: var(--teal); }
   .typing i:nth-child(3) { animation-delay: 0.36s; }
   @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-5px); opacity: 1; } }
 
@@ -170,8 +170,8 @@
     width: 8px; height: 16px;
     margin-left: 2px;
     vertical-align: -2px;
-    background: var(--cyan);
-    box-shadow: 0 0 8px var(--cyan);
+    background: var(--amber);
+    box-shadow: 0 0 8px var(--amber);
     animation: blink 0.9s steps(1) infinite;
   }
   @keyframes blink { 50% { opacity: 0; } }
@@ -184,10 +184,10 @@
   .welcome .hex {
     width: 64px; height: 64px; margin: 0 auto 18px;
     display: grid; place-items: center;
-    font-size: 26px; color: #06101f; font-weight: 800;
+    font-size: 20px; color: #1a1206; font-weight: 800;
     background: var(--assistant-grad);
     clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-    box-shadow: 0 0 30px rgba(34, 211, 238, 0.5);
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.5);
   }
   .welcome h1 { font-size: 22px; font-weight: 600; letter-spacing: 1px; }
   .welcome h1 span { background: var(--assistant-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -249,8 +249,8 @@
 <body>
 
 <header>
-  <div class="logo">喵</div>
-  <div class="title">MewHelp 智能客服中枢<small>MEWHELP · NEURAL SUPPORT</small></div>
+  <div class="logo">EL</div>
+  <div class="title">Thrift shopping 智能客服<small>ETHAN_LEO · VINTAGE NEURAL SUPPORT</small></div>
   <div class="spacer"></div>
   <div class="status-chip"><span class="status-dot" id="statusDot"></span><span id="statusText">LINKING</span></div>
   <button class="new-chat" id="newChatBtn">↺ 新会话</button>
@@ -258,8 +258,8 @@
 
 <main id="chatArea">
   <div class="welcome" id="welcome">
-    <div class="hex">喵</div>
-    <h1>你好,我是<span>小喵</span> —— MewHelp 商城智能客服</h1>
+    <div class="hex">EL</div>
+    <h1>你好,我是<span>Ethan_Leo</span> —— Thrift shopping 智能客服</h1>
     <p>退货退款 · 物流查询 · 订单咨询 · 售后支持</p>
     <div class="suggestions">
       <button data-q="你们的退货流程是什么?">退货流程是什么?</button>
@@ -320,7 +320,7 @@
     row.className = "msg-row " + role;
     const avatar = document.createElement("div");
     avatar.className = "avatar " + (role === "ai" ? "ai" : "");
-    avatar.textContent = role === "ai" ? "喵" : "我";
+    avatar.textContent = role === "ai" ? "EL" : "我";
     const wrap = document.createElement("div");
     wrap.className = "bubble-wrap";
     const sender = document.createElement("div");
@@ -345,7 +345,7 @@
     addRow("user", "YOU").bubble.textContent = text;
 
     /* AI 气泡:先放打字指示器 */
-    const { bubble } = addRow("ai", "MEWHELP AI");
+    const { bubble } = addRow("ai", "ETHAN_LEO");
     const typing = document.createElement("span");
     typing.className = "typing";
     typing.innerHTML = "<i></i><i></i><i></i>";
