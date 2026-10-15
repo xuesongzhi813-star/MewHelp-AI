@@ -2,6 +2,7 @@ import math
 from typing import Protocol
 
 from langchain_core.messages import BaseMessage
+from langchain_core.messages.utils import trim_messages
 
 
 def estimate_tokens(text: str) -> int:
@@ -21,18 +22,24 @@ def _message_tokens(message: BaseMessage) -> int:
     return estimate_tokens(content if isinstance(content, str) else "")
 
 
+def _count_tokens(messages: list[BaseMessage]) -> int:
+    """trim_messages 的 token_counter:沿用中文宽松口径(estimate_tokens)。"""
+    return sum(_message_tokens(m) for m in messages)
+
+
 def trim_history(messages: list[BaseMessage], budget: int) -> list[BaseMessage]:
-    """从最新往旧累加消息,超出预算即止,返回按时间正序保留的消息。"""
-    kept: list[BaseMessage] = []
-    used = 0
-    for message in reversed(messages):
-        cost = _message_tokens(message)
-        if used + cost > budget:
-            break
-        kept.append(message)
-        used += cost
-    kept.reverse()
-    return kept
+    """从最新往旧累加消息,超出预算即止,返回按时间正序保留的消息。
+
+    委托 langchain_core 的 trim_messages(strategy="last"):保新丢旧、
+    allow_partial=False 保证消息绝不被拦腰截断,整条要么保留要么丢弃。
+    """
+    return trim_messages(
+        messages,
+        max_tokens=budget,
+        token_counter=_count_tokens,
+        strategy="last",
+        allow_partial=False,
+    )
 
 
 class SessionStore(Protocol):

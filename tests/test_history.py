@@ -41,6 +41,16 @@ def test_trim_history_budget_zero_returns_empty():
     assert trim_history([_msg(0)], budget=0) == []
 
 
+def test_trim_history_never_splits_a_message():
+    # allow_partial=False:消息只整条保留或整条丢弃,绝不拦腰截断
+    long_msg = HumanMessage(content="超长" + "消息" * 100)  # 200+ token
+    short_msg = HumanMessage(content="短")
+    kept = trim_history([long_msg, short_msg], budget=150)
+    # 长消息(200+ token)整条被丢弃,不会留下前 150 token 的残片
+    assert kept == [short_msg]
+    assert all(m.content == "短" or len(m.content) > 200 for m in kept)
+
+
 def test_get_history_for_unknown_session_returns_empty_list():
     store = InMemorySessionStore(max_sessions=10)
     assert store.get_history("missing") == []
