@@ -1,28 +1,21 @@
-import json
-from collections.abc import AsyncIterator
 from pathlib import Path
 
 from fastapi import Depends, FastAPI
 from fastapi.responses import FileResponse, StreamingResponse
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
-from app.config import get_settings
+from app.chat_service import stream_chat
 from app.dependencies import get_chat_model, get_extractor
-from app.history import InMemorySessionStore, SessionStore, trim_history
-from app.prompts import build_system_prompt
+from app.history import SessionStore
 from app.schemas import AfterSalesInfo, ChatRequest, ExtractRequest
-
-
-def _sse(payload: dict) -> str:
-    return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+from app.session_store import MySQLSessionStore
 
 
 def create_app() -> FastAPI:
     application = FastAPI()
-    settings = get_settings()
-    application.state.settings = settings
-    application.state.session_store = InMemorySessionStore(max_sessions=settings.max_sessions)
-    application.state.system_prompt = build_system_prompt(settings)
+    # ch02:会话历史落 MySQL。构造期不连库(引擎惰性建连),MySQL 不可达时
+    # 首次 store 操作才抛 OperationalError,由 stream_chat 的 error 帧路径兜住。
+    # config.max_sessions 仅内存版 store 的 FIFO 淘汰参数,MySQL 版不淘汰,字段保留不删。
+    application.state.session_store = MySQLSessionStore()
 
     @application.get("/health")
     async def health() -> dict[str, str]:
@@ -37,32 +30,12 @@ def create_app() -> FastAPI:
         request: ChatRequest,
         llm=Depends(get_chat_model),
     ) -> StreamingResponse:
+        # ch01 的手拼消息 + astream 已整体下沉到 chat_service.stream_chat,
+        # 这里只做接线;帧协议、media_type、响应头全部保持不变。
+        # model 仍走每请求构建的 FastAPI 依赖(与 ch01 同款注入模式,测试可 override)。
         store: SessionStore = application.state.session_store
-        history = store.get_history(request.session_id)
-        store.append_message(request.session_id, HumanMessage(content=request.message))
-
-        messages: list[BaseMessage] = [
-            SystemMessage(content=application.state.system_prompt),
-            *trim_history(history, application.state.settings.history_token_budget),
-            HumanMessage(content=request.message),
-        ]
-
-        async def event_stream() -> AsyncIterator[str]:
-            collected = ""
-            try:
-                async for chunk in llm.astream(messages):
-                    content = chunk.content
-                    if content:
-                        collected += content
-                        yield _sse({"type": "token", "content": content})
-            except Exception as exc:  # noqa: BLE001 - 任何模型异常都转成 error 帧
-                yield _sse({"type": "error", "message": str(exc)})
-                return
-            store.append_message(request.session_id, AIMessage(content=collected))
-            yield _sse({"type": "done"})
-
         return StreamingResponse(
-            event_stream(),
+            stream_chat(request.session_id, request.message, store=store, model=llm),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
