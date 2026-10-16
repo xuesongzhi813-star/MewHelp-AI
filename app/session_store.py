@@ -18,6 +18,8 @@
   monkeypatch 注入回滚会话),每次操作短 session,不自持长连接。
 """
 
+import logging
+
 from langchain_core.messages import (
     AIMessage,
     BaseMessage,
@@ -29,6 +31,8 @@ from sqlalchemy import select
 from app.db import get_session_local
 from app.history import SessionStore
 from app.models import Conversation, Message
+
+logger = logging.getLogger(__name__)
 
 
 class MySQLSessionStore(SessionStore):
@@ -69,6 +73,8 @@ class MySQLSessionStore(SessionStore):
         """重建该会话的全部历史消息(按消息 id 升序,即写入顺序)。
 
         未知 session(无「进行中」会话)会先建会话再查,天然返回空列表。
+        重建时做毒历史防御(I-1):尾部未配对的 AIMessage(tool_calls) 直接丢弃,
+        详见 _rebuild_messages。
         """
         conversation_id = self.get_or_create_conversation(session_id)
         with get_session_local()() as session:
@@ -79,7 +85,46 @@ class MySQLSessionStore(SessionStore):
                     .order_by(Message.id.asc())
                 ).all()
                 # 在 session 上下文内完成重建,避免 commit 后属性过期
-                return [self._row_to_message(row) for row in rows]
+                return self._rebuild_messages(
+                    [self._row_to_message(row) for row in rows],
+                    session_id=session_id,
+                    conversation_id=conversation_id,
+                )
+
+    @staticmethod
+    def _rebuild_messages(
+        messages: list[BaseMessage], *, session_id: str, conversation_id: int
+    ) -> list[BaseMessage]:
+        """毒历史防御(I-1):丢弃尾部未配对的 AIMessage(tool_calls)。
+
+        正常路径不可达——append_message 逐条落库,AIMessage(tool_calls) 与
+        其 ToolMessage 本应成对写入;唯一现实缺口是 AIMessage(tool_calls)
+        落库后、ToolMessage 落库前进程崩溃(或 ToolMessage 落库失败),
+        该 AIMessage 会孤悬在序列尾部。把这样的历史原样发给 OpenAI API
+        会因「tool_calls 无对应 tool 结果」被拒,整个会话每轮都 400。
+        防御口径:尾部未配对的 AIMessage(tool_calls) 从重建结果中丢弃,
+        把「会话每轮 400」降级为「丢一轮工具记录但会话可用」。
+
+        只处理尾部未配对:序列中间出现未配对属于更严重的库损坏(比如
+        ToolMessage 被手工删除),保持原样重建、不做额外处理,交由
+        上层报错暴露问题。配对判定:紧随其后的一条是 ToolMessage 且
+        其 tool_call_id 等于该 AIMessage 第一个 tool_call 的 id
+        (append_message 逐条落库的正常形态必满足)。
+        """
+        if not messages:
+            return messages
+        last = messages[-1]
+        if not (isinstance(last, AIMessage) and last.tool_calls):
+            return messages
+        # 尾部 AIMessage 携带 tool_calls,却已无后续消息可与它配对
+        logger.warning(
+            "检测到尾部未配对的 AIMessage(tool_calls),已丢弃以防御毒历史(I-1):"
+            " session_id=%s conversation_id=%s tool_call_ids=%s",
+            session_id,
+            conversation_id,
+            [tc.get("id") for tc in last.tool_calls],
+        )
+        return messages[:-1]
 
     def append_message(self, session_id: str, message: BaseMessage) -> None:
         """把一条 LangChain 消息追加落库;不落库的类型直接跳过。"""

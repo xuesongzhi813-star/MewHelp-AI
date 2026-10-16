@@ -184,6 +184,80 @@ def test_two_rounds_keep_order(store_tx):
     assert history[7].content == "复古水洗牛仔夹克售价 299 元"
 
 
+# ---------- 毒历史防御(I-1)----------
+
+
+def test_tail_orphan_tool_call_ai_message_dropped(store_tx):
+    """毒历史防御(I-1):尾部 AIMessage(tool_calls) 未配对(ToolMessage
+    落库失败的缺口形态),get_history 把它丢弃——「会话每轮 400」降级为
+    「丢一轮工具记录但会话可用」。正常路径不可达,savepoint 内手工构造。"""
+    store = MySQLSessionStore()
+    sid = _new_sid("store-poison-tail")
+
+    # 正常 append 三条,再手工删掉 ToolMessage 行,制造尾部未配对
+    store.append_message(sid, HumanMessage("订单1001"))
+    store.append_message(
+        sid,
+        AIMessage(
+            content="",
+            tool_calls=[{
+                "name": "query_logistics",
+                "args": {"order_id": "ORD-1001"},
+                "id": "call_1",
+            }],
+        ),
+    )
+    store.append_message(
+        sid, ToolMessage("物流在中途", tool_call_id="call_1")
+    )
+    with Session(store_tx) as session:
+        with session.begin():
+            tool_row = session.scalar(
+                select(Message)
+                .where(Message.conversation_id.isnot(None))
+                .where(Message.role == "tool")
+                .where(Message.tool_call_id == "call_1")
+            )
+            assert tool_row is not None  # 前置自检:ToolMessage 行确实存在
+            session.delete(tool_row)
+
+    history = store.get_history(sid)
+    # 未配对的尾部 AIMessage(tool_calls) 被丢弃,只剩 Human
+    assert len(history) == 1
+    assert isinstance(history[0], HumanMessage)
+    assert history[0].content == "订单1001"
+
+
+def test_paired_tool_call_round_untouched(store_tx):
+    """回归保护:配对完整(AIMessage(tool_calls) + 对应 ToolMessage)
+    时防御逻辑不介入,整轮原样重建。"""
+    store = MySQLSessionStore()
+    sid = _new_sid("store-poison-paired")
+
+    store.append_message(sid, HumanMessage("订单1001"))
+    store.append_message(
+        sid,
+        AIMessage(
+            content="",
+            tool_calls=[{
+                "name": "query_logistics",
+                "args": {"order_id": "ORD-1001"},
+                "id": "call_1",
+            }],
+        ),
+    )
+    store.append_message(
+        sid, ToolMessage("物流在中途", tool_call_id="call_1")
+    )
+
+    history = store.get_history(sid)
+    assert len(history) == 3  # 一条不少
+    assert isinstance(history[1], AIMessage)
+    assert history[1].tool_calls[0]["id"] == "call_1"
+    assert isinstance(history[2], ToolMessage)
+    assert history[2].tool_call_id == "call_1"
+
+
 # ---------- get_or_create_conversation 语义 ----------
 
 
