@@ -16,20 +16,29 @@ import re
 from types import SimpleNamespace
 
 import pytest
+from langchain_core.utils.function_calling import convert_to_openai_tool
+from pydantic import ValidationError
+from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
 import app.tools as tools_mod
 from app.db import get_engine
+from app.executor import execute_tool
 from app.models import Conversation, Faq, Ticket
 from app.tools import TOOL_REGISTRY, get_tools, query_faq as query_faq_tool
 
-# 各工具期望的参数名集合(用于 args_schema 的 JSON schema 断言)
+# 各工具期望的**模型可见**参数名集合(用于 tool_call_schema 的 JSON schema 断言)
 EXPECTED_ARGS: dict[str, set[str]] = {
     "query_order": {"order_id"},
     "query_product": {"product_name"},
     "query_logistics": {"order_id"},
     "query_faq": {"keyword"},
     "create_ticket": {"description", "ticket_type"},
+}
+
+# 各工具的**系统注入**参数(标了 InjectedToolArg,模型不可见,由编排层注入)
+INJECTED_ARGS: dict[str, set[str]] = {
+    "create_ticket": {"conversation_id"},
 }
 
 
@@ -169,10 +178,27 @@ def test_query_faq_escapes_like_wildcards(tools_tx):
 # ---------- create_ticket(真实连库,回滚)----------
 
 
+def _seed_conversation(conn, user_id: str) -> int:
+    """在同一回滚事务里建一条真实 Conversation,返回其自增 id。"""
+    with Session(conn) as session:
+        with session.begin():
+            conversation = Conversation(user_id=user_id)
+            session.add(conversation)
+            session.flush()
+            return conversation.id
+
+
 def test_create_ticket_success_and_format(tools_tx):
-    """create_ticket:返回成功文案与合法工单号,行落表且 status='待处理'。"""
+    """create_ticket:返回成功文案与合法工单号,行落表且 status='待处理',
+    且 conversation_id 精确等于注入值。"""
+    conversation_id = _seed_conversation(tools_tx, "ticket-success")
+
     result = tools_mod.create_ticket.invoke(
-        {"description": "订单 ORD-TEST-0001 的商品有破损,要求退货", "ticket_type": "售后"}
+        {
+            "description": "订单 ORD-TEST-0001 的商品有破损,要求退货",
+            "ticket_type": "售后",
+            "conversation_id": conversation_id,
+        }
     )
     match = re.search(r"工单创建成功,工单号 (T\d{12})", result)
     assert match, f"返回文案缺少合法工单号:{result}"
@@ -184,19 +210,31 @@ def test_create_ticket_success_and_format(tools_tx):
         assert row.description == "订单 ORD-TEST-0001 的商品有破损,要求退货"
         assert row.ticket_type == "售后"
         assert row.status == "待处理"  # 默认值由模型/数据库口径一致保证
-        # conversation_id 必须指向真实存在的会话行(本机 conversations 表当前为空,
-        # 会走「自建 user_id='system' 会话」的过渡分支)
-        conversation = session.get(Conversation, row.conversation_id)
-        assert conversation is not None
+        # conversation_id 精确等于注入值(不再是「指向任意存在的会话」过渡口径)
+        assert row.conversation_id == conversation_id
+
+
+def test_create_ticket_missing_conversation_id_raises():
+    """漏注入 conversation_id:invoke 当场抛 ValidationError,而非静默写脏外键。
+
+    注入参数无默认值——编排层忘了注入时问题必须暴露(该路径在参数校验阶段
+    即失败,不会触达真实库,故无需回滚 fixture)。
+    """
+    with pytest.raises(ValidationError):
+        tools_mod.create_ticket.invoke(
+            {"description": "缺少注入参数的工单", "ticket_type": "咨询"}
+        )
 
 
 def test_create_ticket_sequence_increments(tools_tx):
     """连续两次创建:序号严格递增(+1),工单号格式均为 ^T\\d{12}$。"""
+    conversation_id = _seed_conversation(tools_tx, "ticket-seq")
+
     first = tools_mod.create_ticket.invoke(
-        {"description": "第一次咨询测试", "ticket_type": "咨询"}
+        {"description": "第一次咨询测试", "ticket_type": "咨询", "conversation_id": conversation_id}
     )
     second = tools_mod.create_ticket.invoke(
-        {"description": "第二次投诉测试", "ticket_type": "投诉"}
+        {"description": "第二次投诉测试", "ticket_type": "投诉", "conversation_id": conversation_id}
     )
     no1 = re.search(r"T(\d{12})", first).group(1)
     no2 = re.search(r"T(\d{12})", second).group(1)
@@ -205,6 +243,45 @@ def test_create_ticket_sequence_increments(tools_tx):
     # 同日同前缀,尾号四位递增 1
     assert no1[:8] == no2[:8]
     assert int(no2[8:]) == int(no1[8:]) + 1
+
+
+def test_execute_tool_injects_real_conversation_id_over_forged_arg(tools_tx):
+    """端到端锁死执行器的**合并方向**:上游把同名 conversation_id 塞进 args 时,
+    落库用的是 context 注入的真值。
+
+    锁的是执行器 `{**args, **context}` 的合并顺序(context 在后覆盖 args),
+    而非「模型能伪造 conversation_id」——该参数不在模型可见 schema 里,模型侧
+    根本产不出它。若日后有人把合并顺序写反成 `{**context, **args}`,伪造值会
+    静默落到 tickets 表(伪造 id 是合法存在的会话,FK 不报错),这条用例即变红;
+    这正是删掉它会失去的保护。用真实 execute_tool(非直接 invoke)才覆盖合并逻辑。
+    """
+    real_id = _seed_conversation(tools_tx, "ticket-inject-real")
+    forged_id = _seed_conversation(tools_tx, "ticket-inject-forged")
+
+    result = execute_tool(
+        "create_ticket",
+        {
+            "description": "端到端注入验证",
+            "ticket_type": "投诉",
+            "conversation_id": forged_id,  # 上游塞入的伪造值
+        },
+        context={"conversation_id": real_id},  # 系统注入的真值
+    )
+
+    assert "工单创建成功" in result
+    ticket_no = re.search(r"工单创建成功,工单号 (T\d{12})", result).group(1)
+
+    with Session(tools_tx) as session:
+        row = session.get(Ticket, ticket_no)
+        assert row is not None
+        # 落表用的是 context 注入的真值,而非 args 里的伪造值
+        assert row.conversation_id == real_id
+        assert row.conversation_id != forged_id
+        # 伪造 id 在 tickets 表里查不到任何行
+        forged_rows = session.scalars(
+            select(Ticket).where(Ticket.conversation_id == forged_id)
+        ).all()
+        assert forged_rows == []
 
 
 # ---------- TOOL_REGISTRY 注册表 ----------
@@ -225,21 +302,49 @@ def test_tool_registry_wraps_original_functions():
 
 
 def test_tool_args_schema_properties_match_params():
-    """args_schema 生成的 JSON schema properties 与工具参数一一对应,
-    且每个参数的 description 非空(模型靠它决定怎么传参)。"""
+    """模型可见 schema 与完整 args_schema 双口径断言:
+
+    - tool_call_schema(模型侧真正看到的):properties/required 恰好等于
+      EXPECTED_ARGS(系统注入参数已被 InjectedToolArg 摘除);
+    - args_schema(工具内部完整 schema):properties/required 恰好等于
+      EXPECTED_ARGS ∪ INJECTED_ARGS(注入参数在 args_schema 里存在)。
+
+    两个口径一起锁住「注入参数在 args_schema 里存在」且「不进模型可见 schema」。
+    每个参数的 description 非空(模型靠它决定怎么传参)。
+    """
     for name, instance in TOOL_REGISTRY.items():
-        schema = instance.args_schema.model_json_schema()
-        props = schema["properties"]
-        assert set(props) == EXPECTED_ARGS[name], f"{name} 参数集合不符"
-        for prop_name, prop in props.items():
+        visible = instance.tool_call_schema.model_json_schema()
+        visible_props = visible["properties"]
+        assert set(visible_props) == EXPECTED_ARGS[name], f"{name} 模型可见参数集合不符"
+        for prop_name, prop in visible_props.items():
             assert prop.get("description"), f"{name}.{prop_name} 缺少 description"
-        # 必填参数全部进 required(五个工具的入参都是必填)
-        assert set(schema["required"]) == EXPECTED_ARGS[name]
+        # 必填参数全部进 required(五个工具的模型可见入参都是必填)
+        assert set(visible["required"]) == EXPECTED_ARGS[name]
+
+        full = instance.args_schema.model_json_schema()
+        expected_full = EXPECTED_ARGS[name] | INJECTED_ARGS.get(name, set())
+        assert set(full["properties"]) == expected_full, f"{name} 完整参数集合不符"
+        assert set(full["required"]) == expected_full
     # create_ticket 的 ticket_type 是枚举,取值与业务口径一致
     ticket_type_prop = TOOL_REGISTRY["create_ticket"].args_schema.model_json_schema()[
         "properties"
     ]["ticket_type"]
     assert set(ticket_type_prop["enum"]) == {"售后", "投诉", "咨询"}
+
+
+def test_create_ticket_openai_payload_hides_injected_arg():
+    """最终口径:真正发给 DeepSeek 的报文里,conversation_id 不出现在
+    parameters.properties 与 required 中——模型完全看不到该参数。
+
+    与上一个测试互补:上一个锁 args_schema 层,这里锁 convert_to_openai_tool
+    转换后的实际请求报文层。
+    """
+    payload = convert_to_openai_tool(TOOL_REGISTRY["create_ticket"])
+    params = payload["function"]["parameters"]
+    assert "conversation_id" not in params["properties"]
+    assert "conversation_id" not in params["required"]
+    # 对照组:模型可见参数仍在(证明摘除的是注入参数,而非整个 schema 出错)
+    assert set(params["properties"]) == EXPECTED_ARGS["create_ticket"]
 
 
 def test_get_tools_returns_registry_values():

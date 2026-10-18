@@ -8,6 +8,9 @@
   条数上限取 Settings.faq_max_results;LIKE 通配符(% _ /)按字面量处理
   (contains(autoescape=True) 自动转义并附带 ESCAPE 子句)。
 - create_ticket:真实写 tickets 表,工单号 = T + YYYYMMDD + 4 位零填充当日序号。
+  其 conversation_id 是**系统注入参数**(InjectedToolArg):从模型可见 schema
+  里摘除,值由对话编排层通过 execute_tool 的 context 提供——工具拿不到会话
+  上下文,不能自己猜关联哪条会话。
 
 测试钩子(与 seed.py 同款做法):工具内部一律通过模块级 get_session_local /
 get_settings 名字拿会话与配置,monkeypatch app.tools.* 即可注入带外层事务的
@@ -17,16 +20,16 @@ get_settings 名字拿会话与配置,monkeypatch app.tools.* 即可注入带外
 import json
 import random
 from datetime import date, datetime, timedelta
-from typing import Literal
+from typing import Annotated, Literal
 
-from langchain_core.tools import BaseTool, tool
+from langchain_core.tools import BaseTool, InjectedToolArg, tool
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db import get_session_local
-from app.models import Conversation, Faq, Ticket
+from app.models import Faq, Ticket
 
 # ---------------------------------------------------------------------------
 # Mock 数据源(订单/商品/物流):进程内共享一个随机源即可,不需要跨进程可复现
@@ -99,6 +102,11 @@ class CreateTicketArgs(BaseModel):
     description: str = Field(description="工单内容:完整转述用户的问题,包含订单号、商品名等关键上下文")
     ticket_type: Literal["售后", "投诉", "咨询"] = Field(
         description="工单类型:售后(退换货/维修类)、投诉(不满/纠纷类)、咨询(其他疑问类)"
+    )
+    # InjectedToolArg:从模型可见 schema 摘除(模型不填),值由编排层注入。
+    # 故意不给默认值——漏注入时 invoke 当场抛 ValidationError,而非静默写脏外键。
+    conversation_id: Annotated[int, InjectedToolArg] = Field(
+        description="当前会话主键(conversations.id),由系统注入,模型不要填"
     )
 
 
@@ -235,32 +243,19 @@ def _next_ticket_no(session: Session) -> str:
     return f"{prefix}{seq:04d}"
 
 
-def _ensure_conversation_id(session: Session) -> int:
-    """为工单取一个 conversation_id:tickets.conversation_id 是非空外键,
-    但工具内部拿不到当前会话上下文。
-
-    TODO(Task 5 过渡方案):本阶段约定关联「最新一条 conversation」,
-    表空时兜底自建一条 user_id='system' 的会话(传 0 会违反外键约束,
-    也不能凭空捏造不存在的 id)。Task 5 的 session store 落地后,
-    应由调用方(对话编排层)注入真实 conversation_id,本函数即废弃。
-    """
-    conversation = session.scalar(
-        select(Conversation).order_by(Conversation.id.desc()).limit(1)
-    )
-    if conversation is not None:
-        return conversation.id
-    conversation = Conversation(user_id="system")
-    session.add(conversation)
-    session.flush()  # flush 拿回自增主键
-    return conversation.id
-
-
 @tool(args_schema=CreateTicketArgs)
-def create_ticket(description: str, ticket_type: Literal["售后", "投诉", "咨询"]) -> str:
+def create_ticket(
+    description: str,
+    ticket_type: Literal["售后", "投诉", "咨询"],
+    conversation_id: Annotated[int, InjectedToolArg],
+) -> str:
     """为用户创建人工客服工单,成功后返回工单号。
 
     当用户明确要求转人工、或问题超出常见问题/订单/物流查询能力
     (如复杂售后纠纷、投诉)时调用;description 需完整转述用户问题。
+
+    conversation_id 是系统注入参数(模型不可见):由对话编排层经
+    execute_tool 的 context 传入真实会话主键,工单据此挂到正确会话上。
     """
     with get_session_local()() as session:
         with session.begin():
@@ -268,7 +263,7 @@ def create_ticket(description: str, ticket_type: Literal["售后", "投诉", "�
             session.add(
                 Ticket(
                     ticket_no=ticket_no,
-                    conversation_id=_ensure_conversation_id(session),
+                    conversation_id=conversation_id,
                     description=description,
                     ticket_type=ticket_type,
                 )

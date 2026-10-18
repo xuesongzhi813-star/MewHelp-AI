@@ -148,9 +148,17 @@ async def stream_chat(
         tool_args = tool_call["args"]
         ai_tool_msg = AIMessage(content=gathered.content or "", tool_calls=[tool_call])
 
+        # 系统注入参数:InjectedToolArg 只把 conversation_id 从模型可见 schema
+        # 里摘掉,值必须由调用方给——create_ticket 靠它把工单挂到真实会话上。
+        # context 会合并进所有工具的入参,未声明该参数的工具由 pydantic 忽略。
+        # 在 start 帧之前取:若 store 取 id 失败,不会留下永远等不到 end 的孤儿
+        # start 帧(前端对 error 帧有兜底,但不该依赖它)。
+        context = {"conversation_id": store.get_or_create_conversation(session_id)}
         yield _sse({"type": "tool", "name": tool_name, "phase": "start"})
         # 执行器是同步函数,丢线程池;契约保证永不抛异常、永远返回 str
-        result = await asyncio.to_thread(execute_tool, tool_name, tool_args)
+        result = await asyncio.to_thread(
+            execute_tool, tool_name, tool_args, context=context
+        )
         tool_msg = ToolMessage(content=result, tool_call_id=tool_call["id"])
         # 两条 append 必须都在工具执行后、回灌调用前落库
         store.append_message(session_id, ai_tool_msg)

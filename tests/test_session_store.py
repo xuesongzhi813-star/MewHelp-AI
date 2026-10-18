@@ -364,8 +364,9 @@ def test_mysql_session_store_satisfies_protocol():
 
     静态口径:显式继承 Protocol,类型检查器直接认可(下方赋值即静态断言)。
     运行时口径:SessionStore 未标 @runtime_checkable,不能用 isinstance,
-    退而按结构化协议的本质——逐个断言两个 Protocol 方法真实存在且可调用。
+    退而按结构化协议的本质——逐个断言三个 Protocol 方法真实存在且可调用。
     """
     store: SessionStore = MySQLSessionStore()
     assert callable(store.get_history)
     assert callable(store.append_message)
+    assert callable(store.get_or_create_conversation)

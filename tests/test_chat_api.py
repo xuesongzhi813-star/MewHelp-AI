@@ -95,6 +95,11 @@ class UnreachableStore:
             "INSERT ...", {}, Exception("(pymysql.OperationalError) 无法连接 MySQL")
         )
 
+    def get_or_create_conversation(self, session_id: str) -> int:
+        raise OperationalError(
+            "SELECT ...", {}, Exception("(pymysql.OperationalError) 无法连接 MySQL")
+        )
+
 
 @pytest.fixture(autouse=True)
 def memory_store():

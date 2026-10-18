@@ -16,9 +16,10 @@
 import time
 from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
+from typing import Annotated
 
 import pytest
-from langchain_core.tools import tool
+from langchain_core.tools import InjectedToolArg, tool
 from pydantic import BaseModel, Field
 
 import app.tools as tools_mod
@@ -113,6 +114,49 @@ class _EchoArgs(BaseModel):
     """带必填字段的 schema:用于真实 StructuredTool 的校验错路径。"""
 
     order_id: str = Field(description="订单号,必填")
+
+
+class _InjectedArgs(BaseModel):
+    """含系统注入参数的 schema:普通参数 + InjectedToolArg 参数。
+
+    与真实 create_ticket 同款。两个控制点各司其职(本地实测):
+    - args_schema 上的字段标注 InjectedToolArg → 决定该参数是否从模型可见
+      schema(tool_call_schema / convert_to_openai_tool)里摘除;
+    - 函数签名必须有同名形参 → 否则注入进来的值会变成
+      unexpected keyword argument 的 TypeError。
+    函数形参处是否也标 InjectedToolArg 属可选自我说明,不标也能工作。
+    """
+
+    text: str = Field(description="普通参数")
+    conversation_id: Annotated[int, InjectedToolArg] = Field(description="系统注入参数")
+
+
+def _make_injected_tool() -> tuple:
+    """带 InjectedToolArg 的假工具:记录收到的 conversation_id。"""
+    received: list = []
+
+    @tool(args_schema=_InjectedArgs)
+    def fake_injected(
+        text: str, conversation_id: Annotated[int, InjectedToolArg]
+    ) -> str:
+        """测试用:消费系统注入的 conversation_id。"""
+        received.append(conversation_id)
+        return f"got:{conversation_id}:{text}"
+
+    return fake_injected, received
+
+
+def _make_plain_arg_tool() -> tuple:
+    """只有普通参数的假工具:验证 context 里的多余 key 被 pydantic 忽略。"""
+    received: list = []
+
+    @tool(args_schema=_EchoArgs)
+    def fake_plain(order_id: str) -> str:
+        """测试用:只声明普通参数。"""
+        received.append(order_id)
+        return f"plain:{order_id}"
+
+    return fake_plain, received
 
 
 @pytest.fixture
@@ -330,3 +374,67 @@ def test_execute_tool_pool_shutdown_falls_back(fake_registry, monkeypatch):
     assert "执行失败" in result
     # submit 抛 RuntimeError 走重试循环的「执行出错」分支:两次尝试都被接住
     assert "执行出错" in result
+
+
+# ---------------------------------------------------------------------------
+# 系统注入参数:context 通道(InjectedToolArg 只摘 schema,值靠调用方注入)
+# ---------------------------------------------------------------------------
+
+
+def test_execute_tool_injects_context_value(fake_registry):
+    """context 传值 → 声明了 InjectedToolArg 的假工具函数收到该值。"""
+    injected, received = _make_injected_tool()
+    fake_registry["fake_injected"] = injected
+
+    result = execute_tool(
+        "fake_injected", {"text": "hi"}, context={"conversation_id": 42}
+    )
+
+    assert result == "got:42:hi"
+    assert received == [42]
+
+
+def test_execute_tool_context_overrides_model_supplied_arg(fake_registry):
+    """模型 args 里带同名伪造值 + context 带真值 → 函数收到 context 的真值。
+
+    context 合并放在 args 之后,覆盖是刻意的安全语义:模型无法决定工单挂到
+    哪条会话。
+    """
+    injected, received = _make_injected_tool()
+    fake_registry["fake_injected"] = injected
+
+    result = execute_tool(
+        "fake_injected",
+        {"text": "hi", "conversation_id": 1},
+        context={"conversation_id": 99},
+    )
+
+    assert result == "got:99:hi"
+    assert received == [99]
+
+
+def test_execute_tool_context_extra_key_ignored_by_plain_tool(fake_registry):
+    """context 传给不声明注入参数的假工具 → 正常返回,多余 key 被 pydantic 忽略。"""
+    plain, received = _make_plain_arg_tool()
+    fake_registry["fake_plain"] = plain
+
+    result = execute_tool(
+        "fake_plain", {"order_id": "X"}, context={"conversation_id": 999}
+    )
+
+    assert result == "plain:X"
+    assert received == ["X"]
+
+
+def test_execute_tool_missing_injected_arg_returns_validation_text(fake_registry):
+    """假工具声明必填注入参数但调用方没传 context → 返回「参数校验失败」文本,
+    而不是抛异常(契约「永不抛异常」不破);校验在 func 之前失败,函数未执行。"""
+    injected, received = _make_injected_tool()
+    fake_registry["fake_injected"] = injected
+
+    result = execute_tool("fake_injected", {"text": "hi"})  # 无 context
+
+    assert isinstance(result, str)
+    assert "fake_injected" in result
+    assert "参数校验失败" in result
+    assert received == []

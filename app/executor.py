@@ -1,8 +1,17 @@
-"""ch02 统一工具执行器:execute_tool(name, args) -> str。
+"""ch02 统一工具执行器:execute_tool(name, args, *, context=None) -> str。
 
 契约:**永不向上抛异常,永远返回 str**——返回值会包成 ToolMessage 回灌给模型,
 错误也一律转成模型可读的中文文本(模型据此向用户致歉或转人工),
 绝不把堆栈/内部路径泄给模型,更不能打断 SSE 流。
+
+系统注入参数(context):
+- 有些工具参数(如 create_ticket 的 conversation_id)模型不该填,而是由编排层
+  提供真实值——工具侧用 InjectedToolArg 把它从模型可见 schema 摘除,值只能
+  由调用方经 context 通道塞进去;
+- 注意 InjectedToolArg **本身不自动填值**(这点与 InjectedToolCallId 不同,
+  后者才由框架自动注入),摘除 schema 后值必须由本执行器的调用方提供;
+- context 会合并进所有工具的入参,只有声明了该参数的工具会消费它,其余工具
+  由 pydantic 默认 extra='ignore' 忽略(实测 langchain-core 1.6.10),无害。
 
 行为:
 1. 未注册工具:返回「工具不存在 + 可用工具清单」的中文提示;
@@ -24,8 +33,10 @@
 """
 
 import logging
+from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeoutError
+from typing import Any
 
 from pydantic import ValidationError
 
@@ -98,13 +109,18 @@ def _run_with_retry(tool, name: str, args: dict) -> str:
     return _failure_text(name, last_category)
 
 
-def execute_tool(name: str, args: dict) -> str:
+def execute_tool(
+    name: str, args: dict, *, context: Mapping[str, Any] | None = None
+) -> str:
     """按名字执行注册表中的工具,任何失败都转成中文错误文本返回。
 
     - name 不在 TOOL_REGISTRY → 「工具不存在」提示;
     - 参数校验错(ValidationError)→ 不重试,直接返回校验失败提示;
     - 超时/运行时异常 → 重试 1 次,再失败返回统一错误文本;
     - 成功路径不打日志;失败路径每个失败尝试记一行(工具名 + 类别/异常)。
+
+    context 是「系统注入参数」的通道(如 create_ticket 的 conversation_id),
+    合并进工具入参后交给工具;未声明该参数的工具由 pydantic 忽略多余 key。
 
     最外层兜底 except 只接漏网异常(不可哈希 name、池 shutdown 后
     submit 抛 RuntimeError 等),返回与二次失败同款的中文错误文本。
@@ -114,7 +130,11 @@ def execute_tool(name: str, args: dict) -> str:
         if tool is None:
             # name 不可哈希时 .get 抛 TypeError,由兜底 except 统一接住
             return _unknown_tool_text(name)
-        return _run_with_retry(tool, name, args)
+        # context 放后面:即便模型伪造了同名参数,也被系统注入的真实值覆盖
+        # (安全语义——模型无法决定工单挂到哪条会话)。args 非 dict 时
+        # {**args} 抛的 TypeError 由最外层兜底 except 接住,契约不破。
+        call_args = {**args, **(context or {})}
+        return _run_with_retry(tool, name, call_args)
     except Exception as exc:
         # 兜底:细粒度分支漏网的任何异常,保证「永不抛、永远返回 str」契约
         logger.warning(

@@ -71,3 +71,12 @@ def test_exceeding_max_sessions_evicts_oldest_session():
     assert store.get_history("s1") == []
     assert len(store.get_history("s2")) == 1
     assert len(store.get_history("s3")) == 1
+
+
+def test_get_or_create_conversation_stable_per_session():
+    """同一 session_id 两次调用返回相同 int;不同 session_id 返回不同 int。"""
+    store = InMemorySessionStore(max_sessions=10)
+    first = store.get_or_create_conversation("s1")
+    assert isinstance(first, int)
+    assert store.get_or_create_conversation("s1") == first  # 同会话恒定
+    assert store.get_or_create_conversation("s2") != first  # 异会话不同
