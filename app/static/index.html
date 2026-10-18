@@ -176,6 +176,25 @@
   }
   @keyframes blink { 50% { opacity: 0; } }
 
+  /* ── 工具轨迹徽章 ─────────────────── */
+  .tool-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .tool-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; letter-spacing: 1px;
+    color: var(--teal);
+    border: 1px solid rgba(45, 212, 191, 0.35);
+    background: rgba(45, 212, 191, 0.08);
+    padding: 3px 10px; border-radius: 999px;
+    animation: rise 0.25s ease-out;
+  }
+  .tool-badge i { font-style: normal; font-size: 12px; }
+  .tool-badge.running { animation: breathe 1.4s ease-in-out infinite; }
+  .tool-badge.running i { display: inline-block; animation: spin 1s linear infinite; }
+  .tool-badge.done { color: var(--amber); border-color: rgba(251, 191, 36, 0.45); background: rgba(251, 191, 36, 0.09); }
+  .tool-badge.failed { color: #f87171; border-color: rgba(248, 113, 113, 0.45); background: rgba(248, 113, 113, 0.09); }
+  @keyframes breathe { 50% { opacity: 0.45; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
   /* ── 欢迎卡片 ─────────────────────── */
   .welcome {
     max-width: 860px; margin: 8vh auto 0; text-align: center;
@@ -262,9 +281,9 @@
     <h1>你好,我是<span>Ethan_Leo</span> —— Thrift shopping 智能客服</h1>
     <p>退货退款 · 物流查询 · 订单咨询 · 售后支持</p>
     <div class="suggestions">
+      <button data-q="订单 1001 的物流到哪了?">订单查询</button>
       <button data-q="你们的退货流程是什么?">退货流程是什么?</button>
       <button data-q="我昨天买的鞋子开胶了,想退货">商品质量问题</button>
-      <button data-q="我的订单怎么还没发货?">物流查询</button>
       <button data-q="你们店有什么优惠活动吗?">售前咨询</button>
     </div>
   </div>
@@ -291,6 +310,12 @@
 
   let sessionId = newSession();
   let busy = false;
+
+  /* 工具名 → 徽章中文标签 */
+  const TOOL_LABELS = {
+    query_order: "查订单", query_logistics: "查物流", query_product: "查商品",
+    query_faq: "查FAQ", create_ticket: "创建工单"
+  };
 
   function newSession() {
     const id = (crypto.randomUUID ? crypto.randomUUID() : "s-" + Date.now()).slice(0, 8);
@@ -344,8 +369,11 @@
 
     addRow("user", "YOU").bubble.textContent = text;
 
-    /* AI 气泡:先放打字指示器 */
+    /* AI 气泡:徽章行 + 正文容器分离,正文 innerHTML 重绘不会冲掉徽章 */
     const { bubble } = addRow("ai", "ETHAN_LEO");
+    const badges = document.createElement("div");
+    badges.className = "tool-badges";
+    const body = document.createElement("span");
     const typing = document.createElement("span");
     typing.className = "typing";
     typing.innerHTML = "<i></i><i></i><i></i>";
@@ -376,15 +404,52 @@
           try { payload = JSON.parse(frame); } catch { continue; }
           if (payload.type === "token") {
             if (typing.isConnected) typing.remove();
-            if (!cursor.isConnected) bubble.appendChild(cursor);
+            if (badges.children.length && !badges.isConnected) bubble.appendChild(badges);
+            if (!body.isConnected) bubble.appendChild(body);
             acc += payload.content;
-            renderText(bubble, acc);
-            bubble.appendChild(cursor);
+            renderText(body, acc);
+            body.appendChild(cursor);
             scrollBottom();
+          } else if (payload.type === "tool") {
+            if (payload.phase === "start") {
+              typing.remove();
+              const badge = document.createElement("span");
+              badge.className = "tool-badge running";
+              badge.dataset.name = payload.name;
+              badge.title = "调用工具:" + payload.name;
+              badge.innerHTML = "<i>◌</i>" + (TOOL_LABELS[payload.name] || payload.name);
+              badges.appendChild(badge);
+              if (body.isConnected) bubble.insertBefore(badges, body);
+              else bubble.appendChild(badges);
+              scrollBottom();
+            } else if (payload.phase === "end") {
+              const running = [...badges.querySelectorAll(".tool-badge.running")]
+                .filter(b => b.dataset.name === payload.name).pop();
+              if (running) {
+                running.classList.remove("running");
+                running.classList.add("done");
+                const icon = running.querySelector("i");
+                icon.classList.remove("spin");
+                icon.textContent = "✓";
+              }
+            }
           } else if (payload.type === "error") {
             typing.remove(); cursor.remove();
+            /* 评审 N-1:error 帧是所有未定格徽章的终止态 */
+            badges.querySelectorAll(".tool-badge.running").forEach(b => {
+              b.classList.remove("running");
+              b.classList.add("failed");
+              const icon = b.querySelector("i");
+              icon.classList.remove("spin");
+              icon.textContent = "✕";
+            });
+            if (badges.children.length && !badges.isConnected) {
+              if (body.isConnected) bubble.insertBefore(badges, body);
+              else bubble.appendChild(badges);
+            }
+            if (!body.isConnected) bubble.appendChild(body);
             bubble.classList.add("error");
-            bubble.textContent = "⚠ 生成失败:" + payload.message;
+            body.textContent = "⚠ 生成失败:" + payload.message;
             scrollBottom();
           } else if (payload.type === "done") {
             cursor.remove();
@@ -392,11 +457,24 @@
         }
       }
       cursor.remove();
-      if (!acc && !bubble.textContent) { typing.remove(); bubble.textContent = "(空回复)"; }
+      if (!acc && !body.textContent) {
+        typing.remove();
+        if (!body.isConnected) bubble.appendChild(body);
+        body.textContent = "(空回复)";
+      }
     } catch (err) {
       typing.remove(); cursor.remove();
+      badges.querySelectorAll(".tool-badge.running").forEach(b => {
+        b.classList.remove("running");
+        b.classList.add("failed");
+        const icon = b.querySelector("i");
+        icon.classList.remove("spin");
+        icon.textContent = "✕";
+      });
+      if (badges.children.length && !badges.isConnected) bubble.appendChild(badges);
+      if (!body.isConnected) bubble.appendChild(body);
       bubble.classList.add("error");
-      bubble.textContent = "⚠ 连接失败:" + err.message + " — 请确认服务已启动";
+      body.textContent = "⚠ 连接失败:" + err.message + " — 请确认服务已启动";
       scrollBottom();
     } finally {
       busy = false;

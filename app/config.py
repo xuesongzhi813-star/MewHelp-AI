@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     max_sessions: int = 1000
     shop_name: str
     agent_name: str
+    # 数据库连接串:默认值不含密码,真实密码只存在于本地 .env 的 DB_URL,绝不入库
+    db_url: str = "mysql+pymysql://root@127.0.0.1:3306/melhelp"
+    tool_timeout: int = 5
+    faq_max_results: int = 3
 
     @field_validator("llm_extra_body", mode="before")
     @classmethod
