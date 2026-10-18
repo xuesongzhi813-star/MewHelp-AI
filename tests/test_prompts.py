@@ -40,16 +40,18 @@ def test_system_prompt_contains_tool_usage_rules(settings):
 
 
 def test_system_prompt_drops_ch01_no_realtime_clause(settings):
-    """ch01 的「查不到实时数据」约束措辞必须已被删除(现在查得到了)。
+    """ch01 的「你查不到实时数据」约束必须已被删除(现在查得到了)。
 
-    注意:模板现在正向提到「实时数据」(工具可查的 数据 范围),所以只断言
-    旧约束的否定性措辞消失,不断言「实时数据」四个字整体消失。
+    注意:ch02 Task 8 迭代后,工具规范里出现了「直接说查不到」(指工具查询
+    无结果时的行为要求),与 ch01 的「你暂时查不到」语义不同——所以断言
+    精确到 ch01 原句式,而不是一刀切禁词。
     """
     prompt = build_system_prompt(settings)
-    assert "查不到" not in prompt
-    assert "暂时查不到" not in prompt
+    assert "你暂时查不到" not in prompt
+    assert "本章你查不到" not in prompt
     # 模板本体同样不再含旧措辞(防止渲染层做替换的假象)
-    assert "查不到" not in SYSTEM_TEMPLATE
+    assert "你暂时查不到" not in SYSTEM_TEMPLATE
+    assert "本章你查不到" not in SYSTEM_TEMPLATE
 
 
 def test_system_prompt_keeps_ch01_constraints(settings):

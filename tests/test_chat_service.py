@@ -140,8 +140,13 @@ async def test_tool_round_full_frame_sequence():
     assert events[-1] == {"type": "done"}
 
 
-async def test_tool_round_second_call_messages_and_no_bind():
-    """场景A续:调用②收到的消息列表正确,且未绑工具。"""
+async def test_tool_round_second_call_messages_and_bind_params():
+    """场景A续:调用②收到的消息列表正确;两次 bind 的参数符合 Ruling 3。
+
+    ch02 调整(Ruling 3):调用②从「完全不绑工具」改为 bind_tools +
+    tool_choice="none"(防 DSML 泄漏,见 chat_service 第 6 步注释)——
+    断言口径由「bind 仅 1 次」改为「bind 2 次且参数各异」。
+    """
     fake = FakeChatModel(
         rounds=[
             [*tool_call_chunks("query_logistics", '{"order_id": "1001"}', "call_1")],
@@ -152,10 +157,16 @@ async def test_tool_round_second_call_messages_and_no_bind():
 
     await collect(stream_chat("s-msgs", "物流", store=store, model=fake))
 
-    # 调用①绑工具且 parallel_tool_calls=False;调用②直接 astream,不再 bind_tools
-    assert len(fake.bind_tools_calls) == 1
-    assert fake.bind_tools_calls[0]["tools"] == get_tools()
-    assert fake.bind_tools_calls[0]["kwargs"].get("parallel_tool_calls") is False
+    # 调用①绑工具且 parallel_tool_calls=False、不指定 tool_choice;
+    # 调用②再 bind 一次:tool_choice="none"(服务器侧拒绝工具调用)
+    assert len(fake.bind_tools_calls) == 2
+    first_bind, second_bind = fake.bind_tools_calls
+    assert first_bind["tools"] == get_tools()
+    assert first_bind["kwargs"].get("parallel_tool_calls") is False
+    assert "tool_choice" not in first_bind["kwargs"]
+    assert second_bind["tools"] == get_tools()
+    assert second_bind["kwargs"].get("tool_choice") == "none"
+    assert second_bind["kwargs"].get("parallel_tool_calls") is False
     assert len(fake.received) == 2
 
     # 调用②的消息:System + Human + AIMessage(tool_calls) + ToolMessage
@@ -298,6 +309,44 @@ async def test_first_call_error_yields_error_without_done():
     assert "连不上" in events[0]["message"]
     # 只有 user 消息落库(孤儿消息现状与 ch01 一致)
     assert [type(m).__name__ for _, m in store.appended] == ["HumanMessage"]
+
+
+async def test_second_call_ignores_tool_calls_defensively():
+    """Ruling 3 防御层:极端情况下 provider 无视 tool_choice="none",
+    调用②仍在 chunk 里吐 tool_calls——编排层不累加、不执行,只取 content
+    作答:无第二对 tool 帧、无第二次工具执行、done 收尾、落库只含文本。
+    """
+    fake = FakeChatModel(
+        rounds=[
+            [*tool_call_chunks("query_logistics", '{"order_id": "1001"}', "call_1")],
+            [
+                AIMessageChunk(content="根据查询结果"),
+                # 调用②违规产出的第二个 tool_call(真实 provider 不该发生)
+                *tool_call_chunks("query_order", '{"order_id": "1001"}', "call_bad"),
+                AIMessageChunk(content=",您的包裹在派送中"),
+            ],
+        ]
+    )
+    store = FakeStore()
+
+    frames = await collect(stream_chat("s-defend", "查物流", store=store, model=fake))
+    events = parse_sse(frames)
+
+    # 全程只有调用①那一对 tool 帧;违规 tool_call 没有触发第二对
+    tool_events = [e for e in events if e["type"] == "tool"]
+    assert tool_events == [
+        {"type": "tool", "name": "query_logistics", "phase": "start"},
+        {"type": "tool", "name": "query_logistics", "phase": "end"},
+    ]
+    assert events[-1] == {"type": "done"}
+
+    # 只发生了两次模型调用,没有第三次(不存在 Agent Loop)
+    assert len(fake.received) == 2
+    # 落库的最终回复是纯文本,不带 tool_calls
+    final = store.appended[-1][1]
+    assert isinstance(final, AIMessage)
+    assert final.content == "根据查询结果,您的包裹在派送中"
+    assert final.tool_calls == []
 
 
 async def test_multiple_tool_calls_only_first_executed(caplog):

@@ -2,7 +2,8 @@
 
 单轮工具调用约束(设计 §7),三层保证:
 1. bind_tools(..., parallel_tool_calls=False) 从请求参数上抑制模型并行多调;
-2. 回灌后的调用②**不绑工具**——模型没有工具可调,只能收敛作答(硬保证,不做 Agent Loop);
+2. 回灌后的调用②带 tool_choice="none"(Ruling 3,详见第 6 步注释)——工具 schema
+   仍可见,但服务器侧直接拒绝工具调用,模型只能收敛作答(硬保证,不做 Agent Loop);
 3. 即便模型仍在一轮里产出多个 tool_calls,编排层也只执行第一个并记日志警告(双保险)。
 
 帧协议(与 ch01 main.py 逐字节同款序列化:json.dumps(ensure_ascii=False) + "data: " 前缀 + "\n\n"):
@@ -115,9 +116,20 @@ async def stream_chat(
         store.append_message(session_id, tool_msg)
         yield _sse({"type": "tool", "name": tool_name, "phase": "end"})
 
-        # 6) 调用②:回灌工具结果,**不绑工具**逼收敛(单轮硬保证)
+        # 6) 调用②:回灌工具结果。Ruling 3:单轮硬保证从「不绑工具(无 schema
+        # 可调)」升级为「工具 schema 可见,但 tool_choice="none" 由服务器侧
+        # 直接拒绝工具调用」。动机:Task 8 样例评估实测,完全不绑工具时
+        # thinking-disabled 的 DeepSeek 若还想查第二项信息,会把 DSML 工具
+        # 调用标记(<｜｜DSML｜｜ calls>...)当正文吐进 token 流(Prompt 迭代
+        # 2 轮压不住,模型内秉回落);实测 tool_choice="none" 可完美抑制
+        # (无 tool_calls、无泄漏、自然作答)。注意调用②单独 bind(不与调用①
+        # 共享 bound 实例,两次 bind 参数不同)。
+        # 防御:即便 provider 无视 none 仍在 chunk 里带 tool_calls,本层也不
+        # 累加、不执行任何工具,只取 content 作答——单轮约束在代码层依然成立。
         final_content = ""
-        async for chunk in model.astream([*msgs, ai_tool_msg, tool_msg]):
+        async for chunk in model.bind_tools(
+            get_tools(), parallel_tool_calls=False, tool_choice="none"
+        ).astream([*msgs, ai_tool_msg, tool_msg]):
             content = chunk.content
             if content:
                 final_content += content
