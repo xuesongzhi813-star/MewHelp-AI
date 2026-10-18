@@ -38,7 +38,7 @@ app/
   config.py        # + db_url(默认拼本机 melhelp)、tool_timeout、faq 条数上限
   db.py            # engine + SessionLocal 工厂(模块级单例)
   models.py        # SQLAlchemy 2.0 declarative:Conversation/Faq/Message/Ticket
-  seed.py          # 灌 faq 测试数据(幂等:已存在同 question 则跳过)
+  seed.py          # 灌 faq 测试数据(幂等:已存在同 question 则跳过;CLI:uv run python -m app.seed)
   tools.py         # 五个 @tool + TOOL_REGISTRY
   history.py       # 不动(trim_history/estimate_tokens 原样复用)
   session_store.py # MySQLSessionStore 替换 InMemorySessionStore
@@ -49,8 +49,9 @@ app/
   main.py          # /chat 改走 chat_service;依赖注入换 MySQL store
   static/index.html# Vibe Coding:工具徽章 + 状态帧
 scripts/
-  seed.py          # CLI 入口:uv run python -m app.seed
+  eval_samples.py  # 样例评估驱动(Task 8 交付物,POST /chat 逐组评估)
 ```
+(seed CLI 实际位于 app/seed.py,入口 `uv run python -m app.seed`,见上方目录注;此为 Task 8 实施时的目录修订)
 
 ## 5. 五个工具规格
 
@@ -93,7 +94,8 @@ scripts/
   → 最终 assistant 消息落库
 ```
 
-调用②不绑工具是单轮约束的硬保证:回灌后模型没有工具可调,只能作答。
+调用② tool_choice="none" 是单轮约束的硬保证:工具 schema 可见但由服务器侧拒绝调用,
+模型只能作答(Ruling 3,见上方注记);编排层对调用②产出的任何 tool_calls 均不执行(专测覆盖)。
 
 **SSE 帧协议扩展**(向后兼容,新增一种):
 - `token` / `done` / `error`:不变

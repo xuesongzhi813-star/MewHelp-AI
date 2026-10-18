@@ -47,6 +47,41 @@ def _error_text(exc: Exception) -> str:
     return f"处理消息时出现错误,请稍后重试或联系人工客服({exc})"
 
 
+def _drop_leading_orphan_tool_messages(
+    messages: list[BaseMessage], session_id: str
+) -> list[BaseMessage]:
+    """trim 后清理开头连续的孤儿 ToolMessage(整分支评审 I-1)。
+
+    动机:trim_history 委托的 trim_messages(strategy="last") 从头丢旧消息,
+    token 预算边界可能恰好落在 AIMessage(tool_calls) 与其 ToolMessage 配对
+    中间——裁剪结果以孤儿 ToolMessage 开头。孤儿 ToolMessage(前面没有
+    与之配对的 AIMessage(tool_calls),即 tool_call_id 无对应调用)发
+    OpenAI 协议 API 即 400,与 session_store 已防御的「尾部孤儿」同毒、
+    但发生在 trim 侧;本清理与那边互补。
+
+    清理口径:只处理**开头连续的孤儿 ToolMessage**——trim 只能从头部截断,
+    这是唯一现实形态;序列中间的配对断裂属于库级数据损坏,超出本层职责,
+    保持现状(配对判定:开头之前不存在任何 AIMessage(tool_calls),自然
+    无 tool_call_id 可配)。
+
+    清理发生时记一行 WARNING(会话 id + 被丢的 tool_call_id 列表),便于排查。
+    """
+    orphans: list[ToolMessage] = []
+    kept = list(messages)
+    # 开头连续的 ToolMessage 都没有前置的 AIMessage(tool_calls) 可配 → 全是孤儿
+    while kept and isinstance(kept[0], ToolMessage):
+        orphans.append(kept.pop(0))
+    if orphans:
+        logger.warning(
+            "trim 边界拆散了工具调用配对,丢弃开头 %d 条孤儿 ToolMessage"
+            "(session_id=%s, tool_call_id=%s)",
+            len(orphans),
+            session_id,
+            [m.tool_call_id for m in orphans],
+        )
+    return kept
+
+
 async def stream_chat(
     session_id: str,
     message: str,
@@ -68,9 +103,15 @@ async def stream_chat(
         store.append_message(session_id, HumanMessage(content=message))
 
         # 2) 拼 [System] + trim_history(历史) + [Human]
+        #    trim 后先清掉开头可能的孤儿 ToolMessage(评审 I-1:预算边界拆散
+        #    AIMessage(tool_calls)/ToolMessage 配对时,孤儿发 API 即 400)
+        trimmed = _drop_leading_orphan_tool_messages(
+            trim_history(history, settings.history_token_budget),
+            session_id,
+        )
         msgs: list[BaseMessage] = [
             SystemMessage(content=build_system_prompt(settings)),
-            *trim_history(history, settings.history_token_budget),
+            *trimmed,
             HumanMessage(content=message),
         ]
 

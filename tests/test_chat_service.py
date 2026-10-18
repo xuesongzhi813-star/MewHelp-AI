@@ -408,6 +408,139 @@ async def test_history_trimmed_and_included():
     assert msgs[3].content == "在吗"
 
 
+# ---------------------------------------------------------------------------
+# 评审 I-1:trim_history 可在 token 预算边界拆散 AIMessage(tool_calls)/ToolMessage
+# 配对,裁剪结果以孤儿 ToolMessage 开头(发 OpenAI 协议 API 即 400)。
+# chat_service 在 trim 后清理开头孤儿(见 _drop_leading_orphan_tool_messages)。
+# ---------------------------------------------------------------------------
+
+# 长历史样例:含一轮完整的 AI(tool_calls)+ToolMessage 配对轮 + 一轮正常轮。
+# token 计数(estimate_tokens,CJK 1 字 1 token):H1=10, A1=4(tool_calls 不计),
+# T1=5, H2=2, A2=2;预算 9 时 trim(strategy=last)恰好保留 [T1, H2, A2] 共 9,
+# 边界把 A1 与 T1 拆散——开头出现孤儿 ToolMessage(本地实测过 trim 行为)。
+_LONG_HISTORY_WITH_PAIR = [
+    HumanMessage(content="一二三四五六七八九十"),
+    AIMessage(
+        content="我查一下",
+        tool_calls=[
+            {"name": "query_order", "args": {"order_id": "1001"}, "id": "call_old"}
+        ],
+    ),
+    ToolMessage(content="旧工具结果", tool_call_id="call_old"),
+    HumanMessage(content="在吗"),
+    AIMessage(content="在的"),
+]
+
+
+def _fake_settings(**overrides) -> "Settings":
+    from app.config import Settings
+
+    return Settings(
+        llm_base_url="https://example.com",
+        llm_api_key="sk-test",
+        llm_model="test-model",
+        llm_extra_body={},
+        shop_name="测试商城",
+        agent_name="小测",
+        **overrides,
+    )
+
+
+async def test_trim_boundary_orphan_tool_message_dropped(monkeypatch, caplog):
+    """I-1 修复:极小预算使裁剪边界落在配对中间 → 孤儿 ToolMessage 被丢,
+    其后的正常轮保留;清空配对的消息绝不发 OpenAI API。"""
+    monkeypatch.setattr(
+        "app.chat_service.get_settings", lambda: _fake_settings(history_token_budget=9)
+    )
+    fake = FakeChatModel(rounds=[[AIMessageChunk(content="好的")]])
+    store = FakeStore(history=list(_LONG_HISTORY_WITH_PAIR))
+
+    frames = await collect(stream_chat("s-orphan", "发货了吗", store=store, model=fake))
+
+    # 流程不受影响:token + done 照常收尾
+    events = parse_sse(frames)
+    assert [e["type"] for e in events] == ["token", "done"]
+
+    # 发给模型的消息:孤儿 ToolMessage 已被清理,以正常轮开头
+    msgs = fake.received[0]
+    assert [type(m).__name__ for m in msgs] == [
+        "SystemMessage", "HumanMessage", "AIMessage", "HumanMessage",
+    ]
+    assert msgs[1].content == "在吗"
+    assert msgs[2].content == "在的"
+    assert msgs[3].content == "发货了吗"
+
+    # 清理动作记了 WARNING(含会话 id 与被丢的 tool_call_id)
+    warnings = [r for r in caplog.records if r.levelname == "WARNING"]
+    assert any(
+        "孤儿 ToolMessage" in r.getMessage() and "call_old" in r.getMessage()
+        for r in warnings
+    )
+
+
+async def test_normal_budget_keeps_tool_pair_intact(monkeypatch):
+    """I-1 回归:正常预算下配对完整保留,清理是幂等无害的。"""
+    monkeypatch.setattr(
+        "app.chat_service.get_settings",
+        lambda: _fake_settings(history_token_budget=4000),
+    )
+    fake = FakeChatModel(rounds=[[AIMessageChunk(content="好的")]])
+    store = FakeStore(history=list(_LONG_HISTORY_WITH_PAIR))
+
+    await collect(stream_chat("s-pair-ok", "发货了吗", store=store, model=fake))
+
+    msgs = fake.received[0]
+    assert [type(m).__name__ for m in msgs] == [
+        "SystemMessage",
+        "HumanMessage",      # H1(预算充足,最旧消息也保留)
+        "AIMessage",         # A1(tool_calls)
+        "ToolMessage",       # T1
+        "HumanMessage",      # H2
+        "AIMessage",         # A2
+        "HumanMessage",      # 本轮
+    ]
+    # 配对完整:A1 的 tool_call id 与 T1 的 tool_call_id 对应
+    a1, t1 = msgs[2], msgs[3]
+    assert a1.tool_calls[0]["id"] == t1.tool_call_id == "call_old"
+
+
+def test_drop_leading_orphans_unit():
+    """私有清理函数单测:开头连续孤儿全丢、序列中间配对不动、
+    非孤儿开头原样返回、全孤儿输入清空。"""
+    from app.chat_service import _drop_leading_orphan_tool_messages
+
+    pair_ai = AIMessage(
+        content="查一下",
+        tool_calls=[
+            {"name": "query_faq", "args": {"keyword": "退货"}, "id": "call_x"}
+        ],
+    )
+    pair_tool = ToolMessage(content="FAQ 结果", tool_call_id="call_x")
+
+    # 开头两条孤儿 ToolMessage 被丢,后面的配对与正常消息保留
+    seq = [
+        ToolMessage(content="孤儿1", tool_call_id="orphan_1"),
+        ToolMessage(content="孤儿2", tool_call_id="orphan_2"),
+        pair_ai,
+        pair_tool,
+        HumanMessage(content="在吗"),
+    ]
+    kept = _drop_leading_orphan_tool_messages(seq, "s-unit")
+    assert [type(m).__name__ for m in kept] == [
+        "AIMessage", "ToolMessage", "HumanMessage",
+    ]
+    assert kept[0] is pair_ai and kept[1] is pair_tool
+
+    # 非孤儿开头(HumanMessage 在前)→ 原样返回同一批对象
+    seq2 = [HumanMessage(content="你好"), pair_ai, pair_tool]
+    kept2 = _drop_leading_orphan_tool_messages(seq2, "s-unit")
+    assert kept2 == seq2
+
+    # 全是孤儿 → 清空
+    seq3 = [ToolMessage(content="x", tool_call_id="a"), ToolMessage(content="y", tool_call_id="b")]
+    assert _drop_leading_orphan_tool_messages(seq3, "s-unit") == []
+
+
 @pytest.mark.parametrize(
     ("frames_count", "expect"),
     [(0, "空流也安全"), (1, "单帧")],

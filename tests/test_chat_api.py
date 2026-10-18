@@ -151,6 +151,8 @@ async def test_second_turn_sees_first_turn_history(client):
     await client.post("/chat", json={"session_id": "s-history", "message": "在吗"})
 
     messages = fake.received[1]
+    # 先断总数:历史多出杂项消息时位置索引断言才不会静默通过(最终评审 N-4)
+    assert len(messages) == 4
     assert isinstance(messages[0], SystemMessage)
     assert isinstance(messages[1], HumanMessage) and messages[1].content == "你好"
     assert messages[2].content == "好的"
