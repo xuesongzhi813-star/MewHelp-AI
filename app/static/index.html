@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ethan_Leo · Thrift shopping 智能客服</title>
+<style>
+  :root {
+    --bg: #0d0a06;
+    --bg-panel: rgba(30, 24, 14, 0.78);
+    --glass: rgba(255, 200, 100, 0.045);
+    --glass-border: rgba(255, 190, 90, 0.16);
+    --amber: #fbbf24;
+    --teal: #2dd4bf;
+    --text: #f3ead7;
+    --text-dim: #a08c6a;
+    --user-grad: linear-gradient(135deg, #d97706, #ea580c);
+    --assistant-grad: linear-gradient(135deg, #fbbf24, #2dd4bf);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    overflow: hidden;
+  }
+
+  /* 网格 + 霓虹光晕背景(复古琥珀+青) */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 72% -10%, rgba(251, 191, 36, 0.16), transparent 60%),
+      radial-gradient(ellipse 50% 35% at 12% 110%, rgba(45, 212, 191, 0.12), transparent 60%),
+      linear-gradient(rgba(255, 200, 100, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 200, 100, 0.04) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px;
+    pointer-events: none;
+  }
+
+  /* ── 顶栏 ─────────────────────────── */
+  header {
+    position: relative;
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 22px;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--glass-border);
+    backdrop-filter: blur(14px);
+  }
+  .logo {
+    width: 38px; height: 38px;
+    display: grid; place-items: center;
+    background: var(--assistant-grad);
+    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+    font-size: 15px; color: #1a1206; font-weight: 800;
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.5);
+  }
+  .title { font-size: 16px; font-weight: 600; letter-spacing: 0.5px; }
+  .title small { display: block; font-size: 11px; font-weight: 400; color: var(--text-dim); letter-spacing: 2px; }
+  .spacer { flex: 1; }
+  .status-chip {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12px; color: var(--text-dim);
+    border: 1px solid var(--glass-border);
+    background: var(--glass);
+    padding: 5px 12px; border-radius: 999px;
+    letter-spacing: 1px;
+  }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #3a4767; }
+  .status-dot.online { background: #34d399; box-shadow: 0 0 8px rgba(52, 211, 153, 0.9); animation: pulse 2.2s infinite; }
+  .status-dot.offline { background: #f87171; box-shadow: 0 0 8px rgba(248, 113, 113, 0.8); }
+  @keyframes pulse { 50% { opacity: 0.45; } }
+
+  button.new-chat {
+    font-size: 12px; letter-spacing: 1px;
+    color: var(--amber);
+    background: transparent;
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    padding: 6px 14px; border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  button.new-chat:hover { background: rgba(251, 191, 36, 0.12); box-shadow: 0 0 14px rgba(251, 191, 36, 0.3); }
+
+  /* ── 消息区 ───────────────────────── */
+  main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 26px 18px 12px;
+    scroll-behavior: smooth;
+  }
+  main::-webkit-scrollbar { width: 6px; }
+  main::-webkit-scrollbar-thumb { background: rgba(120, 160, 255, 0.2); border-radius: 3px; }
+
+  .msg-row {
+    position: relative;
+    display: flex; gap: 12px;
+    margin-bottom: 20px;
+    max-width: 860px;
+    margin-left: auto; margin-right: auto;
+    animation: rise 0.25s ease-out;
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+
+  .msg-row.user { flex-direction: row-reverse; }
+
+  .avatar {
+    flex-shrink: 0;
+    width: 34px; height: 34px;
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 800; color: #1a1206;
+    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  }
+  .avatar.ai { background: var(--assistant-grad); box-shadow: 0 0 12px rgba(251, 191, 36, 0.4); }
+  .msg-row.user .avatar { background: #3d3421; color: var(--text); clip-path: none; border-radius: 50%; }
+
+  .bubble-wrap { display: flex; flex-direction: column; max-width: 76%; }
+  .msg-row.user .bubble-wrap { align-items: flex-end; }
+
+  .sender {
+    font-size: 11px; color: var(--text-dim);
+    letter-spacing: 1.5px; margin: 0 4px 5px;
+  }
+  .sender.ai { color: rgba(34, 211, 238, 0.75); }
+  .sender.user { color: rgba(129, 140, 248, 0.75); }
+
+  .bubble {
+    padding: 12px 16px;
+    line-height: 1.75;
+    font-size: 14.5px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .msg-row.ai .bubble {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 4px 16px 16px 16px;
+    backdrop-filter: blur(8px);
+  }
+  .msg-row.user .bubble {
+    background: var(--user-grad);
+    border-radius: 16px 4px 16px 16px;
+    box-shadow: 0 4px 20px rgba(234, 88, 12, 0.28);
+  }
+  .bubble.error {
+    border: 1px solid rgba(248, 113, 113, 0.4);
+    background: rgba(248, 113, 113, 0.08);
+    color: #fca5a5;
+  }
+  .bubble strong { color: var(--amber); font-weight: 600; }
+
+  /* 打字指示器 */
+  .typing { display: inline-flex; gap: 5px; padding: 4px 0; }
+  .typing i {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--amber);
+    animation: bounce 1.2s infinite;
+  }
+  .typing i:nth-child(2) { animation-delay: 0.18s; background: var(--teal); }
+  .typing i:nth-child(3) { animation-delay: 0.36s; }
+  @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-5px); opacity: 1; } }
+
+  /* 流式光标 */
+  .cursor {
+    display: inline-block;
+    width: 8px; height: 16px;
+    margin-left: 2px;
+    vertical-align: -2px;
+    background: var(--amber);
+    box-shadow: 0 0 8px var(--amber);
+    animation: blink 0.9s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ── 欢迎卡片 ─────────────────────── */
+  .welcome {
+    max-width: 860px; margin: 8vh auto 0; text-align: center;
+    animation: rise 0.4s ease-out;
+  }
+  .welcome .hex {
+    width: 64px; height: 64px; margin: 0 auto 18px;
+    display: grid; place-items: center;
+    font-size: 20px; color: #1a1206; font-weight: 800;
+    background: var(--assistant-grad);
+    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.5);
+  }
+  .welcome h1 { font-size: 22px; font-weight: 600; letter-spacing: 1px; }
+  .welcome h1 span { background: var(--assistant-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .welcome p { margin-top: 10px; color: var(--text-dim); font-size: 13px; letter-spacing: 0.5px; }
+  .suggestions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 26px; }
+  .suggestions button {
+    color: var(--text);
+    font-size: 13px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .suggestions button:hover { border-color: rgba(34, 211, 238, 0.5); box-shadow: 0 0 16px rgba(34, 211, 238, 0.2); }
+
+  /* ── 输入区 ───────────────────────── */
+  footer {
+    position: relative;
+    padding: 14px 18px 18px;
+    background: linear-gradient(transparent, var(--bg) 40%);
+  }
+  .input-box {
+    max-width: 860px; margin: 0 auto;
+    display: flex; align-items: flex-end; gap: 10px;
+    background: var(--bg-panel);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 10px 10px 10px 18px;
+    backdrop-filter: blur(14px);
+    transition: border-color 0.25s, box-shadow 0.25s;
+  }
+  .input-box:focus-within { border-color: rgba(34, 211, 238, 0.5); box-shadow: 0 0 24px rgba(34, 211, 238, 0.15); }
+  textarea {
+    flex: 1;
+    background: transparent; border: none; outline: none; resize: none;
+    color: var(--text);
+    font-size: 14.5px; line-height: 1.6;
+    max-height: 130px;
+    font-family: inherit;
+  }
+  textarea::placeholder { color: var(--text-dim); }
+  .send-btn {
+    flex-shrink: 0;
+    width: 40px; height: 40px;
+    border: none; border-radius: 12px;
+    display: grid; place-items: center;
+    background: var(--user-grad);
+    color: white; font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .send-btn:hover:not(:disabled) { box-shadow: 0 0 18px rgba(99, 102, 241, 0.55); transform: translateY(-1px); }
+  .send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .hint { max-width: 860px; margin: 8px auto 0; text-align: center; font-size: 11px; color: var(--text-dim); letter-spacing: 1px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">EL</div>
+  <div class="title">Thrift shopping 智能客服<small>ETHAN_LEO · VINTAGE NEURAL SUPPORT</small></div>
+  <div class="spacer"></div>
+  <div class="status-chip"><span class="status-dot" id="statusDot"></span><span id="statusText">LINKING</span></div>
+  <button class="new-chat" id="newChatBtn">↺ 新会话</button>
+</header>
+
+<main id="chatArea">
+  <div class="welcome" id="welcome">
+    <div class="hex">EL</div>
+    <h1>你好,我是<span>Ethan_Leo</span> —— Thrift shopping 智能客服</h1>
+    <p>退货退款 · 物流查询 · 订单咨询 · 售后支持</p>
+    <div class="suggestions">
+      <button data-q="你们的退货流程是什么?">退货流程是什么?</button>
+      <button data-q="我昨天买的鞋子开胶了,想退货">商品质量问题</button>
+      <button data-q="我的订单怎么还没发货?">物流查询</button>
+      <button data-q="你们店有什么优惠活动吗?">售前咨询</button>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="input-box">
+    <textarea id="input" rows="1" placeholder="输入你的问题… (Enter 发送 / Shift+Enter 换行)"></textarea>
+    <button class="send-btn" id="sendBtn" title="发送">➤</button>
+  </div>
+  <div class="hint">SESSION · <span id="sessionIdText">—</span> · 回复由 AI 逐字生成,上下文连续保持</div>
+</footer>
+
+<script>
+(() => {
+  const chatArea = document.getElementById("chatArea");
+  const welcome = document.getElementById("welcome");
+  const input = document.getElementById("input");
+  const sendBtn = document.getElementById("sendBtn");
+  const newChatBtn = document.getElementById("newChatBtn");
+  const statusDot = document.getElementById("statusDot");
+  const statusText = document.getElementById("statusText");
+  const sessionIdText = document.getElementById("sessionIdText");
+
+  let sessionId = newSession();
+  let busy = false;
+
+  function newSession() {
+    const id = (crypto.randomUUID ? crypto.randomUUID() : "s-" + Date.now()).slice(0, 8);
+    sessionIdText.textContent = id;
+    return id;
+  }
+
+  /* 健康检查 */
+  fetch("/health").then(r => {
+    if (r.ok) { statusDot.className = "status-dot online"; statusText.textContent = "ONLINE"; }
+    else throw 0;
+  }).catch(() => {
+    statusDot.className = "status-dot offline"; statusText.textContent = "OFFLINE";
+  });
+
+  /* 极简 markdown:转义 → **加粗** → 原样换行(white-space: pre-wrap) */
+  function renderText(el, text) {
+    const esc = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    el.innerHTML = esc.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  }
+
+  function scrollBottom() { chatArea.scrollTop = chatArea.scrollHeight; }
+
+  function addRow(role, senderLabel) {
+    if (welcome.isConnected) welcome.remove();
+    const row = document.createElement("div");
+    row.className = "msg-row " + role;
+    const avatar = document.createElement("div");
+    avatar.className = "avatar " + (role === "ai" ? "ai" : "");
+    avatar.textContent = role === "ai" ? "EL" : "我";
+    const wrap = document.createElement("div");
+    wrap.className = "bubble-wrap";
+    const sender = document.createElement("div");
+    sender.className = "sender " + role;
+    sender.textContent = senderLabel;
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    wrap.append(sender, bubble);
+    row.append(avatar, wrap);
+    chatArea.appendChild(row);
+    scrollBottom();
+    return { row, bubble };
+  }
+
+  async function sendMessage(text) {
+    if (busy || !text.trim()) return;
+    busy = true;
+    sendBtn.disabled = true;
+    input.value = "";
+    input.style.height = "auto";
+
+    addRow("user", "YOU").bubble.textContent = text;
+
+    /* AI 气泡:先放打字指示器 */
+    const { bubble } = addRow("ai", "ETHAN_LEO");
+    const typing = document.createElement("span");
+    typing.className = "typing";
+    typing.innerHTML = "<i></i><i></i><i></i>";
+    bubble.appendChild(typing);
+
+    let acc = "";
+    let buf = "";
+    const cursor = document.createElement("span");
+    cursor.className = "cursor";
+
+    try {
+      const resp = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, message: text }),
+      });
+      if (!resp.ok || !resp.body) throw new Error("HTTP " + resp.status);
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let frame;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        while ((frame = extractFrame()) !== null) {
+          let payload;
+          try { payload = JSON.parse(frame); } catch { continue; }
+          if (payload.type === "token") {
+            if (typing.isConnected) typing.remove();
+            if (!cursor.isConnected) bubble.appendChild(cursor);
+            acc += payload.content;
+            renderText(bubble, acc);
+            bubble.appendChild(cursor);
+            scrollBottom();
+          } else if (payload.type === "error") {
+            typing.remove(); cursor.remove();
+            bubble.classList.add("error");
+            bubble.textContent = "⚠ 生成失败:" + payload.message;
+            scrollBottom();
+          } else if (payload.type === "done") {
+            cursor.remove();
+          }
+        }
+      }
+      cursor.remove();
+      if (!acc && !bubble.textContent) { typing.remove(); bubble.textContent = "(空回复)"; }
+    } catch (err) {
+      typing.remove(); cursor.remove();
+      bubble.classList.add("error");
+      bubble.textContent = "⚠ 连接失败:" + err.message + " — 请确认服务已启动";
+      scrollBottom();
+    } finally {
+      busy = false;
+      sendBtn.disabled = false;
+      input.focus();
+    }
+
+    function extractFrame() {
+      const i = buf.indexOf("\n\n");
+      if (i < 0) return null;
+      const raw = buf.slice(0, i);
+      buf = buf.slice(i + 2);
+      return raw.startsWith("data: ") ? raw.slice(6) : raw;
+    }
+  }
+
+  /* 发送交互 */
+  sendBtn.addEventListener("click", () => sendMessage(input.value));
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input.value); }
+  });
+  input.addEventListener("input", () => {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 130) + "px";
+  });
+
+  /* 建议问题 & 新会话 */
+  document.querySelectorAll(".suggestions button").forEach(b =>
+    b.addEventListener("click", () => sendMessage(b.dataset.q))
+  );
+  newChatBtn.addEventListener("click", () => {
+    chatArea.innerHTML = "";
+    chatArea.appendChild(welcome);
+    sessionId = newSession();
+    input.focus();
+  });
+})();
+</script>
+</body>
+</html>
