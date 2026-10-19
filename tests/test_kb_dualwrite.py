@@ -36,6 +36,9 @@ class FakeMilvus:
         raise_on_list_ids: bool = False,
         raise_on_upsert_calls=(),
         raise_on_flush: bool = False,
+        raise_on_flush_calls=(),
+        raise_on_count: bool = False,
+        count_value: int | None = None,
     ) -> None:
         self.ids: set[str] = {str(item) for item in ids}
         self.ping_ok = ping_ok
@@ -43,12 +46,16 @@ class FakeMilvus:
         self.raise_on_list_ids = raise_on_list_ids
         self.raise_on_upsert_calls = set(raise_on_upsert_calls)
         self.raise_on_flush = raise_on_flush
+        self.raise_on_flush_calls = set(raise_on_flush_calls)
+        self.raise_on_count = raise_on_count
+        self.count_value = count_value
         self.upserted: list[dict] = []
         self.upsert_batches: list[list[dict]] = []
         self.upsert_calls = 0
         self.flush_calls = 0
         self.drop_calls = 0
         self.ensure_calls = 0
+        self.list_ids_calls = 0
 
     def ping(self) -> bool:
         if self.raise_on_ping:
@@ -72,15 +79,22 @@ class FakeMilvus:
         self.ids.update(row["id"] for row in rows)
 
     def flush(self) -> None:
-        if self.raise_on_flush:
-            raise MilvusUnavailable("flush failed")
+        call_index = self.flush_calls
         self.flush_calls += 1
+        if self.raise_on_flush or call_index in self.raise_on_flush_calls:
+            raise MilvusUnavailable("flush failed")
 
     def drop(self) -> None:
         self.drop_calls += 1
         self.ids.clear()
 
+    def count(self) -> int:
+        if self.raise_on_count:
+            raise MilvusUnavailable("count failed")
+        return self.count_value if self.count_value is not None else len(self.ids)
+
     def list_ids(self) -> list[str]:
+        self.list_ids_calls += 1
         if self.raise_on_list_ids:
             raise MilvusUnavailable("list_ids failed")
         return sorted(self.ids)
@@ -217,6 +231,74 @@ def test_failure_continues_to_next_batch(kb_tx, monkeypatch):
     assert rows[ids[1]].vectorize_status == "done"
 
 
+def test_failed_counts_every_row_in_batch(kb_tx, monkeypatch):
+    """失败计数按整批行数累计(2 行批次失败必须记 failed=2,而非 1)。"""
+    ids = store.insert_chunks(
+        [_candidate("问1", "答1"), _candidate("问2", "答2"), _candidate("问3", "答3")]
+    )
+    fake_milvus = FakeMilvus()
+    calls = _install_embed(monkeypatch, fail_calls={0})
+    _install_settings(monkeypatch, batch_size=2)
+    monkeypatch.setattr(dualwrite, "milvus", fake_milvus)
+
+    result = dualwrite.vectorize_pending()
+
+    assert result.processed == 1
+    assert result.failed == 2
+    assert result.pending_left == 2  # 失败批次的两行仍 pending
+    assert [len(batch) for batch in calls] == [2, 1]
+    rows = store.fetch_by_ids(ids)
+    assert [rows[item].vectorize_status for item in ids] == [
+        "pending",
+        "pending",
+        "done",
+    ]
+
+
+def test_flush_failure_leaves_pending_and_rerun_converges(kb_tx, monkeypatch):
+    """flush 失败时行必须保持 pending;重跑用幂等 upsert 收敛。"""
+    ids = store.insert_chunks([_candidate("问1", "答1"), _candidate("问2", "答2")])
+    fake_milvus = FakeMilvus(raise_on_flush_calls={0})
+    _install_embed(monkeypatch)
+    monkeypatch.setattr(dualwrite, "milvus", fake_milvus)
+
+    first = dualwrite.vectorize_pending()
+
+    assert first.processed == 0
+    assert first.failed == len(ids)
+    assert first.pending_left == len(ids)
+    rows = store.fetch_by_ids(ids)
+    assert all(row.vectorize_status == "pending" for row in rows.values())
+    assert all(row.vector_id is None for row in rows.values())
+
+    second = dualwrite.vectorize_pending()
+
+    assert second == dualwrite.VectorizeResult(
+        processed=len(ids), failed=0, pending_left=0
+    )
+    assert fake_milvus.ids == {str(item) for item in ids}
+    rows = store.fetch_by_ids(ids)
+    assert all(row.vectorize_status == "done" for row in rows.values())
+
+
+def test_upsert_failure_leaves_pending_and_rerun_converges(kb_tx, monkeypatch):
+    ids = store.insert_chunks([_candidate("问", "答")])
+    fake_milvus = FakeMilvus(raise_on_upsert_calls={0})
+    _install_embed(monkeypatch)
+    monkeypatch.setattr(dualwrite, "milvus", fake_milvus)
+
+    first = dualwrite.vectorize_pending()
+
+    assert (first.processed, first.failed, first.pending_left) == (0, 1, 1)
+    assert store.fetch_by_ids(ids)[ids[0]].vectorize_status == "pending"
+
+    second = dualwrite.vectorize_pending()
+
+    assert (second.processed, second.failed, second.pending_left) == (1, 0, 0)
+    assert fake_milvus.ids == {str(ids[0])}
+    assert store.fetch_by_ids(ids)[ids[0]].vectorize_status == "done"
+
+
 def test_batching_uses_embedding_batch_size(kb_tx, monkeypatch):
     store.insert_chunks([_candidate(f"问{i}", f"答{i}") for i in range(3)])
     fake_milvus = FakeMilvus()
@@ -310,6 +392,37 @@ def test_consistency_mismatch_lists_missing_and_orphan(kb_tx, monkeypatch):
     assert "精确" in snapshot.note
 
 
+def test_consistency_large_library_uses_count_only(kb_tx, monkeypatch):
+    """超过 5000 行时不再调用 list_ids,避免「没列全」被误报成 missing。"""
+    done = [str(index) for index in range(6000)]
+    monkeypatch.setattr(dualwrite.store, "done_ids", lambda: done)
+    fake_milvus = FakeMilvus(count_value=len(done))
+    monkeypatch.setattr(dualwrite, "milvus", fake_milvus)
+
+    snapshot = dualwrite.consistency_snapshot()
+
+    assert snapshot.status == "consistent"
+    assert snapshot.missing_in_milvus == ()
+    assert snapshot.orphan_in_milvus == ()
+    assert snapshot.note == "仅数量比对(超过 5000 行)"
+    assert fake_milvus.list_ids_calls == 0
+
+
+def test_consistency_large_library_count_mismatch(kb_tx, monkeypatch):
+    done = [str(index) for index in range(6000)]
+    monkeypatch.setattr(dualwrite.store, "done_ids", lambda: done)
+    fake_milvus = FakeMilvus(count_value=5999)
+    monkeypatch.setattr(dualwrite, "milvus", fake_milvus)
+
+    snapshot = dualwrite.consistency_snapshot()
+
+    assert snapshot.status == "mismatch"
+    assert snapshot.missing_in_milvus == ()
+    assert snapshot.orphan_in_milvus == ()
+    assert snapshot.note == "仅数量比对(超过 5000 行)"
+    assert fake_milvus.list_ids_calls == 0
+
+
 def test_consistency_unknown_when_milvus_down(kb_tx, monkeypatch):
     fake_milvus = FakeMilvus(raise_on_ping=True)
     monkeypatch.setattr(dualwrite, "milvus", fake_milvus)
@@ -350,6 +463,16 @@ def test_consistency_unknown_when_list_ids_fails(kb_tx, monkeypatch):
     assert snapshot.status == "unknown"
     assert snapshot.missing_in_milvus == ()
     assert snapshot.orphan_in_milvus == ()
+
+
+def test_consistency_unknown_when_count_fails(kb_tx, monkeypatch):
+    fake_milvus = FakeMilvus(raise_on_count=True)
+    monkeypatch.setattr(dualwrite, "milvus", fake_milvus)
+
+    snapshot = dualwrite.consistency_snapshot()
+
+    assert snapshot.status == "unknown"
+    assert snapshot.note == "Milvus 读不到"
 
 
 # ---------------------------------------------------------------------------

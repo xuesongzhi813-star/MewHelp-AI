@@ -23,6 +23,11 @@ from app.kb.embedding import embed_texts
 
 logger = logging.getLogger(__name__)
 
+# milvus.list_ids() 默认最多返回 5000 条;超过该规模时无法做精确集合比对,
+# 只能降级为数量比对,避免把「没列全」误报成 missing。
+_EXACT_ID_LIMIT = 5000
+_COUNT_ONLY_NOTE = "仅数量比对(超过 5000 行)"
+
 
 @dataclass(frozen=True)
 class VectorizeResult:
@@ -88,8 +93,10 @@ def vectorize_pending(limit: int | None = None) -> VectorizeResult:
                     f"嵌入返回数量不匹配:期望 {len(batch)},实际 {len(vectors)}"
                 )
             milvus.upsert([str(item_id) for item_id in ids], vectors)
-            store.mark_done(ids)
+            # 先 flush 再标 done:任何一步失败都让该批保持 pending,
+            # 下次重跑用幂等 upsert 覆盖,不会出现 done 但未持久化的情况。
             milvus.flush()
+            store.mark_done(ids)
         except Exception as exc:  # noqa: BLE001 - 单批失败不阻断其余批次
             failed += len(batch)
             logger.exception("批次向量化失败(ids=%s): %s", ids, exc)
@@ -131,6 +138,17 @@ def consistency_snapshot() -> Consistency:
     except Exception as exc:  # noqa: BLE001 - 读取失败不能当成无匹配
         logger.warning("读取 MySQL done id 失败: %s", exc)
         return Consistency("unknown", (), (), "MySQL 读不到")
+
+    try:
+        milvus_count = milvus.count()
+    except Exception as exc:  # noqa: BLE001 - 读取失败不能当成无匹配
+        logger.warning("读取 Milvus 数量失败: %s", exc)
+        return Consistency("unknown", (), (), "Milvus 读不到")
+
+    if len(mysql_ids) > _EXACT_ID_LIMIT or milvus_count > _EXACT_ID_LIMIT:
+        # list_ids 有条数上限,大库下精确集合比对会假报 missing;降级为数量比对。
+        status = "consistent" if milvus_count == len(mysql_ids) else "mismatch"
+        return Consistency(status, (), (), _COUNT_ONLY_NOTE)
 
     try:
         milvus_ids = set(milvus.list_ids())
