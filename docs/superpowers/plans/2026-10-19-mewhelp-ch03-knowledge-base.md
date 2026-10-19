@@ -154,31 +154,75 @@ git commit -m "feat(ch03): 知识库配置与 knowledge_chunks/staging ORM 映�
 
 **Files:**
 - Create: `deploy/milvus/docker-compose.yml`
+- Create: `deploy/milvus/embedEtcd.yaml`
+- Create: `deploy/milvus/user.yaml`
 - Modify: `.gitignore`(若 Task 1 未加)
 - Test: 命令验证,无单测
 
 **Interfaces:**
 - Produces: 本机 `http://127.0.0.1:19530` 可连接的 Milvus;后续 Task 6、8、15 使用。
 
-- [ ] **Step 1: 下载官方 compose**
+**Ruling(2026-10-19,计划修订):** 官方 v3.0.0 三容器 compose 的 `minio/minio` 镜像已从 Docker Hub 删除,`docker compose up` 报 `pull access denied ... repository does not exist`。改用官方 `standalone_embed.sh` 同款的单容器形态:`ETCD_USE_EMBED=true` + `COMMON_STORAGETYPE=local`,不依赖 MinIO/etcd 容器。Milvus 版本 `v3.0.0` 与 19530 端口不变。代价:本地存储只适合单机演示;若后续要集群/对象存储,再恢复 MinIO。
 
-Run:
-```powershell
-New-Item -ItemType Directory -Force deploy\milvus | Out-Null
-Invoke-WebRequest -Uri "https://github.com/milvus-io/milvus/releases/download/v3.0.0/milvus-standalone-docker-compose.yml" -OutFile deploy\milvus\docker-compose.yml -UseBasicParsing
+- [ ] **Step 1: 创建单容器 compose 与配置**
+
+`deploy/milvus/docker-compose.yml`:
+
+```yaml
+services:
+  standalone:
+    container_name: milvus-standalone
+    image: milvusdb/milvus:v3.0.0
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_USE_EMBED: "true"
+      ETCD_DATA_DIR: /var/lib/milvus/etcd
+      ETCD_CONFIG_PATH: /milvus/configs/embedEtcd.yaml
+      COMMON_STORAGETYPE: local
+      DEPLOY_MODE: STANDALONE
+    volumes:
+      - ./volumes/milvus:/var/lib/milvus
+      - ./embedEtcd.yaml:/milvus/configs/embedEtcd.yaml
+      - ./user.yaml:/milvus/configs/user.yaml
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+      - "2379:2379"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 30s
+      start_period: 90s
+      timeout: 20s
+      retries: 3
 ```
 
-Expected: 文件存在,包含 `milvusdb/milvus:v3.0.0`、`19530:19530`、`etcd`、`minio` 三个服务。
+`deploy/milvus/embedEtcd.yaml`:
+
+```yaml
+listen-client-urls: http://0.0.0.0:2379
+advertise-client-urls: http://0.0.0.0:2379
+quota-backend-bytes: 4294967296
+auto-compaction-mode: revision
+auto-compaction-retention: '1000'
+```
+
+`deploy/milvus/user.yaml`:
+
+```yaml
+# Extra config to override default milvus.yaml
+```
 
 - [ ] **Step 2: 启动并等待健康**
 
 Run:
 ```powershell
 docker compose -f deploy/milvus/docker-compose.yml up -d
-Start-Sleep -Seconds 20
+# 轮询,不要只 sleep 一次
 docker compose -f deploy/milvus/docker-compose.yml ps
 ```
-Expected: `milvus-etcd`、`milvus-minio`、`milvus-standalone` 均为 `Up`;standalone 的 healthcheck 在 90 秒内变 `healthy`。若内存不足导致退出,停下来记录 `docker logs milvus-standalone`,向用户报告,不要自行换方案。
+Expected: 只有 `milvus-standalone` 一个容器,`Up` 且 90 秒内变 `healthy`。若启动失败,记录 `docker logs milvus-standalone` 尾部并返回 BLOCKED;不要自行换 MinIO 镜像或改回三容器(该路径已验证不可用)。
 
 - [ ] **Step 3: 验证端口与 pymilvus 连接**
 
@@ -191,8 +235,8 @@ Expected: 输出 `[]` 或已有集合列表,不抛异常。
 - [ ] **Step 4: 提交**
 
 ```bash
-git add deploy/milvus/docker-compose.yml .gitignore
-git commit -m "chore(ch03): Milvus Standalone v3.0.0 compose 部署"
+git add deploy/milvus/docker-compose.yml deploy/milvus/embedEtcd.yaml deploy/milvus/user.yaml .gitignore
+git commit -m "chore(ch03): Milvus Standalone v3.0.0 单容器部署(embedded etcd + local)"
 ```
 
 ---

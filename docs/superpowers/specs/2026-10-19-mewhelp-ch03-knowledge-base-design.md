@@ -254,11 +254,12 @@ Prompt 类产出验证:`docs/samples/ch03-mining-samples.md` 标注 6 组会话(
 
 ## 10. Milvus 部署
 
-- `deploy/milvus/docker-compose.yml` 采用官方 v3.0.0 standalone 配置(etcd + MinIO + milvus-standalone,19530 端口),数据卷放 gitignored 目录。
+- `deploy/milvus/docker-compose.yml` 采用官方 Milvus 3.x **单容器 standalone**(embedded etcd + 本地存储,19530/9091/2379 端口),数据卷 `deploy/milvus/volumes/` 放 gitignored 目录。
 - 启动:`docker compose -f deploy/milvus/docker-compose.yml up -d`
-- 验证:`docker compose -f deploy/milvus/docker-compose.yml ps` 三容器 healthy;`Test-NetConnection 127.0.0.1 -Port 19530` 为 True。
+- 验证:`docker compose -f deploy/milvus/docker-compose.yml ps` 单容器 healthy;`Test-NetConnection 127.0.0.1 -Port 19530` 为 True。
 - 停止:`docker compose -f deploy/milvus/docker-compose.yml down`(保留卷);`down -v` 清数据。
 - `.gitignore` 增加 `deploy/milvus/volumes/` 与 `log/`,容器数据与作业日志不进 git。
+- 注记(2026-10-19,Task 2 实施时修订):官方 v3.0.0 三容器 compose 中的 `minio/minio` 镜像已从 Docker Hub 删除,三容器形态无法启动。改用官方 `standalone_embed.sh` 同款的单容器形态:`ETCD_USE_EMBED=true` + `COMMON_STORAGETYPE=local`,不再依赖 MinIO/etcd 容器。Milvus 版本与 19530 端口不变;单机本地存储仅适合演示,后续要集群再恢复 MinIO。
 - Milvus 不可达时:建库 CLI 给出中文报错并非零退出;在线检索抛异常,由执行器回灌错误文本。
 
 ## 11. 配置与密钥
