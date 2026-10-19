@@ -174,15 +174,35 @@ def ingest_faq() -> IngestResult:
 
 
 def build_all() -> IngestResult:
-    """按 docs → faq → vectorize 的顺序完成一轮建库。"""
+    """按 docs → faq → vectorize 的顺序完成一轮建库。
+
+    向量化沿用 ``dualwrite`` 的失败语义(单批失败只累计 ``failed``,
+    不抛异常)。因此本函数必须检查返回值:只要有失败或剩余 pending,
+    就告警并抛 ``RuntimeError``,让 CLI / 任务显式失败;MySQL 中未完成
+    的行保持 pending,补跑 ``vectorize`` 即可收敛。
+    """
     docs = ingest_docs()
     faq = ingest_faq()
-    vectorize_pending()
-    return IngestResult(
+    result = IngestResult(
         inserted=docs.inserted + faq.inserted,
         skipped=docs.skipped + faq.skipped,
         chunk_ids=docs.chunk_ids + faq.chunk_ids,
     )
+
+    vectorized = vectorize_pending()
+    if vectorized.failed > 0 or vectorized.pending_left > 0:
+        logger.warning(
+            "建库后向量化未完成:processed=%d, failed=%d, pending_left=%d",
+            vectorized.processed,
+            vectorized.failed,
+            vectorized.pending_left,
+        )
+        raise RuntimeError(
+            f"已入库 {result.inserted} 块,但向量化未完成"
+            f"(failed={vectorized.failed}, pending_left={vectorized.pending_left}),"
+            "补跑 vectorize 即可"
+        )
+    return result
 
 
 # ---------------------------------------------------------------------------

@@ -219,7 +219,9 @@ def test_build_calls_docs_faq_vectorize(kb_tx, monkeypatch):
         lambda: calls.append("faq") or ingest.IngestResult(0, 0, ()),
     )
     monkeypatch.setattr(
-        ingest, "vectorize_pending", lambda: calls.append("vec") or None
+        ingest,
+        "vectorize_pending",
+        lambda: calls.append("vec") or VectorizeResult(0, 0, 0),
     )
 
     ingest.build_all()
@@ -239,6 +241,30 @@ def test_build_combines_results(monkeypatch):
     result = ingest.build_all()
 
     assert result == ingest.IngestResult(5, 5, (10, 11, 12, 13, 14))
+
+
+@pytest.mark.parametrize(
+    "vectorized",
+    [
+        VectorizeResult(processed=0, failed=2, pending_left=2),
+        VectorizeResult(processed=2, failed=0, pending_left=2),
+    ],
+)
+def test_build_raises_when_vectorize_incomplete(
+    kb_tx, monkeypatch, vectorized
+):
+    """向量化有失败/剩余 pending 时 build 必须显式失败,且行保持 pending。"""
+    monkeypatch.setattr(ingest, "vectorize_pending", lambda: vectorized)
+
+    with pytest.raises(
+        RuntimeError, match=r"向量化未完成.*补跑 vectorize 即可"
+    ):
+        ingest.build_all()
+
+    counts = store.overview_counts()
+    assert counts["chunks"] > 0
+    assert counts["pending"] == counts["chunks"]
+    assert counts["done"] == 0
 
 
 def test_rebuild_delegates_to_dualwrite(monkeypatch):
@@ -373,6 +399,26 @@ def test_main_build_and_rebuild_print_result(kb_tx, capsys, monkeypatch):
     )
     assert ingest.main(["rebuild"]) == 0
     assert "3" in capsys.readouterr().out
+
+
+def test_main_build_exits_nonzero_when_vectorize_incomplete(
+    kb_tx, capsys, monkeypatch
+):
+    """CLI build 必须把向量化未完成转成 stderr 报错与退出码 1。"""
+    monkeypatch.setattr(
+        ingest, "vectorize_pending", lambda: VectorizeResult(0, 2, 2)
+    )
+
+    assert ingest.main(["build"]) == 1
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "向量化未完成" in captured.err
+    assert "补跑 vectorize 即可" in captured.err
+    # 已入库的行保持 pending,等待补跑
+    counts = store.overview_counts()
+    assert counts["chunks"] > 0
+    assert counts["pending"] == counts["chunks"]
 
 
 def test_main_status_prints_report(kb_tx, capsys, monkeypatch):
