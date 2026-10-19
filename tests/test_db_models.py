@@ -64,9 +64,9 @@ def test_tool_timeout_default(env_settings, monkeypatch):
 
 
 def test_tool_timeout_env_override(env_settings, monkeypatch):
-    monkeypatch.setenv("TOOL_TIMEOUT", "10")
+    monkeypatch.setenv("TOOL_TIMEOUT", "7")
     get_settings.cache_clear()
-    assert get_settings().tool_timeout == 10
+    assert get_settings().tool_timeout == 7
 
 
 def test_knowledge_settings_defaults(env_settings, monkeypatch):
