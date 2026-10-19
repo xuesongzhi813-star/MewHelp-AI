@@ -20,8 +20,26 @@ class Settings(BaseSettings):
     agent_name: str
     # 数据库连接串:默认值不含密码,真实密码只存在于本地 .env 的 DB_URL,绝不入库
     db_url: str = "mysql+pymysql://root@127.0.0.1:3306/melhelp"
-    tool_timeout: int = 5
+    tool_timeout: int = 10
     faq_max_results: int = 3
+    # 向量化与语义检索(真实 EMBEDDING_API_KEY 只存在于本地 .env,绝不入库)
+    embedding_base_url: str = "https://api.siliconflow.cn/v1"
+    embedding_api_key: str = ""
+    embedding_model: str = "BAAI/bge-m3"
+    embedding_dim: int = 1024
+    embedding_batch_size: int = 32
+    milvus_uri: str = "http://127.0.0.1:19530"
+    milvus_token: str = ""
+    knowledge_collection: str = "knowledge"
+    knowledge_min_score: float = 0.5
+    knowledge_dedup_score: float = 0.92
+    # 知识挖掘与录入
+    mining_batch_size: int = 5
+    mining_max_chars: int = 6000
+    kb_sources_dir: str = "data/kb"
+    kb_max_markdown_bytes: int = 204800
+    job_log_dir: str = "log/acceptance"
+    make_exe: str = "make"
 
     @field_validator("llm_extra_body", mode="before")
     @classmethod
