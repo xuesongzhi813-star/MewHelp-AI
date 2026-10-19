@@ -10,7 +10,9 @@ dependencies = [
     "fastapi>=0.143.0",
     "langchain>=1.4.5",
     "langchain-openai>=1.7.1",
+    "openai>=3.31",
     "pydantic-settings>=2.15.0",
+    "pymilvus>=3.0",
     "pymysql>=1.2.3",
     "sqlalchemy>=2.1.4",
     "uvicorn[standard]>=0.54.0",
@@ -34,3 +36,4 @@ dev = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+markers = ["integration: 需要真实外部服务的集成测试"]

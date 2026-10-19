@@ -7,7 +7,7 @@ created_at/updated_at 全部交给数据库默认值(CURRENT_TIMESTAMP / ON UPDA
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import BigInteger, Enum, ForeignKey, JSON, String, Text, func
+from sqlalchemy import BigInteger, Boolean, Enum, ForeignKey, JSON, String, Text, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -97,6 +97,59 @@ class Ticket(Base):
         nullable=False,
         default="待处理",
         server_default="待处理",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        server_default=func.current_timestamp()
+    )
+
+
+class KnowledgeChunk(Base):
+    """知识库切片表:一条问答切片及其向量化状态(表由既有 DDL 维护)。"""
+
+    __tablename__ = "knowledge_chunks"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    category: Mapped[str] = mapped_column(String(255), nullable=False)
+    questions: Mapped[str] = mapped_column(Text, nullable=False)
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    section_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    content_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    is_key_clause: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="0"
+    )
+    prev_chunk_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    next_chunk_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    vector_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    vectorize_status: Mapped[str] = mapped_column(
+        Enum("pending", "done", name="vectorize_status"),
+        nullable=False,
+        default="pending",
+        server_default="pending",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        server_default=func.current_timestamp()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        server_default=func.current_timestamp(),
+        server_onupdate=func.current_timestamp(),
+    )
+
+
+class QaExtractionStaging(Base):
+    """问答挖掘暂存表:每批抽取结果待人工保留/丢弃(表由既有 DDL 维护)。"""
+
+    __tablename__ = "qa_extraction_staging"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    batch_no: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_ref: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(
+        Enum("extracted", "kept", "discarded", name="staging_status"),
+        nullable=False,
+        default="extracted",
+        server_default="extracted",
     )
     created_at: Mapped[datetime] = mapped_column(
         server_default=func.current_timestamp()

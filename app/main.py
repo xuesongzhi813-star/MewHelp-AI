@@ -2,7 +2,10 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI
 from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
+from app.api.jobs import router as jobs_router
+from app.api.kb import router as kb_router
 from app.chat_service import stream_chat
 from app.dependencies import get_chat_model, get_extractor
 from app.history import SessionStore
@@ -12,6 +15,12 @@ from app.session_store import MySQLSessionStore
 
 def create_app() -> FastAPI:
     application = FastAPI()
+    static_dir = Path(__file__).parent / "static"
+    # ch03:知识库与白名单作业 API。
+    application.include_router(kb_router)
+    application.include_router(jobs_router)
+    # 共享后台脚本与页面资源;index.html 仍由下方 `/` 直接返回,不做改动。
+    application.mount("/static", StaticFiles(directory=static_dir), name="static")
     # ch02:会话历史落 MySQL。构造期不连库(引擎惰性建连),MySQL 不可达时
     # 首次 store 操作才抛 OperationalError,由 stream_chat 的 error 帧路径兜住。
     # config.max_sessions 仅内存版 store 的 FIFO 淘汰参数,MySQL 版不淘汰,字段保留不删。
@@ -23,7 +32,15 @@ def create_app() -> FastAPI:
 
     @application.get("/", include_in_schema=False)
     async def index() -> FileResponse:
-        return FileResponse(Path(__file__).parent / "static" / "index.html")
+        return FileResponse(static_dir / "index.html")
+
+    @application.get("/admin", include_in_schema=False)
+    async def admin_page() -> FileResponse:
+        return FileResponse(static_dir / "admin.html")
+
+    @application.get("/kb", include_in_schema=False)
+    async def kb_page() -> FileResponse:
+        return FileResponse(static_dir / "kb.html")
 
     @application.post("/chat")
     async def chat(

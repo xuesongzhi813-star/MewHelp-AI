@@ -10,6 +10,10 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
+# 运行时产物
+log/
+deploy/milvus/volumes/
+
 # IDE / 系统
 .idea/
 .vscode/

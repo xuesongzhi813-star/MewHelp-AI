@@ -65,6 +65,8 @@ scripts/
 
 每个工具配 pydantic args_schema(Field 中文 description 帮模型填参)。随机生成工具内部用 `random` 即可,不接真实 API、不建订单/物流表。
 
+注记(2026-10-18,conversation_id 系统注入修订):`create_ticket` 新增 `conversation_id` 参数,但它是**系统注入参数**——用 `InjectedToolArg` 标注,从模型可见 schema(`tool_call_schema` / `convert_to_openai_tool`)里摘除,模型看不到、不填;真实值由编排层通过 `execute_tool(..., context=...)` 注入(见 §7)。原「取最新一条 conversation / 表空自建 user_id='system' 会话」的 `_ensure_conversation_id` 过渡方案已删除。
+
 ## 6. 工具基础设施
 
 - **注册**:`TOOL_REGISTRY: dict[str, BaseTool]`,新增工具一处注册;`bind_tools(list(TOOL_REGISTRY.values()), parallel_tool_calls=False)` 从参数上抑制并行多调
@@ -96,6 +98,8 @@ scripts/
 
 调用② tool_choice="none" 是单轮约束的硬保证:工具 schema 可见但由服务器侧拒绝调用,
 模型只能作答(Ruling 3,见上方注记);编排层对调用②产出的任何 tool_calls 均不执行(专测覆盖)。
+
+注记(2026-10-18,conversation_id 系统注入修订):编排层在 yield 工具 start 帧**之前**经 `store.get_or_create_conversation(session_id)` 取真实会话主键,构造 `context={"conversation_id": ...}` 并随 `execute_tool(name, args, context=context)` 注入。`InjectedToolArg` 只负责把该参数从模型可见 schema 摘除,**不自动填值**(这点与 `InjectedToolCallId` 不同),值必须由调用方提供。context 合并进所有工具的入参(放在模型 args 之后,模型伪造的同名值被真实值覆盖),未声明该参数的工具由 pydantic 忽略多余 key。取 id 放在 start 帧之前:store 取 id 失败时只产出 error 帧,不留永远等不到 end 的孤儿 start 帧。
 
 **SSE 帧协议扩展**(向后兼容,新增一种):
 - `token` / `done` / `error`:不变

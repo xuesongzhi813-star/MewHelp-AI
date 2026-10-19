@@ -22,6 +22,7 @@ from langchain_core.messages import (
     SystemMessage,
     ToolMessage,
 )
+from sqlalchemy.exc import OperationalError
 
 from app.chat_service import stream_chat
 from app.tools import get_tools
@@ -62,17 +63,36 @@ class FakeChatModel:
 
 
 class FakeStore:
-    """测试替身:全内存会话存储,记录 append 调用序列(含 session_id)。"""
+    """测试替身:全内存会话存储,记录 append 调用序列(含 session_id)。
 
-    def __init__(self, history: list[BaseMessage] | None = None) -> None:
+    get_or_create_conversation 返回构造时指定的固定 id,供断言编排层注入的
+    context 值。
+    """
+
+    def __init__(
+        self, history: list[BaseMessage] | None = None, conversation_id: int = 1
+    ) -> None:
         self.history = list(history or [])
         self.appended: list[tuple[str, BaseMessage]] = []
+        self.conversation_id = conversation_id
 
     def get_history(self, session_id: str) -> list[BaseMessage]:
         return list(self.history)
 
     def append_message(self, session_id: str, message: BaseMessage) -> None:
         self.appended.append((session_id, message))
+
+    def get_or_create_conversation(self, session_id: str) -> int:
+        return self.conversation_id
+
+
+class _ConversationIdFailingStore(FakeStore):
+    """get_or_create_conversation 必抛 OperationalError,模拟 store 取 id 失败。"""
+
+    def get_or_create_conversation(self, session_id: str) -> int:
+        raise OperationalError(
+            "SELECT ...", {}, Exception("(pymysql.OperationalError) 无法连接 MySQL")
+        )
 
 
 def parse_sse(frames: list[str]) -> list[dict]:
@@ -190,6 +210,61 @@ async def test_tool_round_second_call_messages_and_bind_params():
     assert len(first) == 2
     assert isinstance(first[0], SystemMessage)
     assert isinstance(first[1], HumanMessage)
+
+
+async def test_tool_round_injects_conversation_id_context(monkeypatch):
+    """编排层把真实 conversation_id 经 context 注入工具调用。
+
+    monkeypatch 掉 chat_service.execute_tool 记录 (name, args, context),
+    用返回固定 id 的 store 替身;断言 context 精确等于该 id。SSE 帧序保留。
+    """
+    calls: list = []
+
+    def fake_execute_tool(name, args, *, context=None):
+        calls.append((name, args, context))
+        return "工具结果"
+
+    monkeypatch.setattr("app.chat_service.execute_tool", fake_execute_tool)
+    fake = FakeChatModel(
+        rounds=[
+            [*tool_call_chunks("query_logistics", '{"order_id": "1001"}', "call_1")],
+            [AIMessageChunk(content="查到了")],
+        ]
+    )
+    store = FakeStore(conversation_id=330)
+
+    frames = await collect(stream_chat("s-inject", "物流", store=store, model=fake))
+    events = parse_sse(frames)
+
+    # 帧序不变:tool start/end + token + done
+    assert [e["type"] for e in events] == ["tool", "tool", "token", "done"]
+    # context 精确注入了 store 给出的真实 conversation_id
+    assert calls == [
+        ("query_logistics", {"order_id": "1001"}, {"conversation_id": 330})
+    ]
+
+
+async def test_conversation_id_failure_yields_error_before_start_frame():
+    """store.get_or_create_conversation 抛异常 → 产出 error 帧,且没有 tool start 帧。
+
+    验证「取 id 在 start 帧之前」的顺序决策:store 失败时不留孤儿 start 帧;
+    失败发生在工具执行与调用②之前(只发生了一次模型调用)。
+    """
+    fake = FakeChatModel(
+        rounds=[
+            [*tool_call_chunks("query_logistics", '{"order_id": "1001"}', "call_1")],
+            [AIMessageChunk(content="不该走到这里")],
+        ]
+    )
+    store = _ConversationIdFailingStore()
+
+    frames = await collect(stream_chat("s-id-fail", "物流", store=store, model=fake))
+    events = parse_sse(frames)
+
+    assert events[-1]["type"] == "error"
+    assert all(e["type"] != "tool" for e in events)
+    # 只发生了调用①:取 id 失败在工具执行与调用②之前
+    assert len(fake.received) == 1
 
 
 async def test_plain_text_round_matches_ch01():

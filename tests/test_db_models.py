@@ -31,6 +31,8 @@ MODEL_BY_TABLE = {
     "faq": models.Faq,
     "messages": models.Message,
     "tickets": models.Ticket,
+    "knowledge_chunks": models.KnowledgeChunk,
+    "qa_extraction_staging": models.QaExtractionStaging,
 }
 
 
@@ -58,13 +60,31 @@ def test_tool_timeout_default(env_settings, monkeypatch):
     """用 Settings(_env_file=None) 验证纯默认值,不依赖磁盘 .env 的取值。"""
     monkeypatch.delenv("TOOL_TIMEOUT", raising=False)
     s = Settings(_env_file=None)
-    assert s.tool_timeout == 5
+    assert s.tool_timeout == 10
 
 
 def test_tool_timeout_env_override(env_settings, monkeypatch):
-    monkeypatch.setenv("TOOL_TIMEOUT", "10")
+    monkeypatch.setenv("TOOL_TIMEOUT", "7")
     get_settings.cache_clear()
-    assert get_settings().tool_timeout == 10
+    assert get_settings().tool_timeout == 7
+
+
+def test_knowledge_settings_defaults(env_settings, monkeypatch):
+    for key in ("EMBEDDING_API_KEY", "EMBEDDING_DIM", "KNOWLEDGE_MIN_SCORE",
+                "MILVUS_URI", "TOOL_TIMEOUT"):
+        monkeypatch.delenv(key, raising=False)
+    s = Settings(_env_file=None)
+    assert s.embedding_base_url == "https://api.siliconflow.cn/v1"
+    assert s.embedding_model == "BAAI/bge-m3"
+    assert s.embedding_dim == 1024
+    assert s.embedding_batch_size == 32
+    assert s.milvus_uri == "http://127.0.0.1:19530"
+    assert s.knowledge_collection == "knowledge"
+    assert s.knowledge_min_score == 0.5
+    assert s.knowledge_dedup_score == 0.92
+    assert s.kb_sources_dir == "data/kb"
+    assert s.kb_max_markdown_bytes == 204800
+    assert s.tool_timeout == 10
 
 
 def test_faq_max_results_default(env_settings, monkeypatch):

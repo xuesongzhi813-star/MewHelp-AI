@@ -47,13 +47,23 @@ class SessionStore(Protocol):
 
     def append_message(self, session_id: str, message: BaseMessage) -> None: ...
 
+    def get_or_create_conversation(self, session_id: str) -> int: ...
+
 
 class InMemorySessionStore:
-    """进程内会话存储,会话数超过 max_sessions 时按 FIFO 淘汰最旧会话。"""
+    """进程内会话存储,会话数超过 max_sessions 时按 FIFO 淘汰最旧会话。
+
+    conversation_id 是测试替身口径:进程内自增、同一 session_id 恒定返回同一
+    值,够 create_ticket 的系统注入参数消费即可(与 MySQL 的自增主键无对应
+    关系);id 只在进程内稳定,进程重启不复现。FIFO 淘汰只针对消息列表,
+    不回收已分配的 id(替身无需严格语义)。
+    """
 
     def __init__(self, max_sessions: int) -> None:
         self._max_sessions = max_sessions
         self._sessions: dict[str, list[BaseMessage]] = {}
+        self._next_conversation_id = 1
+        self._conversation_ids: dict[str, int] = {}
 
     def get_history(self, session_id: str) -> list[BaseMessage]:
         return list(self._sessions.get(session_id, []))
@@ -65,3 +75,9 @@ class InMemorySessionStore:
                 del self._sessions[oldest]
             self._sessions[session_id] = []
         self._sessions[session_id].append(message)
+
+    def get_or_create_conversation(self, session_id: str) -> int:
+        if session_id not in self._conversation_ids:
+            self._conversation_ids[session_id] = self._next_conversation_id
+            self._next_conversation_id += 1
+        return self._conversation_ids[session_id]
