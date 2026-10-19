@@ -2,18 +2,17 @@
 
 关键设计:
 - 三个 Mock 工具不连库,只断言 JSON 可解析、字段齐全、同参数结果稳定;
-- query_faq / create_ticket 走真实 MySQL,用「外层事务 + SAVEPOINT」回滚:
+- query_faq 已切换为语义检索,只测试「委托给 retriever」与模型可见描述,
+  不再连库或依赖种子数据;
+- create_ticket 走真实 MySQL,用「外层事务 + SAVEPOINT」回滚:
   把 app.tools.get_session_local 替换成绑定外层事务连接的会话工厂,
   工具内部 session.begin() 因 join_transaction_mode="create_savepoint"
   只会开 SAVEPOINT,用例结束整体 rollback,不留任何脏数据
-  (与 test_seed.py 的 tx_session 同一意图,这里是「注入」给工具);
-- 配置注入同理:monkeypatch app.tools.get_settings 即可改 faq_max_results,
-  不动真实 .env 与 lru_cache。
+  (与 test_seed.py 的 tx_session 同一意图,这里是「注入」给工具)。
 """
 
 import json
 import re
-from types import SimpleNamespace
 
 import pytest
 from langchain_core.utils.function_calling import convert_to_openai_tool
@@ -24,7 +23,7 @@ from sqlalchemy.orm import Session, sessionmaker
 import app.tools as tools_mod
 from app.db import get_engine
 from app.executor import execute_tool
-from app.models import Conversation, Faq, Ticket
+from app.models import Conversation, Ticket
 from app.tools import TOOL_REGISTRY, get_tools, query_faq as query_faq_tool
 
 # 各工具期望的**模型可见**参数名集合(用于 tool_call_schema 的 JSON schema 断言)
@@ -44,7 +43,7 @@ INJECTED_ARGS: dict[str, set[str]] = {
 
 @pytest.fixture
 def tools_tx(monkeypatch):
-    """注入回滚会话工厂:工具的所有写操作最终随外层事务整体 rollback。
+    """注入回滚会话工厂:create_ticket 的写操作最终随外层事务整体 rollback。
 
     真实引擎上开一条连接并显式 begin,再把绑定该连接的 sessionmaker
     (join_transaction_mode="create_savepoint")塞给 app.tools.get_session_local;
@@ -104,75 +103,27 @@ def test_query_logistics_returns_stable_json():
     assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", data["eta"])
 
 
-# ---------- query_faq(真实连库,回滚)----------
+# ---------- query_faq(委托语义检索)----------
 
 
-def test_query_faq_hits_return_policy(tools_tx):
-    """命中「退货」:返回含 7 天无理由与退货流程(申请售后/寄回/退款)的文本。"""
-    result = query_faq_tool.invoke({"keyword": "退货"})
-    assert "7 天" in result
-    assert "申请售后" in result
-    assert "寄回" in result
-    assert "退款" in result
-    # 命中时是「序号. 问题 + → 答案」的多行文本,而非无匹配提示
-    assert "没有找到" not in result
-
-
-def test_query_faq_matches_answer_only_keyword(tools_tx):
-    """OR 右支独立覆盖:「色差」只出现在换货政策条目的 answer 里,
-    不出现在任何 question 里(见 app/seed.py 的 FAQ_SEED),
-    命中说明 answer 列的 LIKE 分支真实生效。"""
-    result = query_faq_tool.invoke({"keyword": "色差"})
-    assert "没有找到" not in result
-    # 命中的正是换货政策条目(answer 含「破损、色差、错发」)
-    assert "换货" in result
-    assert "色差" in result
-
-
-def test_query_faq_shipping_cost_no_match(tools_tx):
-    """漏召回演示点:「邮费」在 FAQ 库(13 条种子,无任何邮费类条目)必然无匹配。"""
-    result = query_faq_tool.invoke({"keyword": "邮费"})
-    assert "没有找到" in result
-    assert "邮费" in result  # 提示里回显关键词,便于模型转述给用户
-
-
-def test_query_faq_max_results_limit(tools_tx, monkeypatch):
-    """faq_max_results 上限生效:注入小值 1,「退货」只返回 1 条。"""
+def test_query_faq_delegates_to_retriever(monkeypatch):
+    """query_faq 不再查 MySQL,原样把 keyword 交给 retrieve 并返回其结果。"""
+    seen: list[str] = []
     monkeypatch.setattr(
         tools_mod,
-        "get_settings",
-        lambda: SimpleNamespace(faq_max_results=1),
+        "retrieve",
+        lambda q: seen.append(q) or "1. 问\n→ 答",
     )
-    result = query_faq_tool.invoke({"keyword": "退货"})
-    # 条目以「N. 」编号开头,统计实际返回条数
-    entries = re.findall(r"^\d+\. ", result, flags=re.MULTILINE)
-    assert len(entries) == 1
+
+    assert query_faq_tool.invoke({"keyword": "邮费怎么算"}) == "1. 问\n→ 答"
+    assert seen == ["邮费怎么算"]
 
 
-def test_query_faq_escapes_like_wildcards(tools_tx):
-    """LIKE 转义:keyword 中的 % 与 _ 按字面量匹配,不当通配符。"""
-    # 事务内预插一条 question 字面量含「100%_」的行(含 % 与 _ 两个特殊字符)
-    with Session(tools_tx) as session:
-        with session.begin():
-            session.add(
-                Faq(
-                    question="限时活动 100%_可叠加优惠券吗?",
-                    answer="本条为转义验证用的测试条目,不提供真实优惠。",
-                    category="支付优惠",
-                )
-            )
-
-    # 「100%_」若按字面量匹配,只能命中预插行;
-    # 若 % 被当通配符,种子中「100 积分抵 1 元」的会员积分条目会被误召回
-    result = query_faq_tool.invoke({"keyword": "100%_"})
-    assert "100%_可叠加优惠券吗?" in result
-    assert "积分" not in result
-
-    # 下划线同理:字面量「_天无理由」不存在(种子写的是「7 天无理由」带空格),
-    # 若 _ 被当单字符通配符,退货政策条目会被误命中
-    result2 = query_faq_tool.invoke({"keyword": "_天无理由"})
-    assert "没有找到" in result2
-    assert "7 天无理由" not in result2
+def test_query_faq_description_mentions_full_question():
+    """工具描述引导模型传用户原话/完整问句,而非单个关键词。"""
+    schema = convert_to_openai_tool(query_faq_tool)
+    description = schema["function"]["description"]
+    assert "完整问句" in description or "用户原话" in description
 
 
 # ---------- create_ticket(真实连库,回滚)----------

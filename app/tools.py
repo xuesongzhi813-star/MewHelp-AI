@@ -4,17 +4,16 @@
 - query_order / query_product / query_logistics:Mock 数据——模块级 random.Random
   随机生成,dict 缓存保证「同一参数同进程内结果稳定」;返回
   json.dumps(ensure_ascii=False) 的 JSON 字符串。
-- query_faq:真实查 faq 表,question/answer 双列 LIKE 模糊匹配,
-  条数上限取 Settings.faq_max_results;LIKE 通配符(% _ /)按字面量处理
-  (contains(autoescape=True) 自动转义并附带 ESCAPE 子句)。
+- query_faq:委托 app.kb.retriever.retrieve 做语义检索(embedding + Milvus
+  向量召回 + MySQL 回表),返回「问题→答案」文本;检索异常不在此捕获,
+  由 execute_tool 统一转成工具错误。
 - create_ticket:真实写 tickets 表,工单号 = T + YYYYMMDD + 4 位零填充当日序号。
   其 conversation_id 是**系统注入参数**(InjectedToolArg):从模型可见 schema
   里摘除,值由对话编排层通过 execute_tool 的 context 提供——工具拿不到会话
   上下文,不能自己猜关联哪条会话。
 
-测试钩子(与 seed.py 同款做法):工具内部一律通过模块级 get_session_local /
-get_settings 名字拿会话与配置,monkeypatch app.tools.* 即可注入带外层事务的
-回滚会话或假配置,不需要真实写库。
+测试钩子(与 seed.py 同款做法):create_ticket 内部通过模块级 get_session_local
+名字拿会话,monkeypatch app.tools.* 即可注入带外层事务的回滚会话,不需要真实写库。
 """
 
 import json
@@ -27,9 +26,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.config import get_settings
 from app.db import get_session_local
-from app.models import Faq, Ticket
+from app.kb.retriever import retrieve
+from app.models import Ticket
 
 # ---------------------------------------------------------------------------
 # Mock 数据源(订单/商品/物流):进程内共享一个随机源即可,不需要跨进程可复现
@@ -93,7 +92,7 @@ class QueryLogisticsArgs(BaseModel):
 class QueryFaqArgs(BaseModel):
     """query_faq 的入参 schema。"""
 
-    keyword: str = Field(description="FAQ 检索关键词,单个词效果最好,例如 退货、发票、尺码、发货、积分、优惠券")
+    keyword: str = Field(description="用户原话中的问题或关键词,完整问句效果更好,例如 退货政策、邮费怎么算、尺码怎么选")
 
 
 class CreateTicketArgs(BaseModel):
@@ -188,40 +187,20 @@ def query_logistics(order_id: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 工具四:query_faq(真实查库)
+# 工具四:query_faq(语义检索)
 # ---------------------------------------------------------------------------
 
 
 @tool(args_schema=QueryFaqArgs)
 def query_faq(keyword: str) -> str:
-    """检索店铺常见问题知识库(FAQ),返回与关键词最相关的问答条目。
+    """检索店铺常见问题知识库(FAQ),返回与问题最相关的问答条目。
 
     用户咨询退货换货政策、发货时效、修改地址、发票、支付方式、优惠券、
-    会员积分、尺码选择等常见问题时优先调用;返回「问题→答案」多行文本,
+    会员积分、尺码选择等常见问题时优先调用;keyword 传用户原话中的问题或
+    完整问句效果更好(例如「邮费怎么算」);返回「问题→答案」多行文本,
     检索不到时返回明确的「无匹配」提示,此时应考虑安抚用户或转人工。
     """
-    # 条数上限运行时读取(而非 import 时固化),测试 monkeypatch get_settings 即可改
-    max_results = get_settings().faq_max_results
-    # autoescape=True:keyword 里的 % _ / 一律按字面量转义,不当 LIKE 通配符
-    with get_session_local()() as session:
-        with session.begin():
-            rows = session.scalars(
-                select(Faq)
-                .where(
-                    Faq.question.contains(keyword, autoescape=True)
-                    | Faq.answer.contains(keyword, autoescape=True)
-                )
-                .order_by(Faq.id.asc())
-                .limit(max_results)
-            ).all()
-            # 在 session 上下文内拼好文本:commit 会使 ORM 实例属性过期,
-            # 离开上下文后再访问会触发 DetachedInstanceError
-            if not rows:
-                return f'FAQ 库中没有找到与「{keyword}」相关的条目'
-            entries = [
-                f"{i}. {row.question}\n→ {row.answer}" for i, row in enumerate(rows, 1)
-            ]
-    return "\n\n".join(entries)
+    return retrieve(keyword)
 
 
 # ---------------------------------------------------------------------------
