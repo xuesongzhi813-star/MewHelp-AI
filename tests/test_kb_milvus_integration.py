@@ -112,6 +112,12 @@ def test_vectorize_pending_creates_missing_collection(monkeypatch):
                 ]
             )
 
+            # 真实库里可能已有验收提交的 done 行;本用例只比较自己插入的
+            # 2 行与独立测试集合,避免把全局数据算进空集合的比对。
+            monkeypatch.setattr(
+                store, "done_ids", lambda: [str(item) for item in ids]
+            )
+
             result = dualwrite.vectorize_pending()
 
             assert result.processed == 2
