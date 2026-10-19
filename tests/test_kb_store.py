@@ -152,6 +152,9 @@ def test_write_functions_never_commit_injected_session(kb_tx):
                     session=session,
                 )
                 store.mark_staging(staging_ids, "kept", session=session)
+                # 全表写操作同样必须只作用于当前事务,绝不提交
+                store.reset_all_pending(session=session)
+                store.delete_all_chunks(session=session)
 
                 assert commits == []
                 assert session.in_transaction()
@@ -261,12 +264,9 @@ def test_list_recent_returns_newest_first(kb_tx):
 
 
 def test_reset_all_pending_returns_rows_to_pending(kb_tx):
-    before = store.overview_counts()
-    before_done = set(store.done_ids())
-
     ids = store.insert_chunks([_candidate("问", "答")])
     store.mark_done(ids)
-    assert set(store.done_ids()) - before_done == {str(ids[0])}
+    assert store.fetch_by_ids(ids)[ids[0]].vectorize_status == "done"
 
     store.reset_all_pending()
 
@@ -274,9 +274,12 @@ def test_reset_all_pending_returns_rows_to_pending(kb_tx):
     assert row.vectorize_status == "pending"
     assert row.vector_id is None
     assert str(ids[0]) not in store.done_ids()
+
+    # reset_all_pending 是全局操作:不假设库里只有本用例的行,
+    # 直接断言重置后的全局不变量——没有任何 done,且全部切片都是 pending。
     counts = store.overview_counts()
-    assert counts["pending"] == before["pending"] + 1
-    assert counts["done"] == before["done"]
+    assert counts["done"] == 0
+    assert counts["pending"] == counts["chunks"]
 
 
 def test_delete_all_chunks_clears_rows_and_sibling_pointers(kb_tx):
