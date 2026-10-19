@@ -25,15 +25,27 @@ from app.models import KnowledgeChunk
 
 
 class FakeMilvus:
-    """只实现 status_report 需要的 ping/count,并记录调用。"""
+    """只实现 status_report 需要的 ping/has_collection/count,并记录调用。"""
 
-    def __init__(self, *, ping_ok: bool = True, count_value: int = 0) -> None:
+    def __init__(
+        self,
+        *,
+        ping_ok: bool = True,
+        has_collection_value: bool = True,
+        count_value: int = 0,
+    ) -> None:
         self.ping_ok = ping_ok
+        self.has_collection_value = has_collection_value
         self.count_value = count_value
+        self.has_collection_calls = 0
         self.count_calls = 0
 
     def ping(self) -> bool:
         return self.ping_ok
+
+    def has_collection(self) -> bool:
+        self.has_collection_calls += 1
+        return self.has_collection_value
 
     def count(self) -> int:
         self.count_calls += 1
@@ -290,6 +302,7 @@ def test_status_report_combines_counts_and_milvus(kb_tx, monkeypatch):
     )
     fake = FakeMilvus(ping_ok=True, count_value=2)
     monkeypatch.setattr(ingest.milvus, "ping", fake.ping)
+    monkeypatch.setattr(ingest.milvus, "has_collection", fake.has_collection)
     monkeypatch.setattr(ingest.milvus, "count", fake.count)
     snapshot = Consistency("consistent", (), (), "已完成精确 id 比对")
     monkeypatch.setattr(
@@ -305,7 +318,38 @@ def test_status_report_combines_counts_and_milvus(kb_tx, monkeypatch):
     assert report["milvus_count"] == 2
     assert report["consistency"] == "consistent"
     assert report["consistency_note"] == "已完成精确 id 比对"
+    assert report["milvus_note"] is None
+    assert fake.has_collection_calls == 1
     assert fake.count_calls == 1
+
+
+def test_status_report_reports_absent_collection_as_available_zero(
+    kb_tx, monkeypatch
+):
+    """服务可达但集合未创建:ok=True、count=0、note=集合未创建,不是不可用。"""
+    fake = FakeMilvus(ping_ok=True, has_collection_value=False)
+    monkeypatch.setattr(ingest.milvus, "ping", fake.ping)
+    monkeypatch.setattr(ingest.milvus, "has_collection", fake.has_collection)
+    monkeypatch.setattr(
+        ingest.milvus,
+        "count",
+        lambda: (_ for _ in ()).throw(
+            AssertionError("集合未创建时不应查询 count")
+        ),
+    )
+    monkeypatch.setattr(
+        ingest.dualwrite,
+        "consistency_snapshot",
+        lambda: Consistency("consistent", (), (), "集合未创建"),
+    )
+
+    report = ingest.status_report()
+
+    assert report["milvus_ok"] is True
+    assert report["milvus_count"] == 0
+    assert report["milvus_note"] == "集合未创建"
+    assert report["consistency"] == "consistent"
+    assert report["consistency_note"] == "集合未创建"
 
 
 def test_status_report_marks_milvus_unreachable(kb_tx, monkeypatch):
@@ -320,6 +364,7 @@ def test_status_report_marks_milvus_unreachable(kb_tx, monkeypatch):
 
     assert report["milvus_ok"] is False
     assert report["milvus_count"] is None
+    assert report["milvus_note"] is None
     assert report["consistency"] == "unknown"
 
 
@@ -374,9 +419,29 @@ def test_main_faq_and_vectorize_print_result(kb_tx, capsys, monkeypatch):
     assert ingest.main(["faq"]) == 0
     assert "13" in capsys.readouterr().out
 
-    assert ingest.main(["vectorize"]) == 0
+    # failed>0 时 CLI 必须以非零退出,让页面作业显示 failed。
+    assert ingest.main(["vectorize"]) == 1
     out = capsys.readouterr().out
     assert "6" in out and "1" in out and "2" in out
+
+
+@pytest.mark.parametrize(
+    "result",
+    [
+        VectorizeResult(processed=2, failed=1, pending_left=1),
+        VectorizeResult(processed=2, failed=0, pending_left=1),
+    ],
+)
+def test_main_vectorize_exits_nonzero_when_incomplete(
+    kb_tx, capsys, monkeypatch, result
+):
+    monkeypatch.setattr(ingest, "vectorize_pending", lambda: result)
+
+    assert ingest.main(["vectorize"]) == 1
+    out = capsys.readouterr().out
+    assert str(result.processed) in out
+    assert str(result.failed) in out
+    assert str(result.pending_left) in out
 
 
 def test_main_build_and_rebuild_print_result(kb_tx, capsys, monkeypatch):
@@ -399,6 +464,25 @@ def test_main_build_and_rebuild_print_result(kb_tx, capsys, monkeypatch):
     )
     assert ingest.main(["rebuild"]) == 0
     assert "3" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "result",
+    [
+        VectorizeResult(processed=2, failed=1, pending_left=1),
+        VectorizeResult(processed=2, failed=0, pending_left=1),
+    ],
+)
+def test_main_rebuild_exits_nonzero_when_incomplete(
+    kb_tx, capsys, monkeypatch, result
+):
+    monkeypatch.setattr(ingest.dualwrite, "rebuild_all", lambda: result)
+
+    assert ingest.main(["rebuild"]) == 1
+    out = capsys.readouterr().out
+    assert str(result.processed) in out
+    assert str(result.failed) in out
+    assert str(result.pending_left) in out
 
 
 def test_main_build_exits_nonzero_when_vectorize_incomplete(
@@ -425,6 +509,7 @@ def test_main_status_prints_report(kb_tx, capsys, monkeypatch):
     monkeypatch.setattr(
         ingest.milvus, "ping", lambda: True
     )
+    monkeypatch.setattr(ingest.milvus, "has_collection", lambda: True)
     monkeypatch.setattr(ingest.milvus, "count", lambda: 7)
     monkeypatch.setattr(
         ingest.dualwrite,

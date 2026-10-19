@@ -33,21 +33,27 @@ class FakeMilvus:
         ids=(),
         ping_ok: bool = True,
         raise_on_ping: bool = False,
+        collection_present: bool = True,
+        raise_on_has_collection: bool = False,
         raise_on_list_ids: bool = False,
         raise_on_upsert_calls=(),
         raise_on_flush: bool = False,
         raise_on_flush_calls=(),
         raise_on_count: bool = False,
+        raise_on_ensure: bool = False,
         count_value: int | None = None,
     ) -> None:
         self.ids: set[str] = {str(item) for item in ids}
         self.ping_ok = ping_ok
         self.raise_on_ping = raise_on_ping
+        self.collection_present = collection_present
+        self.raise_on_has_collection = raise_on_has_collection
         self.raise_on_list_ids = raise_on_list_ids
         self.raise_on_upsert_calls = set(raise_on_upsert_calls)
         self.raise_on_flush = raise_on_flush
         self.raise_on_flush_calls = set(raise_on_flush_calls)
         self.raise_on_count = raise_on_count
+        self.raise_on_ensure = raise_on_ensure
         self.count_value = count_value
         self.upserted: list[dict] = []
         self.upsert_batches: list[list[dict]] = []
@@ -55,15 +61,25 @@ class FakeMilvus:
         self.flush_calls = 0
         self.drop_calls = 0
         self.ensure_calls = 0
+        self.has_collection_calls = 0
         self.list_ids_calls = 0
+        self.count_calls = 0
 
     def ping(self) -> bool:
         if self.raise_on_ping:
             raise MilvusUnavailable("milvus down")
         return self.ping_ok
 
+    def has_collection(self) -> bool:
+        self.has_collection_calls += 1
+        if self.raise_on_has_collection:
+            raise MilvusUnavailable("has_collection failed")
+        return self.collection_present
+
     def ensure_collection(self) -> None:
         self.ensure_calls += 1
+        if self.raise_on_ensure:
+            raise MilvusUnavailable("ensure failed")
 
     def upsert(self, ids, vectors) -> None:
         call_index = self.upsert_calls
@@ -89,6 +105,7 @@ class FakeMilvus:
         self.ids.clear()
 
     def count(self) -> int:
+        self.count_calls += 1
         if self.raise_on_count:
             raise MilvusUnavailable("count failed")
         return self.count_value if self.count_value is not None else len(self.ids)
@@ -167,6 +184,8 @@ def test_pending_becomes_done_and_upserts_str_id(kb_tx, monkeypatch):
     result = dualwrite.vectorize_pending()
 
     assert result == dualwrite.VectorizeResult(processed=1, failed=0, pending_left=0)
+    # 全新 Milvus 上集合可能还不存在:向量化必须先幂等建集合。
+    assert fake_milvus.ensure_calls == 1
     assert fake_milvus.upserted[0]["id"] == str(ids[0])
     assert all(isinstance(row["id"], str) for row in fake_milvus.upserted)
     assert fake_milvus.flush_calls == 1
@@ -176,6 +195,20 @@ def test_pending_becomes_done_and_upserts_str_id(kb_tx, monkeypatch):
     row = store.fetch_by_ids(ids)[ids[0]]
     assert row.vectorize_status == "done"
     assert row.vector_id == str(ids[0])
+
+
+def test_ensure_collection_failure_propagates(kb_tx, monkeypatch):
+    """Milvus 建集合失败时向调用方冒泡,而不是吞成 failed 后假装还能补跑。"""
+    store.insert_chunks([_candidate("问", "答")])
+    fake_milvus = FakeMilvus(raise_on_ensure=True)
+    calls = _install_embed(monkeypatch)
+    monkeypatch.setattr(dualwrite, "milvus", fake_milvus)
+
+    with pytest.raises(MilvusUnavailable):
+        dualwrite.vectorize_pending()
+
+    assert calls == []
+    assert fake_milvus.upserted == []
 
 
 def test_embedding_failure_leaves_pending(kb_tx, monkeypatch):
@@ -437,6 +470,55 @@ def test_consistency_unknown_when_milvus_down(kb_tx, monkeypatch):
     )
 
 
+def test_consistency_absent_collection_with_empty_mysql_is_consistent(
+    kb_tx, monkeypatch
+):
+    """服务可达但集合未创建且 MySQL 无 done 行:一致,不是 unknown。"""
+    fake_milvus = FakeMilvus(collection_present=False)
+    monkeypatch.setattr(dualwrite, "milvus", fake_milvus)
+
+    snapshot = dualwrite.consistency_snapshot()
+
+    assert snapshot == dualwrite.Consistency(
+        status="consistent",
+        missing_in_milvus=(),
+        orphan_in_milvus=(),
+        note="集合未创建",
+    )
+    assert fake_milvus.has_collection_calls == 1
+    assert fake_milvus.count_calls == 0
+    assert fake_milvus.list_ids_calls == 0
+
+
+def test_consistency_absent_collection_with_done_rows_is_mismatch(
+    kb_tx, monkeypatch
+):
+    """集合未创建但 MySQL 有 done 行:这些向量确实缺失,必须报 mismatch。"""
+    ids = store.insert_chunks([_candidate("问1", "答1"), _candidate("问2", "答2")])
+    store.mark_done(ids)
+    fake_milvus = FakeMilvus(collection_present=False)
+    monkeypatch.setattr(dualwrite, "milvus", fake_milvus)
+
+    snapshot = dualwrite.consistency_snapshot()
+
+    assert snapshot.status == "mismatch"
+    assert snapshot.missing_in_milvus == tuple(sorted(str(item) for item in ids))
+    assert snapshot.orphan_in_milvus == ()
+    assert snapshot.note == "集合未创建"
+    assert fake_milvus.count_calls == 0
+
+
+def test_consistency_unknown_when_has_collection_fails(kb_tx, monkeypatch):
+    """读不到集合状态仍按「读不到」处理,绝不能当成集合不存在。"""
+    fake_milvus = FakeMilvus(raise_on_has_collection=True)
+    monkeypatch.setattr(dualwrite, "milvus", fake_milvus)
+
+    snapshot = dualwrite.consistency_snapshot()
+
+    assert snapshot.status == "unknown"
+    assert snapshot.note == "Milvus 读不到"
+
+
 def test_consistency_unknown_when_mysql_fails(kb_tx, monkeypatch):
     fake_milvus = FakeMilvus()
     monkeypatch.setattr(dualwrite, "milvus", fake_milvus)
@@ -492,7 +574,8 @@ def test_rebuild_all_resets_and_revectorizes(kb_tx, monkeypatch):
 
     assert result == dualwrite.VectorizeResult(processed=2, failed=0, pending_left=0)
     assert fake_milvus.drop_calls == 1
-    assert fake_milvus.ensure_calls == 1
+    # 初次 vectorize + rebuild 显式 ensure + rebuild 内 vectorize,共 3 次。
+    assert fake_milvus.ensure_calls == 3
     assert fake_milvus.ids == {str(item) for item in ids}
     assert set(store.done_ids()) == {str(item) for item in ids}
     assert store.overview_counts()["pending"] == 0

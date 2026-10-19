@@ -207,6 +207,11 @@ def test_argv_is_fixed_and_shell_false(monkeypatch):
     assert captured["kwargs"]["encoding"] == "utf-8"
     assert captured["kwargs"]["errors"] == "replace"
     assert captured["kwargs"]["stderr"] is jobs.subprocess.STDOUT
+    # 子进程强制 UTF-8 + 无缓冲,中文日志可读且运行中 tail 有内容。
+    env = captured["kwargs"]["env"]
+    assert env["PYTHONUTF8"] == "1"
+    assert env["PYTHONIOENCODING"] == "utf-8"
+    assert env["PYTHONUNBUFFERED"] == "1"
 
 
 def test_make_missing_raises_chinese_error(monkeypatch):

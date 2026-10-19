@@ -23,7 +23,7 @@ import app.kb.mining as mining
 import app.kb.store as store
 from app.db import get_engine
 from app.kb.embedding import EmbeddingError
-from app.models import Conversation, Message, QaExtractionStaging
+from app.models import Conversation, Message, QaExtractionStaging, Ticket
 from app.kb.store import ConversationForMining
 
 
@@ -45,9 +45,10 @@ def kb_tx(monkeypatch):
             with session.begin():
                 session.execute(delete(QaExtractionStaging))
                 session.execute(delete(store.KnowledgeChunk))
-                # run_once 读取整张 conversations 表;先清消息再清会话,
-                # 让每个用例只看到自己创建的数据。rollback 会恢复已提交行
-                # (包括 seed-ch03-* 演示会话),不会污染真实库。
+                # run_once 读取整张 conversations 表;先清引用方(tickets /
+                # messages)再清会话,避免真实工单触发外键错误。rollback 会
+                # 恢复已提交行(包括 seed-ch03-* 演示会话),不会污染真实库。
+                session.execute(delete(Ticket))
                 session.execute(delete(Message))
                 session.execute(delete(Conversation))
         try:
@@ -279,8 +280,11 @@ def _install_settings(monkeypatch, *, max_chars=6000, batch_size=5, dedup_score=
 # ---------------------------------------------------------------------------
 
 
-def test_empty_pairs_writes_nothing(kb_tx, monkeypatch):
-    conversation_id, _ = _seed_conversation(kb_tx, _default_turns())
+def test_empty_pairs_writes_discarded_sentinel_and_skips_rerun(
+    kb_tx, monkeypatch
+):
+    """零抽取会话写审计哨兵,让 staging_tail 前进,下一轮不再调用 LLM。"""
+    conversation_id, message_ids = _seed_conversation(kb_tx, _default_turns())
     extractor = FakeExtractor(mining.QAPairList(pairs=[]))
     _install(monkeypatch, extractor)
 
@@ -289,11 +293,28 @@ def test_empty_pairs_writes_nothing(kb_tx, monkeypatch):
     assert result == mining.MiningResult(
         conversations=1, extracted=0, kept=0, discarded=0
     )
+    rows = _staging_rows()
+    assert len(rows) == 1
+    row = rows[0]
+    assert row.status == "discarded"
+    assert row.question == mining.NO_KNOWLEDGE_QUESTION
+    assert row.answer == mining.NO_KNOWLEDGE_ANSWER
+    assert row.source_ref == (
+        f"conv:{conversation_id}:msgs:{message_ids[0]}-{message_ids[-1]}"
+    )
     assert store.staging_counts()["extracted"] == 0
     assert store.staging_counts()["kept"] == 0
-    assert store.staging_counts()["discarded"] == 0
-    assert extractor.calls == 1
     assert _chunks() == []
+    assert extractor.calls == 1
+
+    # 第二轮:tail 已推进,不再调用抽取器。
+    second = mining.run_once()
+
+    assert second == mining.MiningResult(
+        conversations=0, extracted=0, kept=0, discarded=0
+    )
+    assert extractor.calls == 1
+    assert len(_staging_rows()) == 1
 
 
 def test_extracted_pairs_go_to_staging_and_kept_chunk(kb_tx, monkeypatch):
@@ -361,13 +382,17 @@ def test_unknown_conversation_id_is_skipped_with_warning(
         result = mining.run_once()
 
     assert result.extracted == 0
-    assert _staging_rows() == []
+    rows = _staging_rows()
+    # 该会话没有产出有效问答对 → 一条 discarded 哨兵。
+    assert len(rows) == 1
+    assert rows[0].status == "discarded"
+    assert rows[0].question == mining.NO_KNOWLEDGE_QUESTION
     assert "conversation_id" in caplog.text
 
 
 def test_skips_already_mined_conversation(kb_tx, monkeypatch):
     conversation_id, message_ids = _seed_conversation(kb_tx, _default_turns())
-    store.insert_staging(
+    ids = store.insert_staging(
         [
             store.StagingCandidate(
                 batch_no="M20260101000000-deadbeef",
@@ -379,6 +404,7 @@ def test_skips_already_mined_conversation(kb_tx, monkeypatch):
             )
         ]
     )
+    store.mark_staging(ids, "kept")
     extractor = FakeExtractor(mining.QAPairList(pairs=[]))
     _install(monkeypatch, extractor)
 
@@ -391,7 +417,7 @@ def test_skips_already_mined_conversation(kb_tx, monkeypatch):
 def test_processes_conversation_with_new_messages_after_tail(kb_tx, monkeypatch):
     conversation_id, message_ids = _seed_conversation(kb_tx, _default_turns())
     # 上次只挖到第一条消息,后面还有未挖掘内容
-    store.insert_staging(
+    ids = store.insert_staging(
         [
             store.StagingCandidate(
                 batch_no="M20260101000000-deadbeef",
@@ -403,6 +429,7 @@ def test_processes_conversation_with_new_messages_after_tail(kb_tx, monkeypatch)
             )
         ]
     )
+    store.mark_staging(ids, "kept")
     extractor = EchoExtractor()
     _install(monkeypatch, extractor)
 
@@ -508,6 +535,158 @@ def test_dedup_failure_rolls_back_staging_and_rerun_processes(
     assert result.extracted == 1 and result.kept == 1
     assert store.staging_tail(conversation_id) == message_ids[-1]
     assert len(_chunks()) == 1
+
+
+# ---------------------------------------------------------------------------
+# run_once: 断点恢复与向量化失败可见性
+# ---------------------------------------------------------------------------
+
+
+def test_resume_extracted_row_without_calling_llm(kb_tx, monkeypatch):
+    """上次在去重中途被杀:本轮直接恢复 extracted 行,不再调用 LLM。"""
+    conversation_id, message_ids = _seed_conversation(kb_tx, _default_turns())
+    store.insert_staging(
+        [
+            store.StagingCandidate(
+                batch_no="M20260101000000-deadbeef",
+                source_ref=(
+                    f"conv:{conversation_id}:msgs:{message_ids[0]}-{message_ids[-1]}"
+                ),
+                question="怎么退货?",
+                answer="签收后 7 天内可申请退货。",
+            )
+        ]
+    )
+    extractor = FakeExtractor(mining.QAPairList(pairs=[]))
+    _install(monkeypatch, extractor)
+
+    result = mining.run_once()
+
+    assert extractor.calls == 0
+    assert result.conversations == 0
+    assert result.extracted == 0
+    assert result.kept == 1
+    rows = _staging_rows()
+    assert len(rows) == 1
+    assert rows[0].status == "kept"
+    assert len(_chunks()) == 1
+
+    # 再跑一轮:没有 extracted 行,tail 已覆盖最新消息,不再抽取。
+    second = mining.run_once()
+
+    assert extractor.calls == 0
+    assert second == mining.MiningResult(
+        conversations=0, extracted=0, kept=0, discarded=0
+    )
+    assert len(_staging_rows()) == 1
+    assert len(_chunks()) == 1
+
+
+def test_resume_extracted_row_for_missing_conversation_is_discarded(
+    kb_tx, monkeypatch
+):
+    store.insert_staging(
+        [
+            store.StagingCandidate(
+                batch_no="M20260101000000-deadbeef",
+                source_ref="conv:999999999:msgs:1-2",
+                question="孤儿问题?",
+                answer="孤儿答案",
+            )
+        ]
+    )
+    extractor = FakeExtractor(mining.QAPairList(pairs=[]))
+    _install(monkeypatch, extractor)
+
+    result = mining.run_once()
+
+    assert extractor.calls == 0
+    assert result.conversations == 0
+    assert result.discarded == 1
+    rows = _staging_rows()
+    assert len(rows) == 1
+    assert rows[0].status == "discarded"
+    assert _chunks() == []
+
+    # 再跑一轮不重复处理,也不调用 LLM。
+    mining.run_once()
+
+    assert extractor.calls == 0
+    assert len(_staging_rows()) == 1
+
+
+def test_resume_extracted_sentinel_is_discarded(kb_tx, monkeypatch):
+    """哨兵行在插入与标记 discarded 之间崩溃时的兜底。"""
+    conversation_id, message_ids = _seed_conversation(kb_tx, _default_turns())
+    store.insert_staging(
+        [
+            store.StagingCandidate(
+                batch_no="M20260101000000-deadbeef",
+                source_ref=(
+                    f"conv:{conversation_id}:msgs:{message_ids[0]}-{message_ids[-1]}"
+                ),
+                question=mining.NO_KNOWLEDGE_QUESTION,
+                answer=mining.NO_KNOWLEDGE_ANSWER,
+            )
+        ]
+    )
+    extractor = FakeExtractor(mining.QAPairList(pairs=[]))
+    _install(monkeypatch, extractor)
+
+    mining.run_once()
+
+    assert extractor.calls == 0
+    rows = _staging_rows()
+    assert len(rows) == 1
+    assert rows[0].status == "discarded"
+    assert _chunks() == []
+
+
+def test_initial_vectorize_failure_raises(kb_tx, monkeypatch):
+    """挖掘前补向量化失败时作业必须显式失败,不能继续挖。"""
+    _seed_conversation(kb_tx, _default_turns())
+    extractor = FakeExtractor(mining.QAPairList(pairs=[]))
+    _install(monkeypatch, extractor)
+    monkeypatch.setattr(
+        dualwrite,
+        "vectorize_pending",
+        lambda: dualwrite.VectorizeResult(0, 1, 1),
+    )
+
+    with pytest.raises(RuntimeError, match="向量化未完成"):
+        mining.run_once()
+
+    assert extractor.calls == 0
+    assert _staging_rows() == []
+
+
+def test_post_keep_vectorize_failure_raises_and_rolls_back_staging(
+    kb_tx, monkeypatch
+):
+    """keep 后向量化失败同样显式失败;暂存行回滚,切片留在 pending。"""
+    conversation_id, _ = _seed_conversation(kb_tx, _default_turns())
+    pair = mining.QAPair(
+        conversation_id=conversation_id,
+        question="怎么退货?",
+        answer="签收后 7 天内可申请退货。",
+    )
+    extractor = FakeExtractor(mining.QAPairList(pairs=[pair]))
+    _install(monkeypatch, extractor)
+    results = iter(
+        [
+            dualwrite.VectorizeResult(0, 0, 0),  # 开跑前补向量化
+            dualwrite.VectorizeResult(0, 1, 1),  # keep 后向量化失败
+        ]
+    )
+    monkeypatch.setattr(dualwrite, "vectorize_pending", lambda: next(results))
+
+    with pytest.raises(RuntimeError, match="挖掘入库后向量化"):
+        mining.run_once()
+
+    assert _staging_rows() == []
+    chunks = _chunks()
+    assert len(chunks) == 1
+    assert chunks[0].vectorize_status == "pending"
 
 
 # ---------------------------------------------------------------------------

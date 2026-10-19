@@ -58,6 +58,11 @@ def vectorize_pending(limit: int | None = None) -> VectorizeResult:
         ``processed`` 为成功写入的行数,``failed`` 为失败批次的行数,
         ``pending_left`` 为本轮结束后的全局待处理行数。
     """
+    # 全新 Milvus 上集合尚不存在;先幂等建集合,否则第一次 upsert 必然失败,
+    # 而「补跑 vectorize」也会因为集合始终缺失而无限循环。Milvus 不可达时
+    # 让异常直接冒泡,由 CLI / API / 作业运行器报告失败。
+    milvus.ensure_collection()
+
     settings = get_settings()
     batch_size = max(1, settings.embedding_batch_size)
     processed = 0
@@ -134,10 +139,25 @@ def consistency_snapshot() -> Consistency:
         return Consistency("unknown", (), (), "Milvus 读不到")
 
     try:
+        collection_exists = milvus.has_collection()
+    except Exception as exc:  # noqa: BLE001 - 读取失败不能当成「集合不存在」
+        logger.warning("读取 Milvus 集合是否存在失败: %s", exc)
+        return Consistency("unknown", (), (), "Milvus 读不到")
+
+    try:
         mysql_ids = set(store.done_ids())
     except Exception as exc:  # noqa: BLE001 - 读取失败不能当成无匹配
         logger.warning("读取 MySQL done id 失败: %s", exc)
         return Consistency("unknown", (), (), "MySQL 读不到")
+
+    if not collection_exists:
+        # 服务可达但集合还没创建(全新安装 / kb-reset 之后):
+        # MySQL 也没有 done 行 → 两边一致;有 done 行 → 这些向量确实缺失。
+        if not mysql_ids:
+            return Consistency("consistent", (), (), "集合未创建")
+        return Consistency(
+            "mismatch", tuple(sorted(mysql_ids)), (), "集合未创建"
+        )
 
     try:
         milvus_count = milvus.count()

@@ -11,6 +11,7 @@ MySQL / Milvus,必须互斥。
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import threading
@@ -185,6 +186,13 @@ def start_job(name: str, *, confirm: bool = False) -> JobState:
             raise MakeNotFound(message)
 
         argv = [make_path, "-f", str(ROOT / "Makefile"), spec.target]
+        # 子进程强制 UTF-8 + 无缓冲:中文日志可读,运行中 log_tail 不空。
+        env = {
+            **os.environ,
+            "PYTHONUTF8": "1",
+            "PYTHONIOENCODING": "utf-8",
+            "PYTHONUNBUFFERED": "1",
+        }
         with log_path.open("w", encoding="utf-8") as log_file:
             try:
                 process = subprocess.Popen(
@@ -196,6 +204,7 @@ def start_job(name: str, *, confirm: bool = False) -> JobState:
                     text=True,
                     encoding="utf-8",
                     errors="replace",
+                    env=env,
                 )
             except OSError as exc:
                 log_file.write(f"启动失败:{exc}\n")

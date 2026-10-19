@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 import app.kb.seed_conversations as seed_conversations
 from app.db import get_engine
-from app.models import Conversation, Message
+from app.models import Conversation, Message, Ticket
 
 
 @pytest.fixture
@@ -34,6 +34,11 @@ def seed_tx(monkeypatch):
                     )
                 ).all()
                 if ids:
+                    # 先删引用 conversations 的 tickets,再删 messages,
+                    # 避免真实工单存在时触发外键错误。
+                    session.execute(
+                        delete(Ticket).where(Ticket.conversation_id.in_(ids))
+                    )
                     session.execute(
                         delete(Message).where(Message.conversation_id.in_(ids))
                     )

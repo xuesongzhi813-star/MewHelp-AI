@@ -50,6 +50,11 @@ def ping() -> bool:
     return True
 
 
+def has_collection() -> bool:
+    """返回知识集合是否已创建;连接失败时异常冒泡,由调用方判定可用性。"""
+    return bool(get_client().has_collection(get_settings().knowledge_collection))
+
+
 def ensure_collection() -> None:
     """确保知识集合存在且已加载;已存在时直接返回。"""
     client = get_client()

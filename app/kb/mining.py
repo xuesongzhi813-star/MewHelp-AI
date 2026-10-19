@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import re
 import secrets
 import string
 import sys
@@ -45,6 +46,16 @@ logger = logging.getLogger(__name__)
 # 单条消息进入 Prompt 的最大字数;超出部分截断,避免一条超长消息挤掉同批
 # 其他会话。
 MAX_TURN_CHARS = 500
+
+# 一次最多恢复多少条上次中断留下的 extracted 暂存行;超出的部分下一轮继续。
+RESUME_LIMIT = 200
+
+# 零抽取会话的审计哨兵:写入一行 discarded,让 staging_tail 前进,
+# 避免 --interval 反复对同一会话调用 LLM。
+NO_KNOWLEDGE_QUESTION = "（无可提取知识）"
+NO_KNOWLEDGE_ANSWER = "该会话未抽取到可复用问答对。"
+
+_SOURCE_REF_PATTERN = re.compile(r"^conv:(\d+):msgs:\d+-(\d+)$")
 
 
 class QAPair(BaseModel):
@@ -182,6 +193,24 @@ def _pending_conversations(limit: int | None) -> list[ConversationForMining]:
     return ready
 
 
+def _require_vectorize_complete(
+    result: dualwrite.VectorizeResult, *, stage: str
+) -> None:
+    """向量化有失败或剩余 pending 时显式失败,避免作业假装成功。"""
+    if result.failed > 0 or result.pending_left > 0:
+        raise RuntimeError(
+            f"{stage}:向量化未完成"
+            f"(failed={result.failed}, pending_left={result.pending_left}),"
+            "补跑 vectorize 后再试"
+        )
+
+
+def _conversation_id_from_source_ref(source_ref: str | None) -> int | None:
+    """从 ``conv:{id}:msgs:{first}-{last}`` 还原会话 id;格式不符返回 None。"""
+    match = _SOURCE_REF_PATTERN.match(source_ref or "")
+    return int(match.group(1)) if match else None
+
+
 def _dedup_and_keep(
     batch_rows: Sequence[tuple[int, QAPair, ConversationForMining]],
     *,
@@ -221,29 +250,114 @@ def _dedup_and_keep(
         store.mark_staging([staging_id], "kept")
         kept_questions.add(normalized)
         kept += 1
-        dualwrite.vectorize_pending()
+        _require_vectorize_complete(
+            dualwrite.vectorize_pending(), stage="挖掘入库后向量化"
+        )
     return kept, discarded
 
 
+def _resume_extracted_rows(
+    *,
+    existing_questions: set[str],
+    kept_questions: set[str],
+    settings,
+) -> tuple[int, int]:
+    """恢复上次中断留下的 ``status='extracted'`` 暂存行。
+
+    进程在写暂存 / 去重中途被杀时,这些行会一直占用 ``staging_tail``,
+    导致对应会话被永久跳过。这里直接复用同一套判重/入库路径,不再调用
+    LLM、也不新增暂存行。失败时行保持 ``extracted``,下一轮继续。
+    """
+    rows = store.list_staging(status="extracted", limit=RESUME_LIMIT)
+    if not rows:
+        return 0, 0
+
+    conversations = {
+        item.id: item for item in store.list_conversations_for_mining()
+    }
+    pending: list[tuple[int, QAPair, ConversationForMining]] = []
+    discarded = 0
+    for row in rows:
+        if row.question == NO_KNOWLEDGE_QUESTION:
+            # 哨兵行在插入与标记 discarded 之间崩溃时的兜底。
+            store.mark_staging([row.id], "discarded")
+            discarded += 1
+            continue
+
+        conversation_id = _conversation_id_from_source_ref(row.source_ref)
+        conversation = (
+            conversations.get(conversation_id)
+            if conversation_id is not None
+            else None
+        )
+        if conversation is None:
+            logger.warning(
+                "恢复暂存行 %s 时找不到对应会话(source_ref=%s),标记 discarded",
+                row.id,
+                row.source_ref,
+            )
+            store.mark_staging([row.id], "discarded")
+            discarded += 1
+            continue
+
+        pending.append(
+            (
+                row.id,
+                QAPair(
+                    conversation_id=conversation.id,
+                    question=row.question,
+                    answer=row.answer,
+                ),
+                conversation,
+            )
+        )
+
+    if not pending:
+        return 0, discarded
+    kept, discarded_here = _dedup_and_keep(
+        pending,
+        existing_questions=existing_questions,
+        kept_questions=kept_questions,
+        settings=settings,
+    )
+    return kept, discarded + discarded_here
+
+
 def run_once(limit: int | None = None) -> MiningResult:
-    """执行一轮对话挖掘;``limit`` 限制本轮处理的会话数。"""
+    """执行一轮对话挖掘;``limit`` 限制本轮新处理的会话数。
+
+    顺序:补向量化 → 恢复上次中断的 extracted 行 → 处理新会话。
+    恢复行的 kept/discarded 计入返回值,但不计入 ``conversations`` /
+    ``extracted``(它们不是本轮 LLM 新抽取的)。
+    """
     settings = get_settings()
     # 第一步永远是补向量化:上一轮 kept 的切片可能仍在 pending。
-    dualwrite.vectorize_pending()
+    _require_vectorize_complete(
+        dualwrite.vectorize_pending(), stage="挖掘前补向量化"
+    )
+
+    existing_questions = store.existing_questions_normalized()
+    kept_questions: set[str] = set()
+    resumed_kept, resumed_discarded = _resume_extracted_rows(
+        existing_questions=existing_questions,
+        kept_questions=kept_questions,
+        settings=settings,
+    )
 
     conversations = _pending_conversations(limit)
     if not conversations:
         return MiningResult(
-            conversations=0, extracted=0, kept=0, discarded=0
+            conversations=0,
+            extracted=0,
+            kept=resumed_kept,
+            discarded=resumed_discarded,
         )
 
     extractor = build_mining_model(settings)
     by_id = {conversation.id: conversation for conversation in conversations}
-    existing_questions = store.existing_questions_normalized()
-    kept_questions: set[str] = set()
     extracted = 0
-    kept = 0
-    discarded = 0
+    kept = resumed_kept
+    discarded = resumed_discarded
 
     for batch in _plan_batches(conversations, settings):
         batch_no = _new_batch_no()
@@ -252,6 +366,7 @@ def run_once(limit: int | None = None) -> MiningResult:
 
         rows: list[store.StagingCandidate] = []
         pending_rows: list[tuple[QAPair, ConversationForMining]] = []
+        produced_conversation_ids: set[int] = set()
         for pair in pairs:
             conversation = by_id.get(pair.conversation_id)
             if conversation is None:
@@ -287,10 +402,12 @@ def run_once(limit: int | None = None) -> MiningResult:
                     conversation,
                 )
             )
+            produced_conversation_ids.add(conversation.id)
 
-        # 抽取调用成功后才落暂存;空结果不产生任何行。
+        # 抽取调用成功后才落暂存。
         staging_ids = store.insert_staging(rows)
         extracted += len(staging_ids)
+        sentinel_ids: list[int] = []
 
         try:
             kept_here, discarded_here = _dedup_and_keep(
@@ -304,17 +421,35 @@ def run_once(limit: int | None = None) -> MiningResult:
                 kept_questions=kept_questions,
                 settings=settings,
             )
+
+            # 零抽取会话也要留一条 discarded 哨兵:否则 staging_tail 永远
+            # 不前进,--interval 会反复对同一会话调用 LLM。
+            sentinel_ids = store.insert_staging(
+                [
+                    store.StagingCandidate(
+                        batch_no=batch_no,
+                        source_ref=_source_ref(conversation),
+                        question=NO_KNOWLEDGE_QUESTION,
+                        answer=NO_KNOWLEDGE_ANSWER,
+                    )
+                    for conversation in batch
+                    if conversation.id not in produced_conversation_ids
+                ]
+            )
+            if sentinel_ids:
+                store.mark_staging(sentinel_ids, "discarded")
         except Exception as exc:  # noqa: BLE001 - 整批回滚后原样冒泡
             # 暂存行一旦保留,source_ref 会推进 staging_tail,导致会话永远
             # 被跳过;因此批次处理失败时必须先删掉本批暂存行再冒泡。
+            cleanup_ids = [*staging_ids, *sentinel_ids]
             logger.warning(
                 "批次 %s 判重/入库失败,删除本批 %d 条暂存行后重试: %s",
                 batch_no,
-                len(staging_ids),
+                len(cleanup_ids),
                 exc,
             )
             try:
-                store.delete_staging(staging_ids)
+                store.delete_staging(cleanup_ids)
             except Exception:  # noqa: BLE001 - 不能掩盖原始异常
                 logger.exception("删除批次 %s 的暂存行失败", batch_no)
             raise

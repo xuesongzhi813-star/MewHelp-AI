@@ -219,12 +219,14 @@ def status_report() -> dict:
     """汇总 MySQL 计数、Milvus 可用性与一致性快照。
 
     Milvus 不可达时 ``milvus_ok=False`` 且 ``milvus_count=None``,
-    绝不把「读不到」误报成 0。
+    绝不把「读不到」误报成 0。服务可达但集合尚未创建时仍算可用:
+    ``milvus_ok=True``、``milvus_count=0``、``milvus_note="集合未创建"``。
     """
     report: dict = dict(store.overview_counts())
 
     milvus_ok = False
     milvus_count: int | None = None
+    milvus_note: str | None = None
     try:
         milvus_ok = bool(milvus.ping())
     except Exception as exc:  # noqa: BLE001 - 可用性探测失败一律不可用
@@ -233,17 +235,28 @@ def status_report() -> dict:
 
     if milvus_ok:
         try:
-            milvus_count = milvus.count()
-        except Exception as exc:  # noqa: BLE001 - 读不到数量视为不可用
-            logger.warning("读取 Milvus 数量失败: %s", exc)
+            collection_exists = bool(milvus.has_collection())
+        except Exception as exc:  # noqa: BLE001 - 读不到集合状态视为不可用
+            logger.warning("读取 Milvus 集合状态失败: %s", exc)
             milvus_ok = False
-            milvus_count = None
+            collection_exists = False
+        if milvus_ok and not collection_exists:
+            milvus_count = 0
+            milvus_note = "集合未创建"
+        elif milvus_ok:
+            try:
+                milvus_count = milvus.count()
+            except Exception as exc:  # noqa: BLE001 - 读不到数量视为不可用
+                logger.warning("读取 Milvus 数量失败: %s", exc)
+                milvus_ok = False
+                milvus_count = None
 
     snapshot = dualwrite.consistency_snapshot()
     report.update(
         {
             "milvus_ok": milvus_ok,
             "milvus_count": milvus_count,
+            "milvus_note": milvus_note,
             "consistency": snapshot.status,
             "missing_in_milvus": snapshot.missing_in_milvus,
             "orphan_in_milvus": snapshot.orphan_in_milvus,
@@ -279,6 +292,23 @@ def _print_vectorize(label: str, result: VectorizeResult) -> None:
     )
 
 
+def _vectorize_exit_code(result: VectorizeResult) -> int:
+    """向量化有失败或剩余 pending 时返回 1,让页面作业显示 failed。"""
+    return 1 if result.failed > 0 or result.pending_left > 0 else 0
+
+
+def _command_vectorize() -> int:
+    result = vectorize_pending()
+    _print_vectorize("向量化完成", result)
+    return _vectorize_exit_code(result)
+
+
+def _command_rebuild() -> int:
+    result = rebuild()
+    _print_vectorize("向量重建完成", result)
+    return _vectorize_exit_code(result)
+
+
 def _command_preview() -> None:
     preview = run_preview()
     for item in preview:
@@ -300,6 +330,8 @@ def _command_status() -> None:
     print(f"  已向量化:{report['done']}")
     print(f"  关键条款:{report['key_clauses']}")
     print(f"  Milvus:{'可用' if report['milvus_ok'] else '不可用'}")
+    if report.get("milvus_note"):
+        print(f"  Milvus 说明:{report['milvus_note']}")
     count = report["milvus_count"]
     print(f"  Milvus 向量数:{count if count is not None else '未知'}")
     print(f"  一致性:{report['consistency']}({report['consistency_note']})")
@@ -348,9 +380,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         elif args.command == "faq":
             _print_ingest("FAQ 录入完成", ingest_faq())
         elif args.command == "vectorize":
-            _print_vectorize("向量化完成", vectorize_pending())
+            return _command_vectorize()
         elif args.command == "rebuild":
-            _print_vectorize("向量重建完成", rebuild())
+            return _command_rebuild()
         elif args.command == "build":
             _print_ingest("建库完成", build_all())
         elif args.command == "status":

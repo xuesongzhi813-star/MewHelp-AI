@@ -183,14 +183,22 @@ def get_overview() -> dict:
 
     milvus_ok = False
     milvus_count: int | None = None
+    milvus_note: str | None = None
     try:
         milvus_ok = bool(milvus.ping())
         if milvus_ok:
-            milvus_count = int(milvus.count())
+            if not milvus.has_collection():
+                # 服务可达但集合尚未创建(全新安装 / kb-reset 之后):
+                # 这是正常的空状态,不是「读不到」。
+                milvus_count = 0
+                milvus_note = "集合未创建"
+            else:
+                milvus_count = int(milvus.count())
     except Exception as exc:  # noqa: BLE001 - Milvus 不可达是一种状态
         logger.warning("读取 Milvus 总览失败: %s", exc)
         milvus_ok = False
         milvus_count = None
+        milvus_note = None
 
     try:
         consistency = _consistency_payload()
@@ -210,13 +218,17 @@ def get_overview() -> dict:
         jobs = []
         jobs_ok = False
 
+    milvus_block: dict = {
+        "ok": milvus_ok,
+        "count": milvus_count,
+        "collection": settings.knowledge_collection,
+    }
+    if milvus_note is not None:
+        milvus_block["note"] = milvus_note
+
     return {
         "mysql": mysql,
-        "milvus": {
-            "ok": milvus_ok,
-            "count": milvus_count,
-            "collection": settings.knowledge_collection,
-        },
+        "milvus": milvus_block,
         "consistency": consistency,
         "staging": staging,
         "sources": [_source_overview(source) for source in get_sources()],

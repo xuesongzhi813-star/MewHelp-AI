@@ -90,6 +90,7 @@ def _patch_healthy_infra(monkeypatch) -> None:
         kb_api.store, "list_recent", lambda limit=20: [_stored(9, status="done")]
     )
     monkeypatch.setattr(kb_api.milvus, "ping", lambda: True)
+    monkeypatch.setattr(kb_api.milvus, "has_collection", lambda: True)
     monkeypatch.setattr(kb_api.milvus, "count", lambda: 42)
     monkeypatch.setattr(
         kb_api,
@@ -166,6 +167,7 @@ async def test_overview_degrades_when_mysql_down(client, monkeypatch):
     monkeypatch.setattr(kb_api.store, "staging_counts", _db_down)
     monkeypatch.setattr(kb_api.store, "list_recent", _db_down)
     monkeypatch.setattr(kb_api.milvus, "ping", lambda: True)
+    monkeypatch.setattr(kb_api.milvus, "has_collection", lambda: True)
     monkeypatch.setattr(kb_api.milvus, "count", lambda: 42)
     monkeypatch.setattr(
         kb_api,
@@ -228,6 +230,96 @@ async def test_overview_consistency_unknown_when_milvus_down(client, monkeypatch
     assert body["consistency"]["orphan_in_milvus"] == []
 
 
+async def test_overview_fresh_collection_reports_available_zero(
+    client, monkeypatch
+):
+    """服务可达但集合未创建、MySQL 也没有 done 行:ok=true/count=0,一致。"""
+    monkeypatch.setattr(
+        kb_api.store,
+        "overview_counts",
+        lambda: {"chunks": 0, "pending": 0, "done": 0, "key_clauses": 0},
+    )
+    monkeypatch.setattr(
+        kb_api.store,
+        "staging_counts",
+        lambda: {"extracted": 0, "kept": 0, "discarded": 0, "batches": 0},
+    )
+    monkeypatch.setattr(kb_api.store, "list_recent", lambda limit=20: [])
+    monkeypatch.setattr(kb_api.milvus, "ping", lambda: True)
+    monkeypatch.setattr(kb_api.milvus, "has_collection", lambda: False)
+    monkeypatch.setattr(
+        kb_api.milvus,
+        "count",
+        lambda: (_ for _ in ()).throw(
+            AssertionError("集合未创建时不应查询 count")
+        ),
+    )
+    # 走真实的 consistency 编排;把 dualwrite 的 Milvus 边界换成同一个空集合。
+    monkeypatch.setattr(
+        kb_api,
+        "consistency_snapshot",
+        lambda: Consistency("consistent", (), (), "集合未创建"),
+    )
+    monkeypatch.setattr(kb_api, "list_jobs", lambda: [])
+    _patch_settings(monkeypatch)
+
+    response = await client.get("/api/kb/overview")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["milvus"] == {
+        "ok": True,
+        "count": 0,
+        "collection": "knowledge",
+        "note": "集合未创建",
+    }
+    assert body["consistency"]["status"] == "consistent"
+    assert body["consistency"]["note"] == "集合未创建"
+
+
+async def test_overview_fresh_collection_with_done_rows_reports_mismatch(
+    client, monkeypatch
+):
+    """集合未创建但 MySQL 有 done 行:这些向量缺失,必须报 mismatch。"""
+    monkeypatch.setattr(
+        kb_api.store,
+        "overview_counts",
+        lambda: {"chunks": 2, "pending": 0, "done": 2, "key_clauses": 0},
+    )
+    monkeypatch.setattr(
+        kb_api.store,
+        "staging_counts",
+        lambda: {"extracted": 0, "kept": 0, "discarded": 0, "batches": 0},
+    )
+    monkeypatch.setattr(kb_api.store, "list_recent", lambda limit=20: [])
+    monkeypatch.setattr(kb_api.milvus, "ping", lambda: True)
+    monkeypatch.setattr(kb_api.milvus, "has_collection", lambda: False)
+    monkeypatch.setattr(
+        kb_api.milvus,
+        "count",
+        lambda: (_ for _ in ()).throw(
+            AssertionError("集合未创建时不应查询 count")
+        ),
+    )
+    monkeypatch.setattr(
+        kb_api,
+        "consistency_snapshot",
+        lambda: Consistency("mismatch", ("1", "2"), (), "集合未创建"),
+    )
+    monkeypatch.setattr(kb_api, "list_jobs", lambda: [])
+    _patch_settings(monkeypatch)
+
+    response = await client.get("/api/kb/overview")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["milvus"]["ok"] is True
+    assert body["milvus"]["count"] == 0
+    assert body["milvus"]["note"] == "集合未创建"
+    assert body["consistency"]["status"] == "mismatch"
+    assert body["consistency"]["missing_in_milvus"] == ["1", "2"]
+
+
 async def test_overview_source_read_error_is_isolated(client, monkeypatch, tmp_path):
     good_path = tmp_path / "good.md"
     good_path.write_text("# 标题\n\n正文。", encoding="utf-8")
@@ -247,6 +339,7 @@ async def test_overview_source_read_error_is_isolated(client, monkeypatch, tmp_p
     )
     monkeypatch.setattr(kb_api.store, "list_recent", lambda limit=20: [])
     monkeypatch.setattr(kb_api.milvus, "ping", lambda: True)
+    monkeypatch.setattr(kb_api.milvus, "has_collection", lambda: True)
     monkeypatch.setattr(kb_api.milvus, "count", lambda: 1)
     monkeypatch.setattr(
         kb_api, "consistency_snapshot", lambda: Consistency("consistent", (), (), "")

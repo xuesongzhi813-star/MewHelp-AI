@@ -15,24 +15,32 @@ knowledge_chunks / qa_extraction_staging 不留任何脏数据。
 import uuid
 
 import pytest
-from sqlalchemy import event
+from sqlalchemy import delete, event
 from sqlalchemy.orm import Session, sessionmaker
 
 import app.kb.store as store
 from app.db import get_engine
 from app.kb.documents import chunk_fingerprint, normalize_text
-from app.models import Conversation, Message
+from app.models import Conversation, Message, QaExtractionStaging
 
 
 @pytest.fixture
 def kb_tx(monkeypatch):
-    """注入回滚会话工厂:仓储的写操作最终随外层事务整体 rollback。"""
+    """注入回滚会话工厂,并在事务内清空暂存表。
+
+    仓储的写操作最终随外层事务整体 rollback。清空暂存表让
+    ``list_staging(limit=...)`` 这类全局查询只看到本用例的行,
+    不受真实 ``kb-mine`` 已提交数据影响。
+    """
     with get_engine().connect() as conn:
         outer = conn.begin()
         session_local = sessionmaker(
             bind=conn, join_transaction_mode="create_savepoint"
         )
         monkeypatch.setattr(store, "get_session_local", lambda: session_local)
+        with Session(conn) as session:
+            with session.begin():
+                session.execute(delete(QaExtractionStaging))
         try:
             yield conn
         finally:
