@@ -13,8 +13,11 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
+import unicodedata
 from dataclasses import dataclass
+from pathlib import Path
 
 CHUNK_TARGET = 500
 CHUNK_OVERLAP = 100
@@ -35,6 +38,103 @@ _CLOSING_HASHES_RE = re.compile(r"\s+#+\s*$")
 _TABLE_SEPARATOR_RE = re.compile(r"^\|(?:\s*:?-{3,}:?\s*\|)+$")
 _LIST_ITEM_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
 
+# 关键条款:标题/正文命中关键词,或正文整体加粗/引用。
+_KEY_CLAUSE_RE = re.compile(r"重要|注意|必须|禁止|不予|务必|仅限|免责")
+
+# 分类规则,按优先级从高到低匹配;命中任一关键词即归类。
+CATEGORY_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        "售后政策",
+        (
+            "退货",
+            "退款",
+            "换货",
+            "售后",
+            "保修",
+            "维修",
+            "退换",
+            "无理由",
+            "赔付",
+            "补偿",
+        ),
+    ),
+    (
+        "物流配送",
+        (
+            "物流",
+            "配送",
+            "发货",
+            "快递",
+            "运费",
+            "邮费",
+            "签收",
+            "到货",
+            "收货",
+            "运输",
+            "派送",
+            "包邮",
+        ),
+    ),
+    (
+        "支付优惠",
+        (
+            "支付",
+            "付款",
+            "优惠",
+            "折扣",
+            "满减",
+            "优惠券",
+            "红包",
+            "结算",
+            "发票",
+            "价格",
+            "价钱",
+        ),
+    ),
+    (
+        "账户会员",
+        (
+            "账户",
+            "账号",
+            "会员",
+            "积分",
+            "登录",
+            "注册",
+            "密码",
+            "实名",
+            "认证",
+            "等级",
+            "成长值",
+        ),
+    ),
+    (
+        "商品咨询",
+        (
+            "商品",
+            "尺码",
+            "材质",
+            "颜色",
+            "库存",
+            "规格",
+            "参数",
+            "型号",
+            "款式",
+            "成分",
+            "尺寸",
+            "重量",
+        ),
+    ),
+)
+
+
+@dataclass(frozen=True)
+class Source:
+    """一份待入库的源文档。"""
+
+    path: Path
+    title: str
+    content_type: str
+
 
 @dataclass(frozen=True)
 class Section:
@@ -43,6 +143,20 @@ class Section:
     ordinal: int
     heading_path: tuple[str, ...]
     body: str
+    features: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class Chunk:
+    """带元数据的入库切块。"""
+
+    ordinal: int
+    category: str
+    questions: str
+    answer: str
+    section_path: str
+    content_type: str
+    is_key_clause: bool
     features: tuple[str, ...]
 
 
@@ -469,3 +583,94 @@ def _pack_atoms(atoms: list[_Atom]) -> list[tuple[str, bool, bool, bool]]:
             overlap = ""
 
     return chunks
+
+
+# ---------------------------------------------------------------------------
+# 入库元数据、指纹与分类
+# ---------------------------------------------------------------------------
+
+
+def build_chunks(markdown: str, source: Source) -> list[Chunk]:
+    """把 Markdown 切分并附加来源元数据。
+
+    空 section(只含子标题或纯空白)不成块;超长 section 由
+    :func:`split_sections` 递归切分,每个子块共享同一标题路径。
+
+    Args:
+        markdown: 原始 Markdown 文本。
+        source: 文档来源信息。
+
+    Returns:
+        按文档顺序排列的 :class:`Chunk`,ordinal 从 0 连续递增。
+    """
+    chunks: list[Chunk] = []
+    for section in split_sections(markdown, source.title):
+        answer = section.body.strip()
+        if not answer:
+            continue
+        heading_path = section.heading_path or (source.title,)
+        parent_path = heading_path[:-1]
+        category = " > ".join(parent_path) if parent_path else source.title
+        section_path = " > ".join(heading_path)
+        chunks.append(
+            Chunk(
+                ordinal=section.ordinal,
+                category=category,
+                questions=heading_path[-1],
+                answer=answer,
+                section_path=section_path,
+                content_type=source.content_type,
+                is_key_clause=_is_key_clause(section_path, answer),
+                features=section.features,
+            )
+        )
+    return chunks
+
+
+def normalize_text(text: str) -> str:
+    """归一化文本:全角转半角、小写,并去掉空白与中英文标点。"""
+    normalized = unicodedata.normalize("NFKC", text).lower()
+    return "".join(
+        character
+        for character in normalized
+        if not character.isspace()
+        and not unicodedata.category(character).startswith("P")
+    )
+
+
+def chunk_fingerprint(questions: str, answer: str) -> str:
+    """计算问题 + 答案的内容指纹,用于跨次建库去重。"""
+    payload = normalize_text(questions) + "\n" + normalize_text(answer)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def embedding_text(category: str, questions: str, answer: str) -> str:
+    """拼接送去向量化的文本,固定为「分类/问题/内容」模板。"""
+    return f"分类:{category}\n问题:{questions}\n内容:{answer}"
+
+
+def classify_category(question: str, answer: str) -> str:
+    """按关键词优先级把问答归类;无命中时返回「其他」。"""
+    text = f"{question}\n{answer}"
+    for category, keywords in CATEGORY_RULES:
+        if any(keyword in text for keyword in keywords):
+            return category
+    return "其他"
+
+
+def _is_key_clause(section_path: str, body: str) -> bool:
+    """判断是否为需重点提示的条款。"""
+    if _KEY_CLAUSE_RE.search(section_path) or _KEY_CLAUSE_RE.search(body):
+        return True
+    stripped = body.strip()
+    if _is_fully_bold(stripped):
+        return True
+    lines = [line.strip() for line in stripped.splitlines() if line.strip()]
+    return bool(lines) and all(line.startswith(">") for line in lines)
+
+
+def _is_fully_bold(text: str) -> bool:
+    """判断整段文本是否恰好被一对 ``**`` 包裹,且内部没有其他加粗标记。"""
+    if not (text.startswith("**") and text.endswith("**") and len(text) > 4):
+        return False
+    return "**" not in text[2:-2]
