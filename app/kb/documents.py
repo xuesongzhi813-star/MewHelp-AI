@@ -650,11 +650,15 @@ def embedding_text(category: str, questions: str, answer: str) -> str:
 
 
 def classify_category(question: str, answer: str) -> str:
-    """按关键词优先级把问答归类;无命中时返回「其他」。"""
-    text = f"{question}\n{answer}"
-    for category, keywords in CATEGORY_RULES:
-        if any(keyword in text for keyword in keywords):
-            return category
+    """按关键词优先级把问答归类;无命中时返回「其他」。
+
+    先在整个问句中按既定优先级匹配,问句未命中时才回退到答案,
+    避免答案中的关键词(如「结算」「退款」)覆盖问句意图。
+    """
+    for text in (question, answer):
+        for category, keywords in CATEGORY_RULES:
+            if any(keyword in text for keyword in keywords):
+                return category
     return "其他"
 
 

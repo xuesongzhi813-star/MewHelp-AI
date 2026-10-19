@@ -211,6 +211,20 @@ def test_classify_category_priority():
     assert classify_category("今天天气", "很好") == "其他"
 
 
+def test_classify_category_prefers_question_intent_over_answer_keywords():
+    # 答案里的「结算」不得把积分问题改判为支付优惠。
+    assert classify_category("积分怎么用", "会员积分可在结算时抵现") == "账户会员"
+    # 答案里的「退款」不得把发货问题改判为售后政策。
+    assert classify_category("多久发货", "若未发货可申请退款") == "物流配送"
+
+
+def test_classify_category_priority_across_categories_in_question():
+    # 问句同时命中售后与物流时,按既定优先级取售后政策。
+    assert classify_category("退货后物流怎么查", "联系客服") == "售后政策"
+    # 问句同时命中支付与账户时,按既定优先级取支付优惠。
+    assert classify_category("优惠券能抵扣积分吗", "以页面为准") == "支付优惠"
+
+
 def test_chunk_is_frozen_dataclass():
     chunk = Chunk(0, "分类", "问题", "答案", "分类 > 问题", "文档章节", False, ())
     assert chunk == Chunk(0, "分类", "问题", "答案", "分类 > 问题", "文档章节", False, ())
