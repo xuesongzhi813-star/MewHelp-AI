@@ -1,23 +1,26 @@
 from types import SimpleNamespace
 
 import pytest
+from pymilvus import DataType
 
 import app.kb.milvus as milvus
 
 
 class FakeSchema:
-    """记录 add_field 参数的假 schema。"""
+    """记录 schema auto_id 与各字段的完整约束。"""
 
-    def __init__(self) -> None:
+    def __init__(self, auto_id=None) -> None:
+        self.auto_id = auto_id
         self.fields: dict[str, dict] = {}
 
     def add_field(self, field_name: str, datatype, **kwargs) -> None:
-        self.fields[field_name] = {"datatype": datatype, **kwargs}
-
-    def has_field(self, name: str, dim: int | None = None) -> bool:
-        if name not in self.fields:
-            return False
-        return dim is None or self.fields[name].get("dim") == dim
+        self.fields[field_name] = {
+            "name": field_name,
+            "datatype": datatype,
+            "is_primary": kwargs.get("is_primary", False),
+            "max_length": kwargs.get("max_length"),
+            "dim": kwargs.get("dim"),
+        }
 
 
 class FakeClient:
@@ -44,7 +47,7 @@ class FakeClient:
         return self._has
 
     def create_schema(self, **kwargs) -> FakeSchema:
-        return FakeSchema()
+        return FakeSchema(auto_id=kwargs.get("auto_id"))
 
     def create_collection(self, collection_name: str, **kwargs) -> None:
         self.created.append({"collection_name": collection_name, **kwargs})
@@ -124,8 +127,20 @@ def test_ensure_collection_schema_dim_and_metric(monkeypatch):
 
     created = fake.created[0]
     assert created["collection_name"] == "knowledge"
-    assert created["schema"].has_field("id")
-    assert created["schema"].has_field("vector", dim=1024)
+
+    schema = created["schema"]
+    assert schema.auto_id is False
+    assert set(schema.fields) == {"id", "vector"}
+
+    id_field = schema.fields["id"]
+    assert id_field["datatype"] is DataType.VARCHAR
+    assert id_field["is_primary"] is True
+    assert id_field["max_length"] == 64
+
+    vector_field = schema.fields["vector"]
+    assert vector_field["datatype"] is DataType.FLOAT_VECTOR
+    assert vector_field["dim"] == 1024
+
     index = created["index_params"][0].to_dict()
     assert index["field_name"] == "vector"
     assert index["index_type"] == "AUTOINDEX"
