@@ -112,7 +112,7 @@ log/                 # 作业日志,gitignored
 
 输入:单个 Markdown 文件文本 + 文档标题(文件名 stem 或首个一级标题)。
 
-1. 逐行扫描 ATX 标题(`#`～`######`),维护标题栈;每个标题开启一个 section。
+1. 逐行扫描 ATX 标题(`#`～`######`),维护标题栈;每个标题开启一个 section,一个 section 的正文到下一个**任意级别**标题为止(子标题内容归子 section,不重复计入父 section)。
 2. section 内容按空行聚合成 block;Markdown 表格(`| ... |` + 分隔行)整体识别为 table block;列表项各自成 block。
 3. section 总长 ≤ 500 字 → 整段成一块。
 4. 超长 section:按 block 累加,超过 500 字就切;切点从目标位置向前回退到最近的句子结束符(`。！？；` 或换行);找不到才硬切。下一块开头带上一块末尾约 100 字,并对齐到句子边界,避免从半句开始。
@@ -408,6 +408,7 @@ kb-reset:
 | 方法与路径 | 请求 | 响应要点 |
 |---|---|---|
 | `GET /api/kb/overview` | — | `mysql`、`milvus`、`consistency`、`staging`、`sources`、`recent`、`jobs` 七块 |
+| `GET /api/kb/source` | `?path=data/kb/xxx.md` | `{path, title, content_type, markdown}`;路径必须在 `sources.SOURCES` 白名单内 |
 | `POST /api/kb/preview` | `{markdown, source_title, content_type}` | `{counts, features, chunks[]}`;dry-run |
 | `POST /api/kb/ingest` | `{markdown, source_title, content_type, vectorize}` | `{inserted, skipped, chunk_ids, vectorized, pending}`;向量化失败 502 |
 | `POST /api/kb/vectorize` | `{limit?}` | `{processed, failed, pending_left}` |
@@ -444,6 +445,7 @@ kb-reset:
 - Milvus 不可达:`overview` 的 `milvus.ok=false`、`consistency.status="unknown"`;`search` / `vectorize` / `rebuild` 返回 502。
 - `ingest` 的 502 响应体:`{"detail": "已入库 N 块(pending),补跑一次即可", "inserted": N}`;不删除已写入的行。
 - `preview` 不依赖 MySQL / Milvus / 嵌入 API,三者全挂也能用。
+- `source` 只接受 `sources.SOURCES` 里的路径;不在白名单返回 404,防止任意文件读取。
 
 ## 17. 风险与不做
 
