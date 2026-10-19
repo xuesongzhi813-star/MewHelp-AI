@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>知识库 · Ethan_Leo 后台</title>
+</head>
+<body class="admin-body">
+<main class="admin-wrap">
+  <header class="admin-hero">
+    <h1>知识<span>库</span></h1>
+    <p>录入 → 切分 → 入库 → 向量化 → 双写核对 → 检索自测;所有作业只走白名单</p>
+  </header>
+
+  <section class="admin-grid">
+    <!-- 1. 库存闸条 -->
+    <article class="admin-card admin-span-2">
+      <div class="admin-card-head">
+        <h2>库存闸条</h2>
+        <span class="admin-badge" id="stockState">读取中…</span>
+        <span class="admin-hint">MySQL 切片 / Milvus 向量 / 暂存三态</span>
+      </div>
+      <div class="admin-stat-row" id="stockStats">
+        <div class="admin-stat">
+          <span class="admin-stat-label">读取中</span>
+          <span class="admin-stat-value">…</span>
+        </div>
+      </div>
+      <p class="admin-note" id="stockNote">正在读取知识库总览…</p>
+    </article>
+
+    <!-- 作业运行面板:所有作业按钮共用 -->
+    <article class="admin-card admin-span-2">
+      <div class="admin-card-head">
+        <h2>作业运行</h2>
+        <span class="admin-badge" id="jobStatus">空闲</span>
+        <span class="admin-hint">同一时刻只允许一个作业;运行中每 3 秒刷新日志尾部</span>
+      </div>
+      <p class="admin-hint" id="jobMeta">尚未运行作业。</p>
+      <pre class="admin-log" id="jobLog">（暂无日志）</pre>
+    </article>
+
+    <!-- 2. 手工录入 -->
+    <article class="admin-card admin-span-2">
+      <div class="admin-card-head">
+        <h2>手工录入</h2>
+        <span class="admin-hint">Markdown 先预览切分,确认后入库;可顺手向量化</span>
+      </div>
+      <div class="admin-form-row">
+        <label class="admin-field admin-grow">
+          <span>标题 source_title</span>
+          <input class="admin-input" id="sourceTitle" value="手工录入" autocomplete="off">
+        </label>
+        <label class="admin-field">
+          <span>内容类型 content_type</span>
+          <select class="admin-select" id="contentType">
+            <option value="文档章节">文档章节</option>
+            <option value="商品FAQ">商品FAQ</option>
+          </select>
+        </label>
+      </div>
+      <label class="admin-field">
+        <span>Markdown 正文</span>
+        <textarea class="admin-textarea" id="markdown" spellcheck="false"
+          placeholder="## 退货时限&#10;&#10;签收后 7 天内可申请无理由退货,商品需保持吊牌完整。"></textarea>
+      </label>
+      <div class="admin-actions" style="margin-top:12px">
+        <button class="admin-btn" id="previewBtn" type="button">预览切分</button>
+        <button class="admin-btn admin-btn-teal" id="ingestBtn" type="button">入库</button>
+        <label class="admin-check">
+          <input type="checkbox" id="vectorizeAfter" checked> 顺手向量化
+        </label>
+        <span class="admin-hint" id="ingestHint"></span>
+      </div>
+      <div class="admin-result" id="previewResult" hidden></div>
+    </article>
+
+    <!-- 3. 建库材料 -->
+    <article class="admin-card admin-span-2">
+      <div class="admin-card-head">
+        <h2>建库材料</h2>
+        <div class="admin-actions">
+          <button class="admin-btn" type="button" data-job="kb-preview">预览作业 kb-preview</button>
+          <button class="admin-btn admin-btn-teal" type="button" data-job="kb-build">建库作业 kb-build</button>
+        </div>
+      </div>
+      <p class="admin-hint">点「载入并预览」把白名单材料填入上方录入区并立即切分预览。</p>
+      <div class="admin-list" id="sourcesList">
+        <p class="admin-empty">读取中…</p>
+      </div>
+    </article>
+
+    <!-- 4. 对话挖知识 -->
+    <article class="admin-card">
+      <div class="admin-card-head">
+        <h2>对话挖知识</h2>
+        <div class="admin-actions">
+          <button class="admin-btn" type="button" data-job="seed-conv">灌入演示会话</button>
+          <button class="admin-btn admin-btn-teal" type="button" data-job="kb-mine">挖掘知识</button>
+        </div>
+      </div>
+      <div class="admin-stat-row" id="stagingCounts">
+        <div class="admin-stat">
+          <span class="admin-stat-label">暂存</span>
+          <span class="admin-stat-value">…</span>
+        </div>
+      </div>
+      <div class="admin-actions" style="margin-top:12px">
+        <button class="admin-btn admin-btn-ghost" type="button" id="stagingToggle">展开暂存明细</button>
+      </div>
+      <div class="admin-list admin-scroll" id="stagingRows" hidden></div>
+    </article>
+
+    <!-- 5. 向量化与双写 -->
+    <article class="admin-card">
+      <div class="admin-card-head">
+        <h2>向量化与双写</h2>
+        <span class="admin-hint">pending 清空后 MySQL 与 Milvus 才一致</span>
+      </div>
+      <div class="admin-stat-row" id="vectorStats">
+        <div class="admin-stat">
+          <span class="admin-stat-label">读取中</span>
+          <span class="admin-stat-value">…</span>
+        </div>
+      </div>
+      <div class="admin-actions" style="margin-top:12px">
+        <button class="admin-btn" type="button" data-job="kb-vectorize">向量化 pending</button>
+        <button class="admin-btn" type="button" data-job="kb-rebuild">重建索引</button>
+        <button class="admin-btn admin-btn-danger" type="button" data-job="kb-reset">清空知识库</button>
+      </div>
+      <p class="admin-note" id="vectorNote">
+        清空知识库会删除 MySQL 切片与 Milvus 集合,需要浏览器二次确认。
+      </p>
+    </article>
+
+    <!-- 6. 检索自测 -->
+    <article class="admin-card admin-span-2">
+      <div class="admin-card-head">
+        <h2>检索自测</h2>
+        <span class="admin-hint">本章只开放 dense 稠密检索</span>
+      </div>
+      <div class="admin-form-row">
+        <label class="admin-field admin-grow">
+          <span>查询问题</span>
+          <input class="admin-input" id="searchQuery" autocomplete="off"
+            placeholder="例如:退货需要多久?">
+        </label>
+        <label class="admin-field">
+          <span>检索路线 route</span>
+          <select class="admin-select" id="searchRoute">
+            <option value="dense">dense</option>
+          </select>
+        </label>
+        <label class="admin-field admin-topk">
+          <span>Top-K</span>
+          <input class="admin-input" id="searchTopK" type="number" min="1" max="50" value="5">
+        </label>
+        <button class="admin-btn admin-btn-teal" type="button" id="searchBtn">检索</button>
+      </div>
+      <p class="admin-hint" id="searchHint">结果按向量分数倒序,低于阈值的命中不会返回。</p>
+      <div class="admin-list" id="searchResult"></div>
+    </article>
+
+    <!-- 7. 最近入库 -->
+    <article class="admin-card admin-span-2">
+      <div class="admin-card-head">
+        <h2>最近入库</h2>
+        <span class="admin-hint">按 id 倒序,最多 20 条</span>
+      </div>
+      <div class="admin-list admin-scroll" id="recentList">
+        <p class="admin-empty">读取中…</p>
+      </div>
+    </article>
+  </section>
+</main>
+
+<script src="/static/admin.js" data-page="kb"></script>
+<script>
+(() => {
+  "use strict";
+
+  const { api, pollJob, fmt } = window.Admin;
+
+  const $ = (id) => document.getElementById(id);
+
+  const stockState = $("stockState");
+  const stockStats = $("stockStats");
+  const stockNote = $("stockNote");
+  const sourcesList = $("sourcesList");
+  const stagingCounts = $("stagingCounts");
+  const stagingRows = $("stagingRows");
+  const stagingToggle = $("stagingToggle");
+  const vectorStats = $("vectorStats");
+  const vectorNote = $("vectorNote");
+  const recentList = $("recentList");
+  const searchResult = $("searchResult");
+  const searchHint = $("searchHint");
+  const previewResult = $("previewResult");
+  const ingestHint = $("ingestHint");
+  const previewBtn = $("previewBtn");
+  const ingestBtn = $("ingestBtn");
+  const sourceTitle = $("sourceTitle");
+  const contentType = $("contentType");
+  const markdown = $("markdown");
+  const jobStatus = $("jobStatus");
+  const jobMeta = $("jobMeta");
+  const jobLog = $("jobLog");
+
+  const STATUS_LABELS = {
+    idle: "空闲",
+    running: "运行中",
+    succeeded: "成功",
+    failed: "失败",
+  };
+  const JOB_LABELS = {
+    "kb-preview": "预览切分",
+    "kb-build": "建库",
+    "seed-conv": "灌入会话",
+    "kb-mine": "挖掘知识",
+    "kb-vectorize": "向量化",
+    "kb-rebuild": "重建索引",
+    "kb-reset": "清空知识库",
+  };
+  // heavy 作业在 API 层必须带 confirm=true;只有 kb-reset 额外弹浏览器确认。
+  const JOB_SEND_CONFIRM = new Set(["kb-mine", "kb-reset"]);
+
+  let jobRunning = false;
+  let refreshing = false;
+  let overviewData = null;
+
+  // ── 通用小工具 ──────────────────────────────────────────────
+  function tile(label, value, tone) {
+    const box = document.createElement("div");
+    box.className = "admin-stat";
+    const labelEl = document.createElement("span");
+    labelEl.className = "admin-stat-label";
+    labelEl.textContent = label;
+    const valueEl = document.createElement("span");
+    valueEl.className = "admin-stat-value" + (tone ? " admin-tone-" + tone : "");
+    valueEl.textContent = value;
+    box.append(labelEl, valueEl);
+    return box;
+  }
+
+  function renderStats(container, items) {
+    container.replaceChildren(
+      ...items.map((item) => tile(item.label, item.value, item.tone))
+    );
+  }
+
+  function badge(text, tone) {
+    const el = document.createElement("span");
+    el.className = "admin-badge" + (tone ? " admin-tone-" + tone : "");
+    el.textContent = text;
+    return el;
+  }
+
+  function setBadge(el, text, tone) {
+    el.textContent = text;
+    el.className = "admin-badge" + (tone ? " admin-tone-" + tone : "");
+  }
+
+  function empty(container, text, isError) {
+    container.replaceChildren();
+    const p = document.createElement("p");
+    p.className = "admin-empty" + (isError ? " admin-error" : "");
+    p.textContent = text;
+    container.appendChild(p);
+  }
+
+  function formatTime(value) {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleString("zh-CN", { hour12: false });
+  }
+
+  function firstLine(text, limit = 90) {
+    const raw = String(text || "").split(/\r?\n/).find((line) => line.trim());
+    const line = (raw || "").trim();
+    if (!line) return "(无问题)";
+    return line.length > limit ? line.slice(0, limit) + "…" : line;
+  }
+
+  function statusTone(status) {
+    if (status === "done" || status === "kept" || status === "succeeded") return "good";
+    if (status === "pending" || status === "extracted") return "warn";
+    if (status === "failed" || status === "discarded") return "bad";
+    return "";
+  }
+
+  function statusLabel(status) {
+    const labels = {
+      pending: "待向量化",
+      done: "已向量化",
+      extracted: "已提取",
+      kept: "已保留",
+      discarded: "已丢弃",
+    };
+    return labels[status] || status || "未知";
+  }
+
+  function consistencyInfo(consistency) {
+    const status = consistency && consistency.status;
+    if (status === "consistent") return { text: "一致", tone: "good" };
+    if (status === "mismatch") return { text: "不一致", tone: "bad" };
+    return { text: "读不到", tone: "warn" };
+  }
+
+  function chunkDetails(chunk) {
+    const details = document.createElement("details");
+    details.className = "admin-chunk";
+    const summary = document.createElement("summary");
+    const flags = [];
+    if (chunk.is_key_clause) flags.push("[关键条款]");
+    summary.textContent =
+      (chunk.category || "未分类") +
+      (chunk.section_path ? " · " + chunk.section_path : "") +
+      (flags.length ? " " + flags.join(" ") : "");
+    const pre = document.createElement("pre");
+    pre.textContent =
+      "问题:" + (chunk.questions || "—") +
+      "\n\n答案:" + (chunk.answer || "—") +
+      "\n\n类型:" + (chunk.content_type || "—") +
+      "\n特性:" + ((chunk.features && chunk.features.length) ? chunk.features.join("、") : "无");
+    details.append(summary, pre);
+    return details;
+  }
+
+  // ── 总览与六块渲染 ──────────────────────────────────────────
+  async function loadOverview() {
+    if (refreshing) return;
+    refreshing = true;
+    try {
+      const data = await api("/api/kb/overview");
+      overviewData = data;
+      renderStock(data);
+      renderSources(data.sources || []);
+      renderStagingCounts(data.staging);
+      renderVector(data);
+      renderRecent(data);
+    } catch (error) {
+      overviewData = null;
+      renderOverviewFailure(error);
+    } finally {
+      refreshing = false;
+    }
+  }
+
+  function renderOverviewFailure(error) {
+    setBadge(stockState, "读数失败", "bad");
+    renderStats(stockStats, [{ label: "知识库", value: "读数失败", tone: "bad" }]);
+    stockNote.textContent = "读数失败:" + error.message;
+    stockNote.className = "admin-note admin-note-bad";
+    empty(sourcesList, "读数失败:" + error.message, true);
+    empty(stagingCounts, "读数失败", true);
+    empty(vectorStats, "读数失败", true);
+    empty(recentList, "读数失败:" + error.message, true);
+  }
+
+  function renderStock(data) {
+    const mysql = data.mysql || {};
+    const milvus = data.milvus || {};
+    const staging = data.staging;
+    const consistency = data.consistency || {};
+    const info = consistencyInfo(consistency);
+
+    const stagingTotal = staging
+      ? Number(staging.extracted || 0) + Number(staging.kept || 0) + Number(staging.discarded || 0)
+      : null;
+
+    renderStats(stockStats, [
+      { label: "知识块 chunks", value: mysql.ok ? fmt(mysql.chunks) : "读不到", tone: mysql.ok ? "" : "bad" },
+      { label: "待向量化 pending", value: mysql.ok ? fmt(mysql.pending) : "读不到", tone: mysql.ok ? "warn" : "bad" },
+      { label: "关键条款", value: mysql.ok ? fmt(mysql.key_clauses) : "读不到", tone: mysql.ok ? "" : "bad" },
+      { label: "Milvus 向量", value: milvus.ok ? fmt(milvus.count) : "读不到", tone: milvus.ok ? "good" : "bad" },
+      { label: "暂存三态", value: stagingTotal === null ? "读不到" : fmt(stagingTotal), tone: stagingTotal === null ? "bad" : "" },
+      { label: "一致性", value: info.text, tone: info.tone },
+    ]);
+
+    if (!mysql.ok) {
+      setBadge(stockState, "MySQL 读不到", "bad");
+      stockNote.textContent = "MySQL 读不到:知识块库存未知,录入、挖掘与检索都不可用。";
+      stockNote.className = "admin-note admin-note-bad";
+      return;
+    }
+    if (!milvus.ok) {
+      setBadge(stockState, "Milvus 读不到", "warn");
+      stockNote.textContent =
+        "MySQL 有 " + fmt(mysql.chunks) + " 块知识,但 Milvus 读不到,向量检索暂不可用。";
+      stockNote.className = "admin-note admin-note-warn";
+      return;
+    }
+    if (consistency.status === "mismatch") {
+      setBadge(stockState, "双写不一致", "bad");
+      stockNote.textContent =
+        "MySQL 与 Milvus 不一致:" + (consistency.note || "建议跑一次重建索引。");
+      stockNote.className = "admin-note admin-note-bad";
+      return;
+    }
+    if (consistency.status !== "consistent") {
+      setBadge(stockState, "一致性未知", "warn");
+      stockNote.textContent = "一致性读不到:" + (consistency.note || "未知原因");
+      stockNote.className = "admin-note admin-note-warn";
+      return;
+    }
+
+    setBadge(stockState, "已同步", "good");
+    const pending = Number(mysql.pending || 0);
+    stockNote.textContent =
+      pending > 0
+        ? "库存一致:" + fmt(mysql.chunks) + " 块知识,其中 " + fmt(pending) + " 块 pending,记得补跑向量化。"
+        : "库存一致:" + fmt(mysql.chunks) + " 块知识全部完成向量化。";
+    stockNote.className = "admin-note" + (pending > 0 ? " admin-note-warn" : " admin-note-good");
+  }
+
+  function renderSources(sources) {
+    sourcesList.replaceChildren();
+    if (!sources.length) {
+      empty(sourcesList, "没有可用的建库材料。");
+      return;
+    }
+
+    sources.forEach((source) => {
+      const item = document.createElement("div");
+      item.className = "admin-list-item";
+
+      const main = document.createElement("div");
+      main.className = "admin-row-main";
+
+      const title = document.createElement("div");
+      title.className = "admin-row-title";
+      title.textContent = source.title || source.path || "未命名材料";
+      title.appendChild(
+        badge(source.content_type || "未知类型", "good")
+      );
+
+      const sub = document.createElement("div");
+      sub.className = "admin-row-sub";
+      sub.textContent = source.path || "—";
+
+      const meta = document.createElement("div");
+      meta.className = "admin-row-meta";
+      if (source.error) {
+        meta.appendChild(badge(source.error, "bad"));
+      } else {
+        meta.appendChild(badge(fmt(source.chunks) + " 块", ""));
+        meta.appendChild(badge(fmt(source.key_clauses) + " 条关键条款", ""));
+        const features = source.features && source.features.length
+          ? source.features.join("、")
+          : "无特性标签";
+        meta.appendChild(badge("特性:" + features, ""));
+      }
+
+      main.append(title, sub, meta);
+
+      const actions = document.createElement("div");
+      actions.className = "admin-actions";
+      const button = document.createElement("button");
+      button.className = "admin-btn";
+      button.type = "button";
+      button.textContent = "载入并预览";
+      button.disabled = Boolean(source.error);
+      button.addEventListener("click", () => previewSource(source, button));
+      actions.appendChild(button);
+
+      item.append(main, actions);
+      sourcesList.appendChild(item);
+    });
+  }
+
+  function renderStagingCounts(staging) {
+    if (staging === null || staging === undefined) {
+      renderStats(stagingCounts, [
+        { label: "暂存", value: "读不到", tone: "bad" },
+      ]);
+      return;
+    }
+    renderStats(stagingCounts, [
+      { label: "已提取 extracted", value: fmt(staging.extracted), tone: "warn" },
+      { label: "已保留 kept", value: fmt(staging.kept), tone: "good" },
+      { label: "已丢弃 discarded", value: fmt(staging.discarded), tone: "" },
+      { label: "批次 batches", value: fmt(staging.batches), tone: "" },
+    ]);
+  }
+
+  function renderVector(data) {
+    const mysql = data.mysql || {};
+    const milvus = data.milvus || {};
+    const consistency = data.consistency || {};
+    const info = consistencyInfo(consistency);
+
+    renderStats(vectorStats, [
+      { label: "pending", value: mysql.ok ? fmt(mysql.pending) : "读不到", tone: mysql.ok ? "warn" : "bad" },
+      { label: "done", value: mysql.ok ? fmt(mysql.done) : "读不到", tone: mysql.ok ? "good" : "bad" },
+      { label: "Milvus", value: milvus.ok ? fmt(milvus.count) : "读不到", tone: milvus.ok ? "good" : "bad" },
+      { label: "一致性", value: info.text, tone: info.tone },
+    ]);
+
+    const missing = consistency.missing_in_milvus || [];
+    const orphan = consistency.orphan_in_milvus || [];
+    if (consistency.status === "mismatch") {
+      vectorNote.textContent =
+        "双写不一致:Milvus 缺 " + fmt(missing.length) + " 条,多 " + fmt(orphan.length) +
+        " 条。" + (consistency.note || "");
+      vectorNote.className = "admin-note admin-note-bad";
+    } else if (consistency.status === "consistent") {
+      vectorNote.textContent = "双写一致:MySQL 的 done 切片与 Milvus 主键完全对齐。";
+      vectorNote.className = "admin-note admin-note-good";
+    } else {
+      vectorNote.textContent = "一致性读不到:" + (consistency.note || "Milvus 或 MySQL 不可达");
+      vectorNote.className = "admin-note admin-note-warn";
+    }
+  }
+
+  function renderRecent(data) {
+    if (!data.mysql || !data.mysql.ok) {
+      empty(recentList, "读不到:MySQL 不可达。", true);
+      return;
+    }
+    const rows = data.recent || [];
+    if (!rows.length) {
+      empty(recentList, "还没有入库记录。");
+      return;
+    }
+
+    recentList.replaceChildren();
+    rows.forEach((row) => {
+      const item = document.createElement("div");
+      item.className = "admin-list-item";
+
+      const main = document.createElement("div");
+      main.className = "admin-row-main";
+
+      const title = document.createElement("div");
+      title.className = "admin-row-title";
+      title.textContent = firstLine(row.questions, 110);
+
+      const sub = document.createElement("div");
+      sub.className = "admin-row-sub";
+      sub.textContent =
+        (row.category || "未分类") +
+        (row.section_path ? " · " + row.section_path : "");
+
+      const meta = document.createElement("div");
+      meta.className = "admin-row-meta";
+      meta.appendChild(badge("#" + row.id, ""));
+      meta.appendChild(badge(statusLabel(row.vectorize_status), statusTone(row.vectorize_status)));
+      if (row.is_key_clause) meta.appendChild(badge("关键条款", "warn"));
+      meta.appendChild(badge(formatTime(row.created_at), ""));
+
+      main.append(title, sub, meta);
+      item.appendChild(main);
+      recentList.appendChild(item);
+    });
+  }
+
+  // ── 手工录入 ────────────────────────────────────────────────
+  function setIngestHint(text, isError) {
+    ingestHint.textContent = text;
+    ingestHint.className = isError ? "admin-error" : "admin-hint";
+  }
+
+  function setContentType(value) {
+    const desired = value || "文档章节";
+    const exists = Array.from(contentType.options).some((option) => option.value === desired);
+    if (!exists) {
+      const option = document.createElement("option");
+      option.value = desired;
+      option.textContent = desired;
+      contentType.appendChild(option);
+    }
+    contentType.value = desired;
+  }
+
+  function readForm() {
+    return {
+      markdown: markdown.value,
+      source_title: (sourceTitle.value || "").trim() || "手工录入",
+      content_type: contentType.value || "文档章节",
+    };
+  }
+
+  function setManualBusy(busy) {
+    previewBtn.disabled = busy;
+    ingestBtn.disabled = busy;
+  }
+
+  async function runPreview() {
+    const payload = readForm();
+    if (!payload.markdown.trim()) {
+      setIngestHint("先填入或从建库材料载入 Markdown 正文。", true);
+      return null;
+    }
+    setManualBusy(true);
+    setIngestHint("预览切分中…", false);
+    try {
+      const data = await api("/api/kb/preview", { method: "POST", body: payload });
+      renderPreview(data);
+      setIngestHint(
+        "预览完成:" + fmt(data.counts.chunks) + " 块," +
+        fmt(data.counts.key_clauses) + " 条关键条款(未写库)。",
+        false
+      );
+      return data;
+    } catch (error) {
+      setIngestHint("预览失败:" + error.message, true);
+      previewResult.hidden = false;
+      empty(previewResult, "预览失败:" + error.message, true);
+      return null;
+    } finally {
+      setManualBusy(false);
+    }
+  }
+
+  function renderPreview(data) {
+    previewResult.hidden = false;
+    previewResult.replaceChildren();
+
+    const title = document.createElement("div");
+    title.className = "admin-result-title";
+    title.textContent =
+      "切分预览 · " + fmt(data.counts.chunks) + " 块 · " +
+      fmt(data.counts.key_clauses) + " 条关键条款";
+    previewResult.appendChild(title);
+
+    const features = data.features || [];
+    const featureLine = document.createElement("div");
+    featureLine.className = "admin-row-sub";
+    featureLine.textContent = "特性:" + (features.length ? features.join("、") : "无");
+    previewResult.appendChild(featureLine);
+
+    const chunks = data.chunks || [];
+    chunks.slice(0, 50).forEach((chunk) => previewResult.appendChild(chunkDetails(chunk)));
+    if (chunks.length > 50) {
+      const more = document.createElement("p");
+      more.className = "admin-hint";
+      more.textContent = "仅展示前 50 块,共 " + fmt(chunks.length) + " 块。";
+      previewResult.appendChild(more);
+    }
+  }
+
+  async function runIngest() {
+    const payload = { ...readForm(), vectorize: $("vectorizeAfter").checked };
+    if (!payload.markdown.trim()) {
+      setIngestHint("先填入或从建库材料载入 Markdown 正文。", true);
+      return;
+    }
+    setManualBusy(true);
+    setIngestHint("入库中" + (payload.vectorize ? "(含向量化)…" : "…"), false);
+    try {
+      const data = await api("/api/kb/ingest", { method: "POST", body: payload });
+      const vectorized = data.vectorized
+        ? ",已处理 " + fmt(data.vectorized.processed) + " 块向量"
+        : "";
+      setIngestHint(
+        "入库完成:新增 " + fmt(data.inserted) + " 块,跳过重复 " +
+        fmt(data.skipped) + " 块" + vectorized + ",剩余 pending " +
+        fmt(data.pending) + "。",
+        false
+      );
+      await loadOverview();
+    } catch (error) {
+      const body = error.body || {};
+      const inserted = body.inserted;
+      setIngestHint(
+        "入库失败:" + error.message +
+        (inserted !== undefined && inserted !== null ? "(已写入 " + fmt(inserted) + " 块)" : ""),
+        true
+      );
+      // 向量化失败时行已经落库,刷新总览让 pending 可见。
+      await loadOverview();
+    } finally {
+      setManualBusy(false);
+    }
+  }
+
+  async function previewSource(source, button) {
+    button.disabled = true;
+    try {
+      const data = await api("/api/kb/source?path=" + encodeURIComponent(source.path));
+      setContentType(data.content_type || source.content_type);
+      sourceTitle.value = data.title || source.title || "手工录入";
+      markdown.value = data.markdown || "";
+      setIngestHint("已载入「" + (data.title || source.title) + "」,正在预览切分…", false);
+      await runPreview();
+      markdown.focus();
+    } catch (error) {
+      setIngestHint("载入材料失败:" + error.message, true);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  // ── 暂存明细 ────────────────────────────────────────────────
+  async function loadStagingRows() {
+    empty(stagingRows, "读取中…");
+    try {
+      const data = await api("/api/kb/staging?limit=50");
+      renderStagingRows(data.rows || []);
+    } catch (error) {
+      empty(stagingRows, "读数失败:" + error.message, true);
+    }
+  }
+
+  function renderStagingRows(rows) {
+    if (!rows.length) {
+      empty(stagingRows, "暂无暂存记录。");
+      return;
+    }
+    stagingRows.replaceChildren();
+    rows.forEach((row) => {
+      const details = document.createElement("details");
+      details.className = "admin-chunk";
+
+      const summary = document.createElement("summary");
+      summary.textContent =
+        "#" + row.id + " [" + statusLabel(row.status) + "] " + firstLine(row.question, 100);
+
+      const pre = document.createElement("pre");
+      pre.textContent =
+        "问题:" + (row.question || "—") +
+        "\n\n答案:" + (row.answer || "—") +
+        "\n\n批次:" + (row.batch_no || "—") +
+        "\n来源:" + (row.source_ref || "—") +
+        "\n时间:" + formatTime(row.created_at);
+
+      details.append(summary, pre);
+      stagingRows.appendChild(details);
+    });
+  }
+
+  // ── 作业 ────────────────────────────────────────────────────
+  function jobButtons() {
+    return document.querySelectorAll("button[data-job]");
+  }
+
+  function setJobButtonsDisabled(disabled) {
+    jobButtons().forEach((button) => {
+      button.disabled = disabled;
+    });
+  }
+
+  function renderJob(state) {
+    const status = (state && state.status) || "idle";
+    const name = (state && state.name) || "";
+    setBadge(
+      jobStatus,
+      (JOB_LABELS[name] || name || "作业") + " · " + (STATUS_LABELS[status] || status),
+      statusTone(status)
+    );
+
+    const parts = [];
+    if (state && state.started_at) parts.push("开始 " + formatTime(state.started_at));
+    if (state && state.finished_at) parts.push("结束 " + formatTime(state.finished_at));
+    if (state && state.exit_code !== null && state.exit_code !== undefined) {
+      parts.push("exit " + state.exit_code);
+    }
+    if (state && state.error) parts.push("错误:" + state.error);
+    jobMeta.textContent = parts.length ? parts.join(" · ") : "尚未运行作业。";
+
+    jobLog.textContent = (state && state.log_tail) || "（暂无日志）";
+    jobLog.scrollTop = jobLog.scrollHeight;
+  }
+
+  async function runJob(name) {
+    if (jobRunning) return;
+
+    if (name === "kb-reset") {
+      const ok = window.confirm(
+        "⚠ 清空知识库会删除 MySQL 中的全部知识切片并重建/清空 Milvus 集合,无法撤销。\n\n确定继续?"
+      );
+      if (!ok) return;
+    }
+
+    jobRunning = true;
+    setJobButtonsDisabled(true);
+    renderJob({ name, status: "running", log_tail: "", started_at: new Date().toISOString() });
+
+    try {
+      await api("/api/jobs/" + encodeURIComponent(name), {
+        method: "POST",
+        body: { confirm: JOB_SEND_CONFIRM.has(name) },
+      });
+      const finalState = await pollJob(name, renderJob);
+      renderJob(finalState);
+      await loadOverview();
+    } catch (error) {
+      // 启动失败(如 make 缺失):尝试读取后端写下的日志,再刷新总览。
+      try {
+        renderJob(await api("/api/jobs/" + encodeURIComponent(name)));
+      } catch (_) {
+        /* 忽略读取失败 */
+      }
+      jobMeta.textContent = "启动失败:" + error.message;
+      setBadge(jobStatus, (JOB_LABELS[name] || name) + " · 启动失败", "bad");
+      await loadOverview();
+    } finally {
+      jobRunning = false;
+      setJobButtonsDisabled(false);
+    }
+  }
+
+  // ── 检索自测 ────────────────────────────────────────────────
+  async function runSearch() {
+    const query = ($("searchQuery").value || "").trim();
+    if (!query) {
+      searchHint.textContent = "请输入要检索的问题。";
+      searchHint.className = "admin-error";
+      return;
+    }
+    const rawTopK = Number($("searchTopK").value);
+    const topK = Number.isFinite(rawTopK) && rawTopK > 0 ? Math.floor(rawTopK) : null;
+
+    const button = $("searchBtn");
+    button.disabled = true;
+    searchHint.textContent = "检索中…";
+    searchHint.className = "admin-hint";
+    try {
+      const data = await api("/api/kb/search", {
+        method: "POST",
+        body: { query, route: $("searchRoute").value, top_k: topK },
+      });
+      renderSearch(data);
+    } catch (error) {
+      searchResult.replaceChildren();
+      empty(searchResult, "检索失败:" + error.message, true);
+      searchHint.textContent = "检索失败:依赖不可用时不返回伪造的空结果。";
+      searchHint.className = "admin-error";
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function renderSearch(data) {
+    const hits = data.hits || [];
+    searchHint.textContent =
+      "阈值 " + data.threshold + " · 命中 " + fmt(hits.length) + " 条" +
+      (data.message ? " · " + data.message : "");
+    searchHint.className = "admin-hint";
+
+    searchResult.replaceChildren();
+    if (!hits.length) {
+      empty(searchResult, data.message || "无匹配");
+      return;
+    }
+
+    hits.forEach((hit) => {
+      const details = document.createElement("details");
+      details.className = "admin-chunk";
+
+      const summary = document.createElement("summary");
+      summary.textContent =
+        "[" + Number(hit.score).toFixed(4) + "] " +
+        (hit.category || "未分类") + " · " + firstLine(hit.questions, 100);
+
+      const pre = document.createElement("pre");
+      pre.textContent =
+        "chunk_id:" + hit.chunk_id +
+        "\n分数:" + Number(hit.score).toFixed(6) +
+        "\n类型:" + (hit.content_type || "—") +
+        "\n章节:" + (hit.section_path || "—") +
+        "\n\n问题:" + (hit.questions || "—") +
+        "\n\n答案:" + (hit.answer || "—");
+
+      details.append(summary, pre);
+      searchResult.appendChild(details);
+    });
+  }
+
+  // ── 事件绑定与启动 ──────────────────────────────────────────
+  previewBtn.addEventListener("click", runPreview);
+  ingestBtn.addEventListener("click", runIngest);
+  $("searchBtn").addEventListener("click", runSearch);
+  $("searchQuery").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      runSearch();
+    }
+  });
+
+  stagingToggle.addEventListener("click", async () => {
+    if (!stagingRows.hidden) {
+      stagingRows.hidden = true;
+      stagingToggle.textContent = "展开暂存明细";
+      return;
+    }
+    stagingRows.hidden = false;
+    stagingToggle.textContent = "收起暂存明细";
+    await loadStagingRows();
+  });
+
+  jobButtons().forEach((button) => {
+    button.addEventListener("click", () => runJob(button.dataset.job));
+  });
+
+  loadOverview();
+  // 空闲时每 15 秒刷新一次总览;作业运行中跳过,避免和入库/向量化抢读数。
+  setInterval(() => {
+    if (!jobRunning) loadOverview();
+  }, 15000);
+})();
+</script>
+</body>
+</html>

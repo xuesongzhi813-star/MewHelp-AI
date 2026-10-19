@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>后台总览 · Ethan_Leo</title>
+</head>
+<body class="admin-body">
+<main class="admin-wrap">
+  <header class="admin-hero">
+    <h1>后台<span>总览</span></h1>
+    <p>知识库运营与客服入口 · 依赖不可用时只降级对应读数,不伪造 0</p>
+  </header>
+
+  <section class="admin-grid">
+    <article class="admin-card" id="kbCard">
+      <div class="admin-card-head">
+        <h2>知识库</h2>
+        <span class="admin-badge" id="kbState">读取中…</span>
+      </div>
+      <div class="admin-stat-row" id="kbStats">
+        <div class="admin-stat">
+          <span class="admin-stat-label">读取中</span>
+          <span class="admin-stat-value">…</span>
+        </div>
+      </div>
+      <p class="admin-note" id="kbConclusion">正在读取知识库总览…</p>
+      <a class="admin-link" href="/kb">进入知识库录入与自测 →</a>
+    </article>
+
+    <article class="admin-card">
+      <div class="admin-card-head">
+        <h2>客服对话</h2>
+        <span class="admin-badge admin-tone-good">在线</span>
+      </div>
+      <p class="admin-hint">
+        打开现有的客服聊天页面,验证检索增强后的回答与工具调用轨迹。
+      </p>
+      <a class="admin-link" href="/">打开客服对话页面 →</a>
+    </article>
+
+    <article class="admin-card admin-card-muted">
+      <div class="admin-card-head">
+        <h2>工单</h2>
+        <span class="admin-badge">占位</span>
+      </div>
+      <p class="admin-placeholder">后续模块</p>
+    </article>
+  </section>
+</main>
+
+<script src="/static/admin.js" data-page="admin"></script>
+<script>
+(() => {
+  "use strict";
+
+  const { api, fmt } = window.Admin;
+  const statsEl = document.getElementById("kbStats");
+  const noteEl = document.getElementById("kbConclusion");
+  const stateEl = document.getElementById("kbState");
+
+  function tile(label, value, tone) {
+    const box = document.createElement("div");
+    box.className = "admin-stat";
+    const labelEl = document.createElement("span");
+    labelEl.className = "admin-stat-label";
+    labelEl.textContent = label;
+    const valueEl = document.createElement("span");
+    valueEl.className = "admin-stat-value" + (tone ? " admin-tone-" + tone : "");
+    valueEl.textContent = value;
+    box.append(labelEl, valueEl);
+    return box;
+  }
+
+  function setBadge(text, tone) {
+    stateEl.textContent = text;
+    stateEl.className = "admin-badge" + (tone ? " admin-tone-" + tone : "");
+  }
+
+  function setNote(text, tone) {
+    noteEl.textContent = text;
+    noteEl.className = "admin-note" + (tone ? " admin-note-" + tone : "");
+  }
+
+  function consistencyValue(consistency) {
+    const status = consistency && consistency.status;
+    if (status === "consistent") return { text: "一致", tone: "good" };
+    if (status === "mismatch") return { text: "不一致", tone: "bad" };
+    return { text: "读不到", tone: "warn" };
+  }
+
+  async function loadKb() {
+    try {
+      const data = await api("/api/kb/overview");
+      const mysql = data.mysql || {};
+      const milvus = data.milvus || {};
+      const staging = data.staging;
+      const consistency = data.consistency || {};
+
+      const stagingTotal = staging
+        ? Number(staging.extracted || 0) +
+          Number(staging.kept || 0) +
+          Number(staging.discarded || 0)
+        : null;
+      const consistencyInfo = consistencyValue(consistency);
+
+      statsEl.replaceChildren(
+        tile("知识块", mysql.ok ? fmt(mysql.chunks) : "读不到", mysql.ok ? "" : "bad"),
+        tile("待向量化", mysql.ok ? fmt(mysql.pending) : "读不到", mysql.ok ? "warn" : "bad"),
+        tile("Milvus", milvus.ok ? fmt(milvus.count) : "读不到", milvus.ok ? "good" : "bad"),
+        tile("暂存", stagingTotal === null ? "读不到" : fmt(stagingTotal), stagingTotal === null ? "bad" : ""),
+        tile("一致性", consistencyInfo.text, consistencyInfo.tone)
+      );
+
+      if (!mysql.ok) {
+        setBadge("MySQL 读不到", "bad");
+        setNote("MySQL 读不到:知识块库存未知,录入与挖掘暂不可用。", "bad");
+        return;
+      }
+      if (!milvus.ok) {
+        setBadge("Milvus 读不到", "bad");
+        setNote(
+          `MySQL 有 ${fmt(mysql.chunks)} 块知识,但 Milvus 读不到,向量检索不可用。`,
+          "warn"
+        );
+        return;
+      }
+      if (consistency.status === "mismatch") {
+        setBadge("不一致", "bad");
+        setNote(
+          "MySQL 与 Milvus 不一致:" + (consistency.note || "建议重建索引。"),
+          "bad"
+        );
+        return;
+      }
+      if (consistency.status !== "consistent") {
+        setBadge("一致性未知", "warn");
+        setNote("一致性读不到:" + (consistency.note || "未知原因"), "warn");
+        return;
+      }
+
+      setBadge("运行正常", "good");
+      const pending = Number(mysql.pending || 0);
+      setNote(
+        pending > 0
+          ? `已收录 ${fmt(mysql.chunks)} 块知识,其中 ${fmt(pending)} 块待向量化,记得补跑向量化。`
+          : `已收录 ${fmt(mysql.chunks)} 块知识,全部完成向量化,双写一致。`,
+        pending > 0 ? "warn" : "good"
+      );
+    } catch (error) {
+      statsEl.replaceChildren(tile("知识库", "读数失败", "bad"));
+      setBadge("读数失败", "bad");
+      setNote("读数失败:" + error.message, "bad");
+    }
+  }
+
+  loadKb();
+  // 页面停留时每 15 秒刷新一次卡片读数;失败同样只影响本卡。
+  setInterval(loadKb, 15000);
+})();
+</script>
+</body>
+</html>
