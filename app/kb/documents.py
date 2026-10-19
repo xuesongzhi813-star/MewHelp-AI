@@ -21,6 +21,7 @@ CHUNK_OVERLAP = 100
 SENTENCE_ENDS = "。！？；"
 
 FEATURE_RECURSIVE = "recursive_split"
+# FEATURE_SENTENCE 的约定:块尾字符落在句末标点上,即边界对齐到了句子末尾。
 FEATURE_SENTENCE = "sentence_trimmed"
 FEATURE_OVERLAP = "overlap_applied"
 FEATURE_TABLE_HEADER = "table_header_replicated"
@@ -277,11 +278,9 @@ def _split_table(text: str) -> tuple[list[str], list[bool]]:
         return pieces, [False] * len(pieces)
 
     pieces: list[str] = []
-    replicated: list[bool] = []
 
     def emit(rows: list[str]) -> None:
         pieces.append(f"{prefix}\n" + "\n".join(rows))
-        replicated.append(len(pieces) > 1)  # 第一块是原始表头,之后均为复制
 
     buffer: list[str] = []
     buffer_length = 0
@@ -302,11 +301,15 @@ def _split_table(text: str) -> tuple[list[str], list[bool]]:
         emit(buffer)
     if not pieces:  # 只有表头与分隔行
         return [text], [False]
-    return pieces, replicated
+    if len(pieces) == 1:
+        return pieces, [False]
+    # 表格被拆成多块:每块都带有表头(首块为原始表头,其余为复制),
+    # 统一打上 table_header_replicated 特性,便于下游识别。
+    return pieces, [True] * len(pieces)
 
 
 def _build_atoms(blocks: list[_Block]) -> list[_Atom]:
-    """把 block 展开成不超过 _PIECE_LIMIT 的原子片段。"""
+    """把 block 展开成不超过 CHUNK_TARGET 的原子片段。"""
     atoms: list[_Atom] = []
     previous: _Block | None = None
     for block in blocks:
@@ -325,7 +328,9 @@ def _build_atoms(blocks: list[_Block]) -> list[_Atom]:
                     )
                 )
         else:
-            pieces = _split_text(block.text, _PIECE_LIMIT)
+            # 文本片段按目标长度切分,优先落在句子边界上;overlap 空间
+            # 由打包阶段动态让出,避免因固定预留 100 字而提前硬切。
+            pieces = _split_text(block.text, CHUNK_TARGET)
             for position, piece in enumerate(pieces):
                 atoms.append(
                     _Atom(
@@ -336,6 +341,21 @@ def _build_atoms(blocks: list[_Block]) -> list[_Atom]:
                 )
         previous = block
     return atoms
+
+
+def _split_at_boundary(text: str, limit: int) -> tuple[str, str]:
+    """把文本切成 (不超过 limit 的前缀, 剩余部分),前缀优先落在句末/换行。"""
+    if len(text) <= limit:
+        return text, ""
+    window = text[:limit]
+    cut = -1
+    for offset in range(len(window) - 1, -1, -1):
+        if window[offset] in SENTENCE_ENDS or window[offset] == "\n":
+            cut = offset + 1
+            break
+    if cut <= 0:
+        cut = limit  # 窗口内没有句子边界,硬切;cut>0 保证前进。
+    return text[:cut], text[cut:]
 
 
 def _overlap_tail(text: str) -> str:
@@ -394,7 +414,25 @@ def _pack_atoms(atoms: list[_Atom]) -> list[tuple[str, bool, bool, bool]]:
             if length > overlap_length:
                 break  # 当前块已有实际内容,收块。
             if used_overlap:
-                # 重叠占满空间导致原子放不下:丢弃重叠,用完整目标空间。
+                # 当前块只有重叠:尽量利用剩余空间切下一片段,保留重叠。
+                available = CHUNK_TARGET - length - len(separator)
+                if available > 0 and atom.kind in ("text", "list"):
+                    prefix, rest = _split_at_boundary(atom.text, available)
+                    if prefix:
+                        if separator:
+                            parts.append(separator)
+                        parts.append(prefix)
+                        length += len(separator) + len(prefix)
+                        replicated = replicated or atom.replicated_header
+                        last_kind = atom.kind
+                        if rest:
+                            atoms[index] = _Atom(
+                                atom.kind, rest, "", atom.replicated_header
+                            )
+                        else:
+                            index += 1
+                        break  # 本块已填满,收块。
+                # 剩余空间无法切分(例如表格块):丢弃重叠,用完整目标空间。
                 parts = []
                 length = 0
                 used_overlap = False
