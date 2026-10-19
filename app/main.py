@@ -3,6 +3,8 @@ from pathlib import Path
 from fastapi import Depends, FastAPI
 from fastapi.responses import FileResponse, StreamingResponse
 
+from app.api.jobs import router as jobs_router
+from app.api.kb import router as kb_router
 from app.chat_service import stream_chat
 from app.dependencies import get_chat_model, get_extractor
 from app.history import SessionStore
@@ -12,6 +14,9 @@ from app.session_store import MySQLSessionStore
 
 def create_app() -> FastAPI:
     application = FastAPI()
+    # ch03:知识库与白名单作业 API;静态页与 /admin、/kb 路由由 Task 14 挂载。
+    application.include_router(kb_router)
+    application.include_router(jobs_router)
     # ch02:会话历史落 MySQL。构造期不连库(引擎惰性建连),MySQL 不可达时
     # 首次 store 操作才抛 OperationalError,由 stream_chat 的 error 帧路径兜住。
     # config.max_sessions 仅内存版 store 的 FIFO 淘汰参数,MySQL 版不淘汰,字段保留不删。
