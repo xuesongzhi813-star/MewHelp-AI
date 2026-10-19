@@ -44,6 +44,7 @@ def _stored(chunk_id: int, *, status: str = "pending") -> StoredChunk:
         vector_id=str(chunk_id) if status == "done" else None,
         prev_chunk_id=None,
         next_chunk_id=None,
+        created_at=datetime(2026, 10, 19, 8, 30, tzinfo=timezone.utc),
     )
 
 
@@ -149,6 +150,9 @@ async def test_overview_returns_seven_blocks(client, monkeypatch):
     }
     assert body["recent"][0]["id"] == 9
     assert body["recent"][0]["vectorize_status"] == "done"
+    # spec §16:recent[] 必须带 created_at。
+    assert body["recent"][0]["created_at"] is not None
+    assert body["recent"][0]["created_at"].startswith("2026-10-19")
     assert body["jobs"][0]["name"] == "kb-preview"
     assert body["jobs_ok"] is True
     # sources 始终现场切分,三份样例材料都应可读。

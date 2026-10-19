@@ -113,6 +113,8 @@ def test_insert_pending_and_link_siblings(kb_tx):
     assert first.section_path == "售后 > 节1"
     assert first.content_type == "文档章节"
     assert first.is_key_clause is False
+    # created_at 由数据库默认值填充,快照必须带上。
+    assert first.created_at is not None
 
 
 def test_insert_chunks_accepts_injected_session_and_only_flushes(kb_tx):
@@ -261,6 +263,8 @@ def test_list_recent_returns_newest_first(kb_tx):
     # 新插入行自增 id 最大,按 id 倒序应排在最前
     assert [row.id for row in recent] == [ids[2], ids[1], ids[0]]
     assert isinstance(recent[0], store.StoredChunk)
+    # spec §16:recent[] 需要 created_at;真实行必须非空。
+    assert recent[0].created_at is not None
 
 
 def test_reset_all_pending_returns_rows_to_pending(kb_tx):

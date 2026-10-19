@@ -60,6 +60,8 @@ class StoredChunk:
     vector_id: str | None
     prev_chunk_id: int | None
     next_chunk_id: int | None
+    # 追加在末尾:既有按位置构造的调用方仍然兼容。
+    created_at: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -122,6 +124,7 @@ def _to_stored(row: KnowledgeChunk) -> StoredChunk:
         vector_id=row.vector_id,
         prev_chunk_id=row.prev_chunk_id,
         next_chunk_id=row.next_chunk_id,
+        created_at=row.created_at,
     )
 
 
