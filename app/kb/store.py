@@ -393,6 +393,19 @@ def mark_staging(
         )
 
 
+def delete_staging(ids: Sequence[int], session: Session | None = None) -> None:
+    """按 id 删除暂存行;用于批次处理失败时整批回滚。"""
+    ids = list(ids)
+    if not ids:
+        return
+    with _session_scope(session) as active:
+        active.execute(
+            delete(QaExtractionStaging).where(
+                QaExtractionStaging.id.in_(ids)
+            )
+        )
+
+
 # ---------------------------------------------------------------------------
 # 对话挖掘素材
 # ---------------------------------------------------------------------------

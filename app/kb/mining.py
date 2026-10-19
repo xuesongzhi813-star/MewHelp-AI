@@ -12,8 +12,10 @@
 
 失败语义:
 - LLM 调用失败直接冒泡,且该批不写任何暂存行;
-- 判重阶段的 embedding / Milvus 异常同样冒泡,已写入的暂存行保持
-  ``extracted``,便于排查与补跑。
+- 判重 / 入库阶段的异常会先删除该批已写入的暂存行,再冒泡。这样
+  ``source_ref`` 不会推进 ``staging_tail``,下一轮会重新抽取同一会话;
+  失败前已经写入 ``knowledge_chunks`` 的问答由下一轮的精确判重兜底,
+  不会产生重复切片。
 """
 
 from __future__ import annotations
@@ -290,17 +292,32 @@ def run_once(limit: int | None = None) -> MiningResult:
         staging_ids = store.insert_staging(rows)
         extracted += len(staging_ids)
 
-        kept_here, discarded_here = _dedup_and_keep(
-            [
-                (staging_id, pair, conversation)
-                for staging_id, (pair, conversation) in zip(
-                    staging_ids, pending_rows
-                )
-            ],
-            existing_questions=existing_questions,
-            kept_questions=kept_questions,
-            settings=settings,
-        )
+        try:
+            kept_here, discarded_here = _dedup_and_keep(
+                [
+                    (staging_id, pair, conversation)
+                    for staging_id, (pair, conversation) in zip(
+                        staging_ids, pending_rows
+                    )
+                ],
+                existing_questions=existing_questions,
+                kept_questions=kept_questions,
+                settings=settings,
+            )
+        except Exception as exc:  # noqa: BLE001 - 整批回滚后原样冒泡
+            # 暂存行一旦保留,source_ref 会推进 staging_tail,导致会话永远
+            # 被跳过;因此批次处理失败时必须先删掉本批暂存行再冒泡。
+            logger.warning(
+                "批次 %s 判重/入库失败,删除本批 %d 条暂存行后重试: %s",
+                batch_no,
+                len(staging_ids),
+                exc,
+            )
+            try:
+                store.delete_staging(staging_ids)
+            except Exception:  # noqa: BLE001 - 不能掩盖原始异常
+                logger.exception("删除批次 %s 的暂存行失败", batch_no)
+            raise
         kept += kept_here
         discarded += discarded_here
 

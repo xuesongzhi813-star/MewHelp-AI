@@ -22,6 +22,7 @@ import app.kb.dualwrite as dualwrite
 import app.kb.mining as mining
 import app.kb.store as store
 from app.db import get_engine
+from app.kb.embedding import EmbeddingError
 from app.models import Conversation, Message, QaExtractionStaging
 from app.kb.store import ConversationForMining
 
@@ -44,6 +45,11 @@ def kb_tx(monkeypatch):
             with session.begin():
                 session.execute(delete(QaExtractionStaging))
                 session.execute(delete(store.KnowledgeChunk))
+                # run_once 读取整张 conversations 表;先清消息再清会话,
+                # 让每个用例只看到自己创建的数据。rollback 会恢复已提交行
+                # (包括 seed-ch03-* 演示会话),不会污染真实库。
+                session.execute(delete(Message))
+                session.execute(delete(Conversation))
         try:
             yield conn
         finally:
@@ -104,12 +110,13 @@ class EchoExtractor:
 class Harness:
     """记录挖掘过程中的外部调用。"""
 
-    def __init__(self, search_results=()) -> None:
+    def __init__(self, search_results=(), *, fail_embed: bool = False) -> None:
         self.events: list[str] = []
         self.embed_calls: list[list[str]] = []
         self.search_calls: list[tuple[list[float], int]] = []
         self.vectorize_calls = 0
         self.search_results = list(search_results)
+        self.fail_embed = fail_embed
 
     def vectorize_pending(self):
         self.vectorize_calls += 1
@@ -118,6 +125,8 @@ class Harness:
 
     def embed(self, texts):
         self.embed_calls.append(list(texts))
+        if self.fail_embed:
+            raise EmbeddingError("embedding 402")
         return [[0.01] * 4 for _ in texts]
 
     def search(self, vector, limit):
@@ -134,9 +143,11 @@ def _install(
     batch_size: int = 5,
     max_chars: int = 6000,
     dedup_score: float = 0.92,
+    fail_embed: bool = False,
 ):
     harness = harness or Harness(search_results)
     harness.search_results = list(search_results)
+    harness.fail_embed = fail_embed
     settings = SimpleNamespace(
         mining_batch_size=batch_size,
         mining_max_chars=max_chars,
@@ -414,6 +425,89 @@ def test_llm_failure_writes_no_staging_and_propagates(kb_tx, monkeypatch):
     assert counts["kept"] == 0
     assert counts["discarded"] == 0
     assert _chunks() == []
+
+
+def test_later_batch_llm_failure_keeps_previous_batch_and_rerun(
+    kb_tx, monkeypatch
+):
+    """第 1 批成功、第 2 批 LLM 失败:第 2 批不落库,补跑只处理第 2 批。"""
+    first_id, first_ids = _seed_conversation(kb_tx, _default_turns())
+    second_id, second_ids = _seed_conversation(kb_tx, _default_turns())
+    first_pair = mining.QAPair(
+        conversation_id=first_id,
+        question="第一批问题?",
+        answer="第一批答案。",
+    )
+    second_pair = mining.QAPair(
+        conversation_id=second_id,
+        question="第二批问题?",
+        answer="第二批答案。",
+    )
+    extractor = FakeExtractor(
+        [
+            mining.QAPairList(pairs=[first_pair]),
+            RuntimeError("第二批 LLM 失败"),
+        ]
+    )
+    _install(monkeypatch, extractor, batch_size=1)
+
+    with pytest.raises(RuntimeError, match="第二批 LLM 失败"):
+        mining.run_once()
+
+    assert extractor.calls == 2
+    rows = _staging_rows()
+    assert len(rows) == 1
+    assert rows[0].status == "kept"
+    assert rows[0].source_ref.startswith(f"conv:{first_id}:msgs:")
+    assert store.staging_tail(first_id) == first_ids[-1]
+    # 第 2 批没有留下任何暂存行,staging_tail 不前进
+    assert store.staging_tail(second_id) is None
+    assert len(_chunks()) == 1
+
+    rerun = FakeExtractor(mining.QAPairList(pairs=[second_pair]))
+    monkeypatch.setattr(mining, "build_mining_model", lambda _settings: rerun)
+
+    result = mining.run_once()
+
+    assert rerun.calls == 1
+    assert result.conversations == 1
+    assert result.extracted == 1 and result.kept == 1
+    assert store.staging_tail(second_id) == second_ids[-1]
+    assert len(_chunks()) == 2
+
+
+def test_dedup_failure_rolls_back_staging_and_rerun_processes(
+    kb_tx, monkeypatch
+):
+    """embedding 失败时删除本批暂存行,staging_tail 不前进,补跑可重抽。"""
+    conversation_id, message_ids = _seed_conversation(kb_tx, _default_turns())
+    pair = mining.QAPair(
+        conversation_id=conversation_id,
+        question="怎么退货?",
+        answer="签收后 7 天内可申请退货。",
+    )
+    extractor = FakeExtractor(mining.QAPairList(pairs=[pair]))
+    harness = _install(monkeypatch, extractor, fail_embed=True)
+
+    with pytest.raises(EmbeddingError, match="embedding 402"):
+        mining.run_once()
+
+    # 暂存行已整批删除,source_ref 没有推进 tail
+    assert _staging_rows() == []
+    assert store.staging_tail(conversation_id) is None
+    assert _chunks() == []
+
+    harness.fail_embed = False
+    rerun = FakeExtractor(mining.QAPairList(pairs=[pair]))
+    monkeypatch.setattr(mining, "build_mining_model", lambda _settings: rerun)
+
+    result = mining.run_once()
+
+    assert rerun.calls == 1
+    assert result.conversations == 1
+    assert result.extracted == 1 and result.kept == 1
+    assert store.staging_tail(conversation_id) == message_ids[-1]
+    assert len(_chunks()) == 1
 
 
 # ---------------------------------------------------------------------------
