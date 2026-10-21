@@ -1,0 +1,1474 @@
+{
+  "identity": {
+    "evaluation_version": "ch04-v1",
+    "corpus_hash": "e73dcbf44c23d6840e79a3d86df003179348bd579f4ce136f7bdf184006d4e04",
+    "cases_sha256": "35e7c17b1cd41c6c00dba9c89fa7a404b5506b394294f64895f7146c8866efc9",
+    "runtime_corpus_hash": "5164aee2caf0dd981fd2e516f0f409b371d2839cce7738f39bbab7c7f48c67f4",
+    "llm_model": "deepseek-flash",
+    "embedding_model": "BAAI/bge-m3",
+    "rerank_model": "BAAI/bge-reranker-v2-m3",
+    "temperature": 0,
+    "dense_top_k": 50,
+    "bm25_top_k": 50,
+    "rrf_k": 60,
+    "rerank_top_k": 10,
+    "model_parameters_hash": "63645a8159068ff5a34310383df1a52fef030d73629b796c0166949fd76ed18a",
+    "prompt_hash": "378ef5b2d917ae0731c64782a3c0e05bebbd08d94650ce0aaba08b3a021abac0",
+    "code_hash": "f11db83d677acf6662a91cd1223c8af9a261c7ab18fcebcdd46f72a7aebc62e3"
+  },
+  "threshold": 0.65,
+  "cached_rows": 252,
+  "missing_rows": 36,
+  "selection": "most completed strategies; tie earliest file; no metric selection",
+  "cases": {
+    "specific_model-05": {
+      "plan": {
+        "raw_query": "黑色短夹克MH-DJ103量出来衣长几厘米",
+        "normalized_query": "黑色短夹克MH-DJ103的衣长是多少厘米",
+        "lexical_query": "黑色短夹克MH-DJ103的衣长是多少厘米",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语“量出来几厘米”归一为询问衣长尺寸，保留SKU与颜色品类，属商品规格知识类。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "bbe3e9acf3e02403af770d0275678432ff22e69870ef3e5c4eda738f31f8f4db",
+        "bm25": "66a0ed336096e37254db576d050b8f58e42f68b4f3f12b94552736e135d5ae2d",
+        "hybrid": "8d1681678cb5ffdbe6de370cd0d544bbf2107aff9419e435f0f52ece3971eaf2",
+        "hybrid_rerank": "4f684b29ef40bdf6de44db70ba260b1e220099b031f09329de8cf456a9f32ecb"
+      }
+    },
+    "specific_model-06": {
+      "plan": {
+        "raw_query": "请列出MH-SH202两种面料各自比例",
+        "normalized_query": "MH-SH202两种面料各自比例是多少",
+        "lexical_query": "MH-SH202两种面料各自比例是多少 材质 料子",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "商品规格咨询，保留SKU与“两种面料各自比例”原意，仅将口语归一为简洁问句。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "5be4e627b242f767a905d91a6ee574f2f3df7b4c6969cf8b7960413cfb306419",
+        "bm25": "776b681265860b3f8d4d9529de7b913d01466c2510fdd449fec8b27bf447e649",
+        "hybrid": "acbbbd3a91ce068cd2ce88ac9a71dc02d5b8fd8b4513a33254c4bf32cfa59515",
+        "hybrid_rerank": "53fbcdb5297c241db48cf5884db6d529aa415a6a0cb8f7337683256f6ccfc2ef"
+      }
+    },
+    "specific_model-07": {
+      "plan": {
+        "raw_query": "MH-SH203已经披露了什么背部问题",
+        "normalized_query": "MH-SH203已经披露了什么背部问题",
+        "lexical_query": "MH-SH203已经披露了什么背部问题",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "询问指定型号商品已披露的背部问题，属商品规格/瑕疵信息类知识问，原句已简洁标准，保留型号与限定词。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "04420c6e18c1895cb7ddefcc1067f44bebab23851e3cc09c86799093777d7b1f",
+        "bm25": "dfe284bbdeb81e77b29ee6ce7959115fc03d657f397626f263b8157c0f89b920",
+        "hybrid": "1d6c8acb0dc0b3a3a88c9ef2d8008941c1595267d188bfaef66215871da73082",
+        "hybrid_rerank": "ec79e3a15bf8f756302c8b16c02b196b6bfa8f6e77e438c08c9955e15114102f"
+      }
+    },
+    "specific_model-08": {
+      "plan": {
+        "raw_query": "灯芯绒MH-PT302的实际腰围给个数",
+        "normalized_query": "灯芯绒MH-PT302的实际腰围是多少",
+        "lexical_query": "灯芯绒MH-PT302的实际腰围是多少",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语“给个数”归一为“是多少”，保留商品描述与SKU型号，属商品规格知识类。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "9929701273a1aaf53705410f8be6eaaeccf1ced71d104f818dc7a4a97207a51c",
+        "bm25": "b5862333bc48d08b2a0ce34e38ac83bd3c9cf006650b6006b33d73bd63c674fd",
+        "hybrid": "bd46ebd7cffe8b52c8ed44c31402f6437740f761869c2e8d46b552aeca48030e",
+        "hybrid_rerank": "b20ebb36f7ffdbac710cf7e9e2e93eee6298a10173d64d43e0da242d393f662f"
+      }
+    },
+    "specific_model-09": {
+      "plan": {
+        "raw_query": "MH-HD401是全棉还是混纺，比例呢",
+        "normalized_query": "MH-HD401是全棉还是混纺,成分比例是多少",
+        "lexical_query": "MH-HD401是全棉还是混纺,成分比例是多少",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "保留型号，将口语选择问句归一为标准问法，并补明“比例”指成分比例，不添加未提供的规格信息。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "e24dd5d83ae0a07358ba0f225d25a203f6ac5bb8d032c77917da793721a37eb8",
+        "bm25": "791ce30d2733660425aefa5a81b7ab667e1414386c8962ba2e6c62fc98aff042",
+        "hybrid": "56004498af035f98646fc39f3dd4a5658d732e375bd4d5491a4547aedcab0e8e",
+        "hybrid_rerank": "b6332e8d08115240116d83695aa02956b0ec870e69e9e295ab6c29bd86e342ae"
+      }
+    },
+    "specific_model-10": {
+      "plan": {
+        "raw_query": "MH-HD402到底带不带帽子",
+        "normalized_query": "MH-HD402是否带帽子",
+        "lexical_query": "MH-HD402是否带帽子",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语“到底带不带”归一为“是否带”，保留型号MH-HD402，属商品规格知识类。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "f6e931291515f381f95777c26ed12a36beb366530a053df4c02a76ce1e118467",
+        "bm25": "a660165b9eb1655ef65fe1f9d696d4d12a939aebba2bcc5c72d53cf122c1d92e",
+        "hybrid": "52559813d0008662710969b006204512fff751154204b97736ef5c0f79a8e63b",
+        "hybrid_rerank": "616ee991901ab3e64e29f841777bbe43b117476ecd694a5151447d6a36ef222e"
+      }
+    },
+    "specific_model-11": {
+      "plan": {
+        "raw_query": "MH-JK501拉链部位有哪项披露瑕疵",
+        "normalized_query": "MH-JK501拉链部位披露了哪项瑕疵",
+        "lexical_query": "MH-JK501拉链部位披露了哪项瑕疵",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "将口语化“有哪项披露瑕疵”归一为简洁标准问法，保留SKU与拉链部位限定，属商品规格/瑕疵披露知识类。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "04d5e51cd5780ee4ba8d1b75e2cb62a8e6010a6f5f364d0713814c6402392bdf",
+        "bm25": "0ed25443e9da5ff5e171966b900d64aa8ab4e9f26f4b03a0df2e9c852f1413ab",
+        "hybrid": "c6cd61f84eb1023c9b3645619e3f1e243325ae02493873f175fc9be4ac1a8d60",
+        "hybrid_rerank": "8db2b0d3ed7121691f11608e05fd73910d78a614e1a666d35d91d16744ab871f"
+      }
+    },
+    "specific_model-12": {
+      "plan": {
+        "raw_query": "MH-JK502标注的主材质是什么",
+        "normalized_query": "MH-JK502标注的主材质是什么",
+        "lexical_query": "MH-JK502标注的主材质是什么 面料 料子",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "询问指定型号的商品规格，原句已简洁标准，保留SKU原样。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "df4936fd8a8cb543781a918e4b92b5491893ba09896d5236ac90cb04533042bb",
+        "bm25": "7de4aa84d20dbd62b265d10eaf08f7f3a57ef9e78e0ab4945213750264ef4bc9",
+        "hybrid": "58bf6c24fb3b928f6723c7877f990cdd7a1284c0533a8dcb3d4e2927367647b6",
+        "hybrid_rerank": "ab056aa15a9ce3701089180a872cd14c823e08b8d49e10a61e6e7ef272b27421"
+      }
+    },
+    "specific_model-13": {
+      "plan": {
+        "raw_query": "MH-DJ101肩宽和袖长分别报一下",
+        "normalized_query": "MH-DJ101的肩宽和袖长分别是多少",
+        "lexical_query": "MH-DJ101的肩宽和袖长分别是多少",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语“报一下”归一为询问具体尺寸数值，保留型号MH-DJ101及肩宽、袖长两项规格。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "338bb3e4e4597c368ec8aaebd4834b80ffdfa5c90bbe62e0ee02681d7d719e23",
+        "bm25": "73bc0cc11be735fe7b09fdec420c646485210d6b838b1a3b7796d6af52307b78",
+        "hybrid": "3a8f7bd0bb7456e04b0315e5cb7ac292cd8d7be5b0cb66720780ccbeec8c6fef",
+        "hybrid_rerank": "8434374b18e99f45512af0464193e2e4127d886473df6c05188e2fe8081f2b11"
+      }
+    },
+    "specific_model-14": {
+      "plan": {
+        "raw_query": "MH-DJ102衣身的长度是多少",
+        "normalized_query": "MH-DJ102衣身长度是多少",
+        "lexical_query": "MH-DJ102衣身长度是多少",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "商品规格咨询，保留SKU原样，口语归一为简洁问法",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "d832d9a64fd308d7a6ba1aa52f49076fbdf62efbbbe27ef6d9f3a50334a76da1",
+        "bm25": "d006865f31416238f5c129fa2e74c678448df489ad758fa8b3afbbc2544e5405",
+        "hybrid": "e6c194aa464b2d267cc6d5964c40fc742b2e8a9fb8b7194ff0829e6c203d3306",
+        "hybrid_rerank": "b5a69ebdb10f31b22b149ef666b960294e10ac42004a2f8e2aaaa9f2e09f3925"
+      }
+    },
+    "specific_model-15": {
+      "plan": {
+        "raw_query": "型号MH-SH201允许怎样熨衣服",
+        "normalized_query": "MH-SH201允许怎样熨烫",
+        "lexical_query": "MH-SH201允许怎样熨烫",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语“熨衣服”归一为“熨烫”，保留型号，属商品养护规格类知识问题。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "b710ce1cb36386783101ef790e59989f7e86834213def49b999f599a697ab9d3",
+        "bm25": "3b52af666c7f87e6fa8c4da175e3bba83f184b46a5bb22262fd73ff9016904a8",
+        "hybrid": "e9ead60046d4d03d253c394c04a718c0598443cb7d023a81c53ec9a0716f4ede",
+        "hybrid_rerank": "5dc200b9fb7756211f48bf1d2b13667e27b4851879297ec09c46121e7581c64a"
+      }
+    },
+    "specific_model-16": {
+      "plan": {
+        "raw_query": "MH-PT301从腰到裤脚的裤长是多少",
+        "normalized_query": "MH-PT301从腰到裤脚的裤长是多少",
+        "lexical_query": "MH-PT301从腰到裤脚的裤长是多少",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "询问具体型号的规格尺寸，属商品规格知识类，原句已规范，保留SKU与测量起止点。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "6855a15d2c800c329691639bc3b2a26a21e6d58245d79bfb8f19f6c23c106049",
+        "bm25": "9afb1605bf52727368f3bf91f864b786954993288ca1063e12a2404103ab7565",
+        "hybrid": "4b13c7acb3a469bed84c4f1d71c65559c43b406a8e1ca7e2148dddee0a616598",
+        "hybrid_rerank": "1e8b785792cc4cdb1b934a7fdf938b87376ad58ee5f29349da09e3f0d7727ebd"
+      }
+    },
+    "colloquial-05": {
+      "plan": {
+        "raw_query": "我普通地址实付才98块，邮钱掏多少来着",
+        "normalized_query": "我普通地址实付才98块,邮钱掏多少来着",
+        "lexical_query": "我普通地址实付才98块,邮钱掏多少来着",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "改写未通过关键条件保真检查，使用本轮原话",
+        "rewrite_fallback": true
+      },
+      "keys": {
+        "dense": "02c1d49cd68f08fce1643da5e9c7cb195cba7a70e91eea65cc0055eeae268871",
+        "bm25": "b9b26cbe3457bfa56c48d0d64f1abeae904f88f76761b46a9588f938201f9384",
+        "hybrid": "e081e7e26bb6626746bf1ab702be02390d5de16c4ac8696600517524e2c1adb8",
+        "hybrid_rerank": "0dbdfebe56a869ca324cb72669f55219043ae99f4cf655e41b9bac623ff9e12c"
+      }
+    },
+    "colloquial-06": {
+      "plan": {
+        "raw_query": "不是偏远地方，真付了99块，还收邮钱不",
+        "normalized_query": "不是偏远地方,真付了99块,还收邮钱不",
+        "lexical_query": "不是偏远地方,真付了99块,还收邮钱不",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "改写未通过关键条件保真检查，使用本轮原话",
+        "rewrite_fallback": true
+      },
+      "keys": {
+        "dense": "2a6f8481d59ff6bac5bc2ec6cd985196b5b885f6f0802b4b7e438735ffd36abd",
+        "bm25": "85847e85233afeecbc64445e0fb1c8c551b374b7df3a9927e77ad00f9eecaac6",
+        "hybrid": "ff5b5d32989bac2570c4bd3c89b325e47695d79f50578dfa15c2a55f394e654e",
+        "hybrid_rerank": "8691b75a0cc9561b0f7c090c64bfe55ad55f3185307ed7da3262daefc0eab390"
+      }
+    },
+    "colloquial-07": {
+      "plan": {
+        "raw_query": "退完钱会走原来付钱的地方还是换个渠道呀",
+        "normalized_query": "退款是否原路退回原支付渠道",
+        "lexical_query": "退款是否原路退回原支付渠道 退货 退货申请",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语疑问归一为标准问法，属店铺退款规则类知识问题，未添加额外条件。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "84b5f77411d464d585f8fe104283515208beaa8b9a41d5b51ab954c77eb5c1bf",
+        "bm25": "4ab398650193837dad5d2efa8e74d5d54003e629941b2480b1f730d2b9c166f5",
+        "hybrid": "62a9133a9b97b68e7bec41880bbccf748343eba93061eab3539b4dfd2cf45301",
+        "hybrid_rerank": "cd6acc72bbf189415ea30bb5856b00422d2886962913e1d263c5d45636c39183"
+      }
+    },
+    "colloquial-08": {
+      "plan": {
+        "raw_query": "攒的分结账能顶多少，有没有上限",
+        "normalized_query": "攒的分结账能顶多少,有没有上限",
+        "lexical_query": "攒的分结账能顶多少,有没有上限",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "改写未通过关键条件保真检查，使用本轮原话",
+        "rewrite_fallback": true
+      },
+      "keys": {
+        "dense": "203703b61f3b87aafeb5e3e5e6fa3e4e68343956cfafa2a394195edac61436b8",
+        "bm25": "f58f3e5e5569020b0383697c603b12581494f19b8ac23fcb3679755f46e5a107",
+        "hybrid": "1de2a54675aa61507c0c0d028ea44fe10a2c9ef43d1473ae418071ad11fd1989",
+        "hybrid_rerank": "59236c5f2ea31cb93c9445b35f0b1a75f040672c4c247fc9523d9c7563aa79ef"
+      }
+    },
+    "colloquial-09": {
+      "plan": {
+        "raw_query": "分攒着一直不用，会不会到期呀",
+        "normalized_query": "分攒着一直不用,会不会到期呀",
+        "lexical_query": "分攒着一直不用,会不会到期呀",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "改写未通过关键条件保真检查，使用本轮原话",
+        "rewrite_fallback": true
+      },
+      "keys": {
+        "dense": "d9f69b0fbd57b8c91104f3086546f2ec20771a970baefae922afffbfc8a88b07",
+        "bm25": "7339cc401f1bfe8932dd5574c888fd9190f42db7d7f214d4b65a06babccc13c5",
+        "hybrid": "8227be516441af925f3e1ce341cb3189de98cddd9fc14835ea704de7802dea60",
+        "hybrid_rerank": "62c89b0293881f14ee2bed9f575d818bc566dfa7a03cbbdf1aeca2a0dc83c635"
+      }
+    },
+    "colloquial-10": {
+      "plan": {
+        "raw_query": "分能不能直接换成钱给我呀",
+        "normalized_query": "分能不能直接换成钱给我呀",
+        "lexical_query": "分能不能直接换成钱给我呀",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "改写未通过关键条件保真检查，使用本轮原话",
+        "rewrite_fallback": true
+      },
+      "keys": {
+        "dense": "725bd63d62586143b27cc09f4413b389f9915af7753753dae14455b44e332b56",
+        "bm25": "e9822254619aa3f6bbcba283c6c42cc6b77874cb669ba2f5b3c1d15a1be0b417",
+        "hybrid": "ee0f68fff512e35838ed73a9163fa5d4c5f32906f2c40efb7e1987bdc67e155f",
+        "hybrid_rerank": "d089a30a62046470f76c217afc0a60e232a29127091ce3eb02844a8f9998df5d"
+      }
+    },
+    "colloquial-11": {
+      "plan": {
+        "raw_query": "付钱能用啥，微信支付宝之外还有没",
+        "normalized_query": "付款方式有哪些?除微信、支付宝外还支持哪些支付方式?",
+        "lexical_query": "付款方式有哪些?除微信、支付宝外还支持哪些支付方式?",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语归一为标准问法，保留“除微信、支付宝外”的排除条件，属店铺规则类知识问题。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "81f99276a719a07ea2514e1e1ed4f6ae6503f979f550992d1d46bc08226cd110",
+        "bm25": "e2b758a5ed1b03a55051af8cfc9a8f035b0fcde916724e8b0336e745cafc43ee",
+        "hybrid": "6b3a5133b0d5ee0df6e2ad38ee079a45bccc5c711ebe3e61ad69c4452eecad8b",
+        "hybrid_rerank": "d47b5244ea8cb78a4ead80703f52c49a1d051798b4fcc815c31c48726cf7793d"
+      }
+    },
+    "colloquial-12": {
+      "plan": {
+        "raw_query": "想找真人唠唠，几点有人在线啊",
+        "normalized_query": "人工客服几点在线",
+        "lexical_query": "人工客服几点在线",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "用户要求转真人并询问在线时间，属转人工类业务诉求，口语归一为简洁问法。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "4eb295950f9964ed23ff4084b94fd0054c9f477abf0aacc8d5b4c62c78f981af",
+        "bm25": "08dbe528f2a72044f1f83aeaf6b072bceb7e35ea5d75d725c5aaa3879f81286c",
+        "hybrid": "51e138afc8d18b3427ee3159bae9fb06d12330202d53c00617b1f9b56ae74eb7",
+        "hybrid_rerank": "7ac92a59238ea3ca1f421437446851fef4aff7fb6e0bf1b9968ff37f1d318856"
+      }
+    },
+    "colloquial-13": {
+      "plan": {
+        "raw_query": "衣服到手洗了一水，还能按没理由退吗",
+        "normalized_query": "衣服洗过一次后还能无理由退货吗",
+        "lexical_query": "衣服洗过一次后还能无理由退货吗 退回 退货申请",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "将口语“到手洗了一水”“没理由退”归一为标准问法，属店铺退换规则，保留洗涤这一条件。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "0286e005798db6819de109fd35495c17479086edffda49387523986c22080fd6",
+        "bm25": "cc1db5c1008a1c6c8233a33847a86e7bd00b35cdc5c48e5298bb22cd75e9e347",
+        "hybrid": "8dc92705e2e08833b9e2e00671ff9756e0b4a95b6708931413d703ca208a0714",
+        "hybrid_rerank": "483cf9ac5f1c2816d38a7dc1bfcf59051db8c0821fc52741b2e3af5e0f9173f6"
+      }
+    },
+    "colloquial-14": {
+      "plan": {
+        "raw_query": "预售也跟现货一样付了钱24小时就发吗",
+        "normalized_query": "预售也跟现货一样付了钱24小时就发吗",
+        "lexical_query": "预售也跟现货一样付了钱24小时就发吗",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "改写未通过关键条件保真检查，使用本轮原话",
+        "rewrite_fallback": true
+      },
+      "keys": {
+        "dense": "d8309494fdbdc148c5e1002937da3f80207c944942ca209a60d57225a25301e3",
+        "bm25": "619c86c71b9fb88e634c04f9dae57b5989053610e5212a41ebdfc0f061a554b1",
+        "hybrid": "cc3e7e7c1e6c1c1385252f4ef1400238a2a478a9ea069a06c01734e32ca8a292",
+        "hybrid_rerank": "bd714d89042c98501cb3674b88131ff641474aec3d1131d7be880333f905334b"
+      }
+    },
+    "colloquial-15": {
+      "plan": {
+        "raw_query": "优惠券一次能摞几张用呀，剩钱能找给我不",
+        "normalized_query": "优惠券一次最多可以叠加使用几张?使用优惠券后剩余金额是否找零?",
+        "lexical_query": "优惠券一次最多可以叠加使用几张?使用优惠券后剩余金额是否找零?",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "将口语化提问归一为标准问法，保留叠加使用数量与是否找零两个问题，属店铺规则类知识问询。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "e571e0dddd5f3eb550438fb722cad8e65d8d47ec8abf646b5b59644ee1f558c4",
+        "bm25": "a990c1e3da5ff201c465bc6de51bee20d143251c3965296070d1ce5e81bd663a",
+        "hybrid": "042a0be0cd7d9314c9e3a60cb00d0854f08482963ca3cd9c6d51200f43ecd307",
+        "hybrid_rerank": "e890d8f03da90c0e2acb7983aec4c46b51beb5633d0d5a7b00abc45aa483f26f"
+      }
+    },
+    "colloquial-16": {
+      "plan": {
+        "raw_query": "审核结果我不服，咋申诉，有时间限制不",
+        "normalized_query": "对审核结果不认可如何申诉,申诉是否有时间限制",
+        "lexical_query": "对审核结果不认可如何申诉,申诉是否有时间限制",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语化疑问归一为标准问法，保留“审核结果”“申诉”“时间限制”原意，属店铺规则类知识问询。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "27d90b6faa303bd114270c45b452185aa68814aaab72195b3144acc240fe5dd2",
+        "bm25": "479636528d7e930f1779ba79c2d1065b4a2824e8fdb185b90b474c6216a1deb4",
+        "hybrid": "3c4d20d814b3b2cbaaa3cd9a130586252e489d53da675dd3dd647b832404010b",
+        "hybrid_rerank": "fc7f90a4d879065d3cf6bb6d2dbce6708d8cfb11dcb245dcea6769574da7e706"
+      }
+    },
+    "synonym-05": {
+      "plan": {
+        "raw_query": "MH-DJ103衣身长短的数据是多少",
+        "normalized_query": "MH-DJ103衣身长短的数据是多少",
+        "lexical_query": "MH-DJ103衣身长短的数据是多少",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "询问具体型号的衣长规格，属商品规格知识类；原句已较规范，保留SKU与问法不变。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "88536c7f8d894e695498bdd7fae3fb01a12d6823585847bede5ad38dcf419d6c",
+        "bm25": "390c72b2b250ce19c4403d423364bdcf6fc0249bb8c1a57ddc990744214d77e0",
+        "hybrid": "ce2b7ab7cffc88e0a50fcf9f0c5aec02735080c0f339db59e2be817ef8944b64",
+        "hybrid_rerank": "70aef0ace83bbd28cc6c767f2c61421a966f12333454780cd34a2810e4af6409"
+      }
+    },
+    "synonym-06": {
+      "plan": {
+        "raw_query": "MH-SH201面料起皱后怎样低温整烫",
+        "normalized_query": "MH-SH201面料起皱后如何低温整烫",
+        "lexical_query": "MH-SH201面料起皱后如何低温整烫 材质 料子",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语“怎样”归一为“如何”，保留型号与低温整烫条件，属商品养护知识。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "4eebfd7d7ccc1d180e528c6cbfb254933a275ae0f4cebd0edbe6c2809b36fea2",
+        "bm25": "3399617b6d1738068dda63b677ae7dc0511ccb8d52198da41c8bebc0fddabdf5",
+        "hybrid": "063d4880454f5045d4bee481ee78629d51d3c3d471a7efeb549f6f1c0def5a94",
+        "hybrid_rerank": "f0be1c31bb0d70e1f2cfde236c0ad49cd499fff627491a65f107aa1a323e117d"
+      }
+    },
+    "synonym-07": {
+      "plan": {
+        "raw_query": "MH-PT302绒毛要怎么梳理护理",
+        "normalized_query": "MH-PT302绒毛如何梳理护理",
+        "lexical_query": "MH-PT302绒毛如何梳理护理",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语化“要怎么”归一为“如何”，保留型号MH-PT302，属商品养护知识类。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "7a0f0451ec1d46c9824d14585dc6fcdda4b25cbd9084b08b47e53632294936eb",
+        "bm25": "6b071fc46ad0d67395cb3c6973b03002218503a2196507a687c6f150647e4386",
+        "hybrid": "afc33ac96eab91d67c2ee774fafcadb8d87887615f2b3bbe284ab89df9ba01ec",
+        "hybrid_rerank": "709b968c70059f7fead2754b10f4eb71dea938ec6810ba46afeec20314d9e824"
+      }
+    },
+    "synonym-08": {
+      "plan": {
+        "raw_query": "MH-HD401胶印部位可以直接熨压吗",
+        "normalized_query": "MH-HD401胶印部位是否可以直接熨压",
+        "lexical_query": "MH-HD401胶印部位是否可以直接熨压",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "将口语疑问归一为标准是非问句，保留型号与部位，属商品养护规格类知识问题。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "e545bed4a0fcedbaec3500b2155adedebd98aaaafbd7205fd35438bc241421e8",
+        "bm25": "eabe5141059a3fffd86dffb9c2e948c1675da31209267a157346493e1e0d4e49",
+        "hybrid": "026817c8ff911bf5d9ce54b002f2d5c97fe4658cba56002d3a09c0419172e974",
+        "hybrid_rerank": "ed582c3a3e7cdbd8c27b2cb1c5c3732e491d583741cb0cbf9ddac9a64b274761"
+      }
+    },
+    "synonym-09": {
+      "plan": {
+        "raw_query": "MH-JK502清洁时温度和干燥有什么要求",
+        "normalized_query": "MH-JK502清洁时的温度和干燥要求是什么",
+        "lexical_query": "MH-JK502清洁时的温度和干燥要求是什么",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语化提问归一为标准问法，保留型号MH-JK502，属商品养护知识。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "6e03fa4a12efa6d7cca221a874b8388f163c247e3e274713bee1d4184ec45886",
+        "bm25": "f043838558fd52c4481d9bf8e194ab7a7f1f063fdc044824f832ac73a88205f3",
+        "hybrid": "6da42e1b2e8f12b8f7dd1599f488492da1d3b1ce3808ede1f73b65d81a9f178c",
+        "hybrid_rerank": "a2f1af0f381eb39c08bc34cba456f77a38fcb469b8fba8a47d6b086e3a74fcc0"
+      }
+    },
+    "synonym-10": {
+      "plan": {
+        "raw_query": "若是发错货，补发的配送费归哪边",
+        "normalized_query": "发错货补发的配送费由哪方承担",
+        "lexical_query": "发错货补发的配送费由哪方承担 运费 邮费",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语问句归一为简洁标准问法，属店铺规则/费用类知识问题，未添加条件。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "d61c5a43488ad5a423c8ab09b0a8861ee615ef0a5f0372f0aea90e86c6332a96",
+        "bm25": "e95179b7d50283388ec25536dd7c783a509db1586ab6e89edcfd6368ec79ac8d",
+        "hybrid": "63fae86e9530a0c40be299e3bc0c6b95d2a621a48c52e481f5f3274c894bd1ed",
+        "hybrid_rerank": "a764c1583b788fdf1df03fef2668cf708798b47c8ff59ee50aca41cbd9823c6a"
+      }
+    },
+    "synonym-11": {
+      "plan": {
+        "raw_query": "支付渠道退回款项会沿原交易路径吗",
+        "normalized_query": "支付渠道退回款项是否沿原交易路径退回",
+        "lexical_query": "支付渠道退回款项是否沿原交易路径退回 退货 退货申请",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "将口语疑问归一为标准问法，属店铺退款规则类知识问题，未添加条件。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "31fd03b936b33ddcc308c0c89ecf0b3fd09088db928f1649eb7f01070c2acf90",
+        "bm25": "71110dd194b7ec67b54112d99dd5dc039df349151313721a240c8bb657694c46",
+        "hybrid": "dfe88805eff32255c2e9261a9a997f1f4807cd4621480bd8bbdae2f539d201a6",
+        "hybrid_rerank": "1722834c9f37144b355ab00944812379168efe96215a86fa30b682284b481e26"
+      }
+    },
+    "synonym-12": {
+      "plan": {
+        "raw_query": "收件地址有误，二次投递产生费用归谁",
+        "normalized_query": "收件地址有误导致二次投递,产生的费用由谁承担",
+        "lexical_query": "收件地址有误导致二次投递,产生的费用由谁承担",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "将口语化提问归一为标准问法，属店铺规则/费用承担类知识问题，保留“地址有误”“二次投递费用”原意，不添加条件。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "3b526abf4c754c42ff596471325e7770aa5ef28115f65cb6bf68a4c70ac52210",
+        "bm25": "cc09ebb24c1dc3e2f8ae35fd4f7e86d111d4d21b58cd182909d86a0f5c61418c",
+        "hybrid": "1ebe5af0f6c4ed7c7c64b48aca8f2c7e09322ef4bf36a72fdaaab2c26c2cfaee",
+        "hybrid_rerank": "1c49b647cdb25cbd59baeee29c81d728a6f602790339f1b362f379e8bd055a4a"
+      }
+    },
+    "synonym-13": {
+      "plan": {
+        "raw_query": "签收商品后无理由退回的计时基准是什么",
+        "normalized_query": "签收商品后无理由退回的计时基准是什么",
+        "lexical_query": "签收商品后无理由退回的计时基准是什么 退货 退货申请",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "原句已是简洁标准问法，属店铺退换规则咨询，保留“签收后”起算点不变。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "cc21ed7b748865183fbb5e3ee412842c37eb1a3416c9b026e99438c1f1f37a0f",
+        "bm25": "7a15d03dcf2ff96b85c7a65e9b83e75a9de2dfeb9e7065787afdf62a11d79862",
+        "hybrid": "9e1d908fceb2fd078e513ecde8a41da40673fe3674c9cc64a4841d543e97811c",
+        "hybrid_rerank": "5f530a59e7dd7885d8acb971d16c14ac869e26d1b14180f2a2532b2c775793d1"
+      }
+    },
+    "synonym-14": {
+      "plan": {
+        "raw_query": "积分能转成法币提现吗",
+        "normalized_query": "积分能否转成法币提现",
+        "lexical_query": "积分能否转成法币提现",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语疑问归一为简洁标准问法，属店铺积分权益规则，归knowledge。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "9487658e023c7a3b4d9269b968cd70e694d56dc8cac3af14a1b5c675b330b3a6",
+        "bm25": "0a74baca2ff3984c337615801d5c4bfbbf33d542e1a71805d68b94d98151d91a",
+        "hybrid": "0b1113c705f807025569bf6477c375d164057409001b21840ac9292ccd57872a",
+        "hybrid_rerank": "1404beef050b337bceaa4a1ba4170ae4329b7e9ac61106d57039ef19abff5644"
+      }
+    },
+    "synonym-15": {
+      "plan": {
+        "raw_query": "订单还没出库寄出时怎么变更收件信息",
+        "normalized_query": "订单未出库寄出时如何变更收件信息",
+        "lexical_query": "订单未出库寄出时如何变更收件信息",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "将口语化表述归一为简洁标准问法，保留“未出库寄出”这一时间条件，属于店铺规则类知识问题。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "f2e849b03d9d6908ac6360d4a03084b27c505c1b5e505a72e2ed799c7a670204",
+        "bm25": "4f76b5ff02c97d55d39e888d34c6ceb830a6f707c36ef7f3558c6a8fe72d12e0",
+        "hybrid": "b7f513655a42565750673931f5e0a812819e24827c746e0355c387b2798a448e",
+        "hybrid_rerank": "2edefe5bc2be3a3a0412dc1e7871b6db9b0cf7108880e088356c671998ec5a4f"
+      }
+    },
+    "synonym-16": {
+      "plan": {
+        "raw_query": "衣服的标码等同统一人体尺寸吗",
+        "normalized_query": "衣服的标码是否等同统一人体尺寸",
+        "lexical_query": "衣服的标码是否等同统一人体尺寸",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语疑问归一为标准是非问句，属商品规格知识类，未添加额外条件。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "df71eafbce7f637596b4fa55faed70e86c1125ca5c8a229f100ad2e1ba1fdfd9",
+        "bm25": "9e485312dd06254c1795910814bf85783ae6ca54d85e3ecf92ca952b128e2b89",
+        "hybrid": "e76b99757d911eff127ba871c5a243d3f0c98e7cd3bed553cc6ecc07512ff788",
+        "hybrid_rerank": "d494a5956e4dc43f16c8b113b86d083ec7fd28f1192d317215dda880e34e3406"
+      }
+    },
+    "metadata-05": {
+      "plan": {
+        "raw_query": "在运动外套品类查MH-JK501肩宽",
+        "normalized_query": "运动外套品类MH-JK501的肩宽是多少",
+        "lexical_query": "运动外套品类MH-JK501的肩宽是多少",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": "运动外套",
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语化查询转为标准问法，保留SKU与品类限定，属商品规格知识类。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "ca4bc7b5ecc298c44e4f076e0817891177eddc22e3b49aeac11edf719efbfbbc",
+        "bm25": "133e93c4fed7c464dee6cda3d750c7573d4552d48488ec698cf3b4cae03acd8a",
+        "hybrid": "252bb3d2d2675d55bf3eb55c46f57a239efcf40f3b95c3a3b6de43e90d9ec4d7",
+        "hybrid_rerank": "b4b0059fa2f5d75198e45bf955bb7811d994d613bd6f4ac5afecd758f5c48f09"
+      }
+    },
+    "metadata-06": {
+      "plan": {
+        "raw_query": "只搜索衬衫，棉麻条纹MH-SH202衣长呢",
+        "normalized_query": "MH-SH202 棉麻条纹衬衫的衣长是多少",
+        "lexical_query": "MH-SH202 棉麻条纹衬衫的衣长是多少",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": "衬衫",
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语化检索需求归一为标准规格问法，保留SKU与商品描述，不添加未提供的条件",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "a8a30cf503182c67dfd305f8f4fa1b2eb8ca25773080c32da62ec3f06be2272c",
+        "bm25": "15fb833b9acef4be98cc125fd0e6ce2e2730e145d97e2b643015471d5f7b354f",
+        "hybrid": "a5fcfce94e93168d6ad253bed902f1c126a3b3352f563edd38e9c790f1f34407",
+        "hybrid_rerank": "a39e965c6e56416419d3da273046a78309b538c1165dcd5bd6ecdcc6a868274d"
+      }
+    },
+    "metadata-07": {
+      "plan": {
+        "raw_query": "牛仔夹克范围内，MH-DJ101右袖口具体有什么瑕疵",
+        "normalized_query": "牛仔夹克范围内,MH-DJ101右袖口具体有什么瑕疵",
+        "lexical_query": "牛仔夹克范围内,MH-DJ101右袖口具体有什么瑕疵",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": "牛仔夹克",
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "原句已为规范问法，保留商品范围限定与SKU、部位，属商品规格/瑕疵描述类知识问询。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "8939cf6640ea8704f2376ff84ad7fd4c77ff1f47d0ff285585ea90060cdd2761",
+        "bm25": "f91f726c17ae9ea7b01e2c02576b63e71e064dc4d8909b8c1c221374f1d0956a",
+        "hybrid": "c2b26ee7d55022c54bcecef8e1de69d33f2f8a3d387429fb7fd9bf5a75d3de12",
+        "hybrid_rerank": "9832c5048fd2a5424d6f4659e73b3f108dfba561c500a63a0b225fce0efcbff6"
+      }
+    },
+    "metadata-08": {
+      "plan": {
+        "raw_query": "只在裤装里看，MH-PT301是否带弹力",
+        "normalized_query": "仅在裤装范围内,MH-PT301是否带弹力",
+        "lexical_query": "仅在裤装范围内,MH-PT301是否带弹力",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": "裤装",
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "保留SKU与限定范围“只在裤装里看”，将口语问法归一为是否带弹力的规格询问",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "d72a947591b3eddb380d9f054a7dbe378acb13d684af94502dc54db56f09425f",
+        "bm25": "c663f29597362ea5f21dee027a018d5037fbab99837b49b389310358e3dcee7f",
+        "hybrid": "699fb61c92ac5b1a5b29ef97d9dccd1b514a5975ed490a0deb5bc9c0d805b41d",
+        "hybrid_rerank": "f67b4a0a3f6c0493de045ce0138904669eed72d599d0a57028284d03453bd714"
+      }
+    },
+    "metadata-09": {
+      "plan": {
+        "raw_query": "卫衣目录中，MH-HD401的衣长查得到吗",
+        "normalized_query": "卫衣目录中MH-HD401的衣长是多少",
+        "lexical_query": "卫衣目录中MH-HD401的衣长是多少",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": "卫衣",
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语疑问归一为规格查询问法，保留SKU与品类限定，不添加答案。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "0422429a18934d8746ed75085bd4eedac862efb9ea4764462aa135e75da16c24",
+        "bm25": "7650c9710df6844a68f84b5e03662d2c33ec1c8ce651ca0cc1729bf5f3b8d5e2",
+        "hybrid": "a6265b0b2c8e044ab4d6c924f8c62897b444d3fb93818d74a58e8e89403e42ac",
+        "hybrid_rerank": "73fa2b9b3e3cc522a1661959b99a38fcc3e5a6eeaa6dcc855865642ae9417045"
+      }
+    },
+    "metadata-10": {
+      "plan": {
+        "raw_query": "运动外套限定，MH-JK502袖长是多少",
+        "normalized_query": "MH-JK502的袖长是多少",
+        "lexical_query": "MH-JK502的袖长是多少",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": "运动外套",
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "去除“运动外套限定”等冗余修饰，保留型号与规格问询，归一为简洁标准问法。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "954bf694159985e3e7c322db942e4e50ee60dfd38e67a150b5b382b3331b0578",
+        "bm25": "d376473c95876f47cb80c8b10dd5e3c9bf2819f4e812a59d4b3db0e16ed68735",
+        "hybrid": "4def803aa31766564500363d1f5b5916faf004dcd0e25f87760711390755b5f2",
+        "hybrid_rerank": "60393b6b802fe670af919766d46a775c54fba3ff5883e14c2711040bf7b81ada"
+      }
+    },
+    "metadata-11": {
+      "plan": {
+        "raw_query": "只取衬衫和通用政策，七天无理由从何时开始",
+        "normalized_query": "仅限衬衫品类,七天无理由退货从何时开始计算",
+        "lexical_query": "仅限衬衫品类,七天无理由退货从何时开始计算 退回 退货申请",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": "衬衫",
+          "content_type": null,
+          "include_general": true
+        },
+        "rewrite_reason": "将口语问法归一为标准问句，保留“仅限衬衫”的限定条件与“七天无理由”起算点询问，不补充答案或额外条件。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "9c552c13edb940311d70fdb8926b6cf09e093ba4abf5d0d55a37e36f104efcf7",
+        "bm25": "aa56c137edc32479285b3df35e287bea7e0ed5f2b3ab5da58647ebc55e34b683",
+        "hybrid": "b0ec27ca710cf1b3440635abfb625ae8218ddef39e67d509a3520f9db259b8a8",
+        "hybrid_rerank": "f414161f8d7e00c4eb2e4bdfa90e26c99db0374418f7aab95ded393dad031a2a"
+      }
+    },
+    "metadata-12": {
+      "plan": {
+        "raw_query": "查裤装和通用规则，个人原因退货邮费谁承担",
+        "normalized_query": "裤装及通用规则中,个人原因退货的邮费由谁承担",
+        "lexical_query": "裤装及通用规则中,个人原因退货的邮费由谁承担 运费 配送费 退回 退货申请",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": "裤装",
+          "content_type": null,
+          "include_general": true
+        },
+        "rewrite_reason": "将口语化提问归一为简洁标准问法，保留“裤装”“通用规则”“个人原因退货”“邮费承担方”等条件，属店铺规则类知识问题。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "024821ab49350cf435f4698afaeacdabc95e32be6468b9adbeb84f58e73969c5",
+        "bm25": "8b497e7052f12a0641d8dbd5bb29e16647f0fa2fd7367a23d6e17e6ce6667a22",
+        "hybrid": "a7f44995eb8eb5b05c8ed71ca971b8a2370ed3eb13347436929edf3f818a3bb1",
+        "hybrid_rerank": "442d6dfad58b1499b391d54008b3a7efec8f62cf20554f53ecaef9d8c12476d8"
+      }
+    },
+    "metadata-13": {
+      "plan": {
+        "raw_query": "从卫衣和通用说明中查，普通地区98元实付运费",
+        "normalized_query": "卫衣和通用说明中,普通地区实付运费98元的相关说明",
+        "lexical_query": "卫衣和通用说明中,普通地区实付运费98元的相关说明 邮费 配送费",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": "卫衣",
+          "content_type": null,
+          "include_general": true
+        },
+        "rewrite_reason": "将口语化检索指令归一为简洁问法，保留“卫衣”“通用说明”“普通地区”“98元实付运费”等限定信息，不添加答案或条件。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "b4043645b7548cde443f4fc0c346ded6297852e0f0d6fc0723b693e54eb118b6",
+        "bm25": "888867da7048618bd590658e4f85f4e894d9c95091bbb0325e11280ad71f9ed6",
+        "hybrid": "837e9e4b31110e60a99de963b899da328f207adc5d9d6aa953bc74a34355a5a5",
+        "hybrid_rerank": "f138ed1cf61a2c4a7b5e35d740408b4951e9f975737c12c9b910d9fc28823c4a"
+      }
+    },
+    "metadata-14": {
+      "plan": {
+        "raw_query": "从牛仔夹克和通用政策中查，积分期限有几个月",
+        "normalized_query": "牛仔夹克和通用政策中积分期限有几个月",
+        "lexical_query": "牛仔夹克和通用政策中积分期限有几个月",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": "牛仔夹克",
+          "content_type": null,
+          "include_general": true
+        },
+        "rewrite_reason": "将口语化查询归一为简洁问法，保留“牛仔夹克”和“通用政策”两个检索范围及“积分期限几个月”的询问点，不添加答案或额外条件。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "419224311adcb41722bd59c227137748a8cd79d24c7f735215ad7731e4650092",
+        "bm25": "e18dae3dc955e5dad062646605dde63242161bd43c37e286cd68ae664f610a0c",
+        "hybrid": "444bbcde862dcc5d895d9fea58932da27fb344aeacd8200985b83208987c70d6",
+        "hybrid_rerank": "c7ea7b21324bdfc32bc59f84a89b73e4f981c09e6638e327a219fb670254438e"
+      }
+    },
+    "metadata-15": {
+      "plan": {
+        "raw_query": "仅衬衫品类，MH-SH201的肩宽是多少",
+        "normalized_query": "仅衬衫品类,MH-SH201的肩宽是多少",
+        "lexical_query": "仅衬衫品类,MH-SH201的肩宽是多少",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": "衬衫",
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "询问指定型号商品规格，保留SKU与品类限定，属商品规格知识类。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "46450a777acd09243779ac925df514644e418418e9a06380f93b4febb411a2dd",
+        "bm25": "139d2bb076dbfdf1b9c9c72e77fca51d491954853021c64f08e2322908740ea1",
+        "hybrid": "69bb5d575b12cbd3eee822975aa3140143819db3cf2be977360053ecff0f4cef",
+        "hybrid_rerank": "d30900c64864bb8f41f24c50c5525bf8466e33681ea2e6c2a672b07b01fafc56"
+      }
+    },
+    "metadata-16": {
+      "plan": {
+        "raw_query": "仅牛仔夹克品类，MH-DJ103左下摆披露了什么",
+        "normalized_query": "仅牛仔夹克品类,MH-DJ103左下摆披露了什么",
+        "lexical_query": "仅牛仔夹克品类,MH-DJ103左下摆披露了什么",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": "牛仔夹克",
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "保留品类限定与SKU原样，问法已较规范，仅做轻微归一",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "537ee37a52f91e4665256891093848940d38b0a0bbb471bf2fcebc607df1c6c9",
+        "bm25": "692b409e0860fadb96fe09cbea9a08e9ea26d545eab9b322c7b09c83b93c0b7d",
+        "hybrid": "d7a57c1998523e1a17c4f8ad39e4014458b8a99b7ff9a6c699c3287d306080bd",
+        "hybrid_rerank": "a9fde45e7f0ab7d4469eb61ddedf49d980a04779c960534c978abbb80def574e"
+      }
+    },
+    "multi_evidence-05": {
+      "plan": {
+        "raw_query": "MH-PT301和MH-PT302裤长分别多少，哪个更长",
+        "normalized_query": "MH-PT301和MH-PT302的裤长分别是多少,哪个更长",
+        "lexical_query": "MH-PT301和MH-PT302的裤长分别是多少,哪个更长",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语问句归一为标准问法，保留两个SKU型号及比较意图，属商品规格知识类。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "53d7cee9d266a5eaad06a1e1a58628fd062ea1608c39692d473bf62d7b059c70",
+        "bm25": "c8eac033b4c66bc95500b327ba1164b2809404130e6f0a7ef42641893ad4d694",
+        "hybrid": "386958089114664b487ebb27097b87116b09ef0e0fa577e384a245a23b85665e",
+        "hybrid_rerank": "bef9b4ff84bd933118ae9ba1faf90803440a12a8a48a9c522f20ca5430a01dcc"
+      }
+    },
+    "multi_evidence-06": {
+      "plan": {
+        "raw_query": "把MH-DJ101和MH-DJ103衣长并列给我",
+        "normalized_query": "MH-DJ101和MH-DJ103的衣长分别是多少",
+        "lexical_query": "MH-DJ101和MH-DJ103的衣长分别是多少",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语“并列给我”归一为询问两款型号衣长，保留原SKU，不添加品类或型号。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "2b6ee1f05389846f28579e7f111d086095bafe35345338c80e124103cb5594e3",
+        "bm25": "87b225fb16082f7f978f3a54efdfa2bbad9e0c8d1ae7d19ed449fee4318cce6c",
+        "hybrid": "1955f483b730563ca5f9f624b50d97ccb86d893ec8f8e675f745c8dce44c88dc",
+        "hybrid_rerank": "66a454b25e4d9bfcf24854758f5b8d25b6c876d3c09e91994a405953f030d63f"
+      }
+    },
+    "multi_evidence-07": {
+      "plan": {
+        "raw_query": "MH-SH202与MH-SH203的成分和已披露瑕疵有何区别",
+        "normalized_query": "MH-SH202与MH-SH203的成分和已披露瑕疵有何区别",
+        "lexical_query": "MH-SH202与MH-SH203的成分和已披露瑕疵有何区别",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "原句已是简洁标准问法，保留型号与对比项，属商品规格知识类。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "afe3e14601c6de83cf1be9c07cbcff235c91cda53e0a2b97c73941007afeccb8",
+        "bm25": "48d8b1572ac47314c96e9aca44876b65418853d35ca93106675d50758160c12b",
+        "hybrid": "d4fa60d656756bc0ab7d03d68e665096e44689770b7be9d170cb15ee7ce37bd6",
+        "hybrid_rerank": "61b2d2bec2646b0ab5abc07f5ecbba21bb8de132f03971bbd887e8eca9be0b2e"
+      }
+    },
+    "multi_evidence-08": {
+      "plan": {
+        "raw_query": "MH-PT302和MH-HD401的棉占比各是多少",
+        "normalized_query": "MH-PT302和MH-HD401的棉占比各是多少",
+        "lexical_query": "MH-PT302和MH-HD401的棉占比各是多少",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "询问两个型号的棉含量规格，属商品规格知识类；原句已规范，保留SKU原样。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "a2ee7a030baaef939adc17878caa9d14e4908c2dc5c8781c8ccce8f7591dfccc",
+        "bm25": "1cbc40b9adef0550475000d1dd42c5ce8fdf6ae2d6dd4367a4fcab505a291a18",
+        "hybrid": "17cba9e13a6958dc9f4dce7b5a5437bfacae6381050d8ae944c8a4881196f84c",
+        "hybrid_rerank": "9667865985376cb4a0f3cb762f46486a627ca7e3f7542ea629434d512bb6d5ef"
+      }
+    },
+    "multi_evidence-09": {
+      "plan": {
+        "raw_query": "MH-JK501与MH-SH201分别怎样清洗",
+        "normalized_query": "MH-JK501与MH-SH201分别怎样清洗",
+        "lexical_query": "MH-JK501与MH-SH201分别怎样清洗",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "询问两个型号的清洗养护方法，属商品养护知识，原句已规范，保留型号原样。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "90b138aebc3d44cfa7bbaf31df4a390c4750715618252a06ac6c8b4d8e48996d",
+        "bm25": "3f92c15684fb4d30f0acaf873a57c3e16a11cbf07b984f4abbd7f7139e63a573",
+        "hybrid": "e69d283cc4dbd74217e9f32cab71aa13649986e67ccdaaaee165541ce5b593c4",
+        "hybrid_rerank": "2147e0f8fa82921e857971080d148e86658cb050e9315eb33c83232da0f1aa41"
+      }
+    },
+    "multi_evidence-10": {
+      "plan": {
+        "raw_query": "普通地区98元订单的运费和积分最多抵扣比例都说一下",
+        "normalized_query": "普通地区98元订单的运费是多少,积分最多抵扣比例是多少",
+        "lexical_query": "普通地区98元订单的运费是多少,积分最多抵扣比例是多少 邮费 配送费",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "将口语“都说一下”拆为两个并列的店铺规则问题，保留金额98元与“普通地区”条件，不添加答案或额外条件。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "9409cf4238e2f329cb13f7a3b30a8a1800f31b56f383fbd18df9501cfd68da90",
+        "bm25": "99b42c0b8d4ae2163f88cbc3c3e9244679fd90aacc5d6f544559cdc9fcece552",
+        "hybrid": "af539d8dc241b5644996be2058dd5f557839560f23208c7160979726e14dd119",
+        "hybrid_rerank": "1ddb48913290bd9e63a88c5aae4ded87de714017396cd87ce3659d5bba369771"
+      }
+    },
+    "multi_evidence-11": {
+      "plan": {
+        "raw_query": "积分有效期从何时起，退货7天又从何时起",
+        "normalized_query": "积分有效期从何时起算,退货7天从何时起算",
+        "lexical_query": "积分有效期从何时起算,退货7天从何时起算 退回 退货申请",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "口语化提问归一为标准问法，保留两个时间起算点，属店铺规则类知识问题",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "32b6066f2d894e1141956c25b1e36e3d4baaee9d97cda405f467b3cd4562f88b",
+        "bm25": "0da59f98e57fd22ca6f061792946b614242179da4967a9d154dc7860cfc57b03",
+        "hybrid": "d01330bc50341b32f56c4566f03f86f9672ea323c44eaa2365b33c7ddc63a082",
+        "hybrid_rerank": "ed9feca76fb8afe5acb7022af2db221db9568b847c3ea4d8cb6fb1f0c56cc6b9"
+      }
+    },
+    "multi_evidence-12": {
+      "plan": {
+        "raw_query": "无质量问题退货和首次换货的运费承担有何不同",
+        "normalized_query": "无质量问题退货与首次换货的运费承担有何不同",
+        "lexical_query": "无质量问题退货与首次换货的运费承担有何不同 邮费 配送费 退回 退货申请",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "属店铺退换货运费规则咨询，口语归一为简洁标准问法，保留“无质量问题”“首次换货”限定条件。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "2a0027a90f7591d24110154cfef41a420d691681371b1bab1aee84d066204621",
+        "bm25": "4174782426dc3607e0dc33086dbfe2344b0c91716ac469e76667d05a0211f219",
+        "hybrid": "d907edf0fefe473eeaf8934c72c0b8489dabb2b8647bcdafd28dacb92acf7b44",
+        "hybrid_rerank": "c00adf2de54851fa050cf10b8b266cd5f0628bfe27a3e428a57bea41d5bbd6c7"
+      }
+    },
+    "multi_evidence-13": {
+      "plan": {
+        "raw_query": "运输破损该带什么材料，错发补发邮费谁承担",
+        "normalized_query": "运输破损需要提供什么材料;错发补发的邮费由谁承担",
+        "lexical_query": "运输破损需要提供什么材料;错发补发的邮费由谁承担 运费 配送费",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "两个店铺规则类问题合并为简洁标准问法，保留原意，不添加条件",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "1eecdec61c6ca3f55e4e38e12419bef8dee3ce6bbde86d940b0afb737ba6251e",
+        "bm25": "16764498c2b24df039fa9a1f0f160c3f8f5a680e8bc6794f8243f19ac3a69b1d",
+        "hybrid": "d551efc4211ee0d178aa7fedb758da7d683f19d25ea0ed78e84161cd4b83fb0d",
+        "hybrid_rerank": "eefa8ea18fc51ecf7a6b5d27bfce1a5d7736fab4155159b78ad5702620e58c1a"
+      }
+    },
+    "multi_evidence-14": {
+      "plan": {
+        "raw_query": "人工客服几点能找，审核异议又应在几日内申诉",
+        "normalized_query": "人工客服的服务时间是几点?审核异议应在几日内申诉?",
+        "lexical_query": "人工客服的服务时间是几点?审核异议应在几日内申诉?",
+        "intent": "business",
+        "requires_knowledge": false,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "将口语化提问归一为标准问法，保留两个并列问题及“几日内”时间条件，属店铺规则类知识问询。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "1ea7d091bf500264b8acf6e0afb55592bdac9502bfb3e56b10806d7a912a1b38",
+        "bm25": "306d3dfc04d0f900b3b81a6884ef568d29424f9972cc7a125ae181de667a5cc8",
+        "hybrid": "10852c60e604810a884aee584be945835f4511db4e0e312184fa1d47786477a5",
+        "hybrid_rerank": "b1342a6debbd4e96899d9e7a54821714f4c14d28a341c903deddb7e7c684ae34"
+      }
+    },
+    "multi_evidence-15": {
+      "plan": {
+        "raw_query": "MH-DJ102与MH-PT302的衣长或裤长分别是多少",
+        "normalized_query": "MH-DJ102与MH-PT302的衣长或裤长分别是多少",
+        "lexical_query": "MH-DJ102与MH-PT302的衣长或裤长分别是多少",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "原句已是简洁标准问法，保留型号与并列条件，属商品规格知识类。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "426baea4a831c6e98a68d1b2d2554a2140aa4784cd3f0955531450cd6ae5802b",
+        "bm25": "78ea34bcf60d2744fa77eff9f910aaf6e758e62eb1a258953a77a4647cc955be",
+        "hybrid": "f7c77f7d85b57bd36269e8fdbeef29314c2b82d3e71f78af3790e287135c636d",
+        "hybrid_rerank": "406920c7455193edfe0e4e27aa12f31322f9b7dbf965614c2731e354bbcf68d5"
+      }
+    },
+    "multi_evidence-16": {
+      "plan": {
+        "raw_query": "MH-SH203与MH-HD402分别披露哪处旧痕",
+        "normalized_query": "MH-SH203与MH-HD402分别披露哪处旧痕",
+        "lexical_query": "MH-SH203与MH-HD402分别披露哪处旧痕",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "原句已是简洁标准问法，保留型号与并列询问结构，属商品规格/成色信息查询。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "a343d84453020dbb86250d83cf744e885e417237e3683ea812dbb7adb0e45a75",
+        "bm25": "27d46c8202c099597779dea7c8c52711eb480b315f77f3aefbe908bc4fcbea2a",
+        "hybrid": "f90d36c19c42a24aa79718c29e4d72ebb30ca701a86e66ce8393ed9133ef49c8",
+        "hybrid_rerank": "e3ce0f0b98edc55a43327b94709a8c039a250d9abfc6540a7fdcd57a1e5521ff"
+      }
+    },
+    "out_of_scope-05": {
+      "plan": {
+        "raw_query": "MH-PT399前裆是多少厘米",
+        "normalized_query": "MH-PT399前裆是多少厘米",
+        "lexical_query": "MH-PT399前裆是多少厘米",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "商品规格尺寸咨询，原句已为标准问法，保留SKU与单位。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "2e9f95a678e889b18a4192b47dde55d529f71339a291306bd9ef4570abfe443e",
+        "bm25": "8c6a0e4944dc9ea1f7ac4920c5806077af09f2ad14525e26f87b262e7dc736f7",
+        "hybrid": "1ca3077fe9eca466874ce93db14d7478eb8e37fb9941b8bcb6f4106d91e28842",
+        "hybrid_rerank": "85ba5a02babb5236a606258920ed495163093a311300cc313c6408575e742388"
+      }
+    },
+    "out_of_scope-06": {
+      "plan": {
+        "raw_query": "MH-HD499能做到永不褪色吗，给试验数据",
+        "normalized_query": "MH-HD499是否能做到永不褪色,请提供试验数据",
+        "lexical_query": "MH-HD499是否能做到永不褪色,请提供试验数据",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "将口语问法归一为标准问句，保留型号与“永不褪色”的绝对表述及索要试验数据的要求，属商品规格知识类。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "d882649d5366556041b30d88b5d0318d35707e9dea8bb54c5c9418b91fc5cba5",
+        "bm25": "7202c5600f3d0bce27768ea136b42b4b280d608812da3abf7b64a6927ef4efa6",
+        "hybrid": "fd95e09cb6cfb826a10338e7c3619760a0b591b8b8a2d7beb40c822f2da47228",
+        "hybrid_rerank": "38bc01e04d1dfdde8b451cf1b71f2fc4b75075f2211527f2602052af1bd2210f"
+      }
+    },
+    "out_of_scope-07": {
+      "plan": {
+        "raw_query": "我的退款10月23日还是24日一定能入账，确定哪一天",
+        "normalized_query": "我的退款是10月23日还是24日一定能入账,确定哪一天",
+        "lexical_query": "我的退款是10月23日还是24日一定能入账,确定哪一天 到账 退款到账",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "用户查询自己退款的到账时间，属订单/资金业务；保留原日期与“一定”限定，仅做口语归一。",
+        "rewrite_fallback": false
+      },
+      "keys": {
+        "dense": "e16d3fb610ecb1d3c87bd5d2f9d6f126cd1e62a5439a20fe8733d58fa8fd1810",
+        "bm25": "580a67e8d778357eb090e7c420b2b3a3d13e54e7a642fd7203d20afbe8f0c43f",
+        "hybrid": "c6d898760ae7563b00e2612cc6b54093d316f3575a322f94b074459a476476e9",
+        "hybrid_rerank": "8da3426324e629d32b58af7a01d30ae140ea56fda6621ecf9f509d8e13abee20"
+      }
+    }
+  }
+}

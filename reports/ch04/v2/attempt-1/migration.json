@@ -1,0 +1,53 @@
+{
+  "before_mysql_count": 113,
+  "before_mysql_hash": "edfec26fe29018bb66db4a903d4d632eb1c86f60f228018d87d1058fdad9e409",
+  "preserved_collections": {
+    "knowledge": {
+      "count": 48,
+      "sha256": "20cb255da0b0d2fd2539c453353de88f1942ccd6132a00ccb6d4d85e915afced"
+    },
+    "knowledge_hybrid": {
+      "count": 65,
+      "sha256": "46fc15b052c8f4b1dee8d526b7beba6017ce57d1c2abd69810cccc5ee0bc5cea"
+    }
+  },
+  "dry_run": {
+    "target_collection": "knowledge_hybrid_ch04_v2",
+    "mysql_total": 113,
+    "source_hashes": {
+      "data\\kb\\ch04\\returns-policy.md": "ff8b7c409437e29f853ffa257c97a7917c3c371b01b8c8e3cd3bb75dd786af15",
+      "data\\kb\\ch04\\product-faq.md": "79df07e1ce2712fbf37c87e43bda4785ddc6c29444bc05af031dd535a3d22f27",
+      "data\\kb\\ch04\\after-sales-manual.md": "124f62cc7b32b4e5b72b0520d2dea56e97d4f01f87ba9edd5df3d5c2b07a0973",
+      "data\\kb\\ch04\\product-specs.md": "bdb27a49565e18bf732cbd9be6b654a126be2a88a9d411202f0f956716ac6266",
+      "data\\kb\\ch04\\member-benefits.md": "98a326348ab2e82f14578805f28d0a6d9e06df196a9596265f6ce5fc0a87e7b7",
+      "data\\kb\\ch04\\billing-shipping.md": "ca1027f085dddac1b93ef2cff75e21e63a9768368fe6bb49356dc04c1fb4651e"
+    },
+    "legacy_excluded": 48,
+    "reused": 65,
+    "phase": "snapshot",
+    "dry_run": true
+  },
+  "migration": {
+    "status": "consistent",
+    "mysql_total": 172,
+    "eligible_total": 124,
+    "legacy_excluded": 48,
+    "eligible_pending": 0,
+    "eligible_done": 124,
+    "target_count": 124,
+    "missing_in_milvus": [],
+    "orphan_in_milvus": [],
+    "stale_ids": []
+  },
+  "after_mysql_hash": "edfec26fe29018bb66db4a903d4d632eb1c86f60f228018d87d1058fdad9e409",
+  "after_collections": {
+    "knowledge": {
+      "count": 48,
+      "sha256": "20cb255da0b0d2fd2539c453353de88f1942ccd6132a00ccb6d4d85e915afced"
+    },
+    "knowledge_hybrid": {
+      "count": 65,
+      "sha256": "46fc15b052c8f4b1dee8d526b7beba6017ce57d1c2abd69810cccc5ee0bc5cea"
+    }
+  }
+}

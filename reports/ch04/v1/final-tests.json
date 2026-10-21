@@ -1,0 +1,56 @@
+{
+  "before": {
+    "conversations": {
+      "count": 11,
+      "sha256": "ea5ad063cc35974feccfc1e66686391cce459a783fcdbe37b89673d34ebddaf9"
+    },
+    "messages": {
+      "count": 46,
+      "sha256": "d16f545f012ef9dfd0b82d04e6528852eddb92829d25428a7b80ad9ff7964ac9"
+    },
+    "tickets": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "low_confidence_questions": {
+      "count": 4,
+      "sha256": "0dbf5e6a31f4505905bc6d38528f9975eb59e1a2d8f2493aa2e701abeca85f5f"
+    },
+    "knowledge_chunks": {
+      "count": 113,
+      "sha256": "12bda808afc5a9396d892cbc90cae4e91c3da96575ea8d349bad9f36798b07d5"
+    }
+  },
+  "after": {
+    "conversations": {
+      "count": 11,
+      "sha256": "ea5ad063cc35974feccfc1e66686391cce459a783fcdbe37b89673d34ebddaf9"
+    },
+    "messages": {
+      "count": 46,
+      "sha256": "d16f545f012ef9dfd0b82d04e6528852eddb92829d25428a7b80ad9ff7964ac9"
+    },
+    "tickets": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "low_confidence_questions": {
+      "count": 4,
+      "sha256": "0dbf5e6a31f4505905bc6d38528f9975eb59e1a2d8f2493aa2e701abeca85f5f"
+    },
+    "knowledge_chunks": {
+      "count": 113,
+      "sha256": "12bda808afc5a9396d892cbc90cae4e91c3da96575ea8d349bad9f36798b07d5"
+    }
+  },
+  "unchanged": true,
+  "test_exit_code": 0,
+  "test_output": "........................................................................ [ 13%]\n........................................................................ [ 26%]\n........................................................................ [ 39%]\n........................................................................ [ 52%]\n........................................................................ [ 65%]\n........................................................................ [ 78%]\n........................................................................ [ 91%]\n...............................................                          [100%]\n551 passed in 37.23s\n",
+  "native_finish_suite": {
+    "command": "uv run --no-sync pytest -q --tb=short",
+    "passed": 551,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 35.44
+  }
+}

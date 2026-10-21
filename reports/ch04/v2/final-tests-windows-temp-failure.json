@@ -1,0 +1,49 @@
+{
+  "before": {
+    "conversations": {
+      "count": 21,
+      "sha256": "af3dcc5550f8abf81ea86103570b2e0fe77edf3a5a1ad96b1f19d09654676068"
+    },
+    "messages": {
+      "count": 90,
+      "sha256": "206f5efe7103a11077d2cd059d439c32ee0ada3b44c57261160b8fa2f6138bdd"
+    },
+    "tickets": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "low_confidence_questions": {
+      "count": 13,
+      "sha256": "3c3eda264099c2d3497aba150f08c61c62a20e4d76fe82e769af61747e654d19"
+    },
+    "knowledge_chunks": {
+      "count": 181,
+      "sha256": "d4f5763d5fec63388327cadae625a4b9f6eb6f6daddc45c3802b09c9969836f5"
+    }
+  },
+  "after": {
+    "conversations": {
+      "count": 21,
+      "sha256": "af3dcc5550f8abf81ea86103570b2e0fe77edf3a5a1ad96b1f19d09654676068"
+    },
+    "messages": {
+      "count": 90,
+      "sha256": "206f5efe7103a11077d2cd059d439c32ee0ada3b44c57261160b8fa2f6138bdd"
+    },
+    "tickets": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "low_confidence_questions": {
+      "count": 13,
+      "sha256": "3c3eda264099c2d3497aba150f08c61c62a20e4d76fe82e769af61747e654d19"
+    },
+    "knowledge_chunks": {
+      "count": 181,
+      "sha256": "d4f5763d5fec63388327cadae625a4b9f6eb6f6daddc45c3802b09c9969836f5"
+    }
+  },
+  "unchanged": true,
+  "test_exit_code": 1,
+  "test_output": "........................................................................ [ 12%]\n........................................................................ [ 25%]\n........................................................................ [ 38%]\n........................................................................ [ 51%]\n.......................................................F................ [ 64%]\n........................................................................ [ 77%]\n........................................................................ [ 90%]\n.......................................................                  [100%]\n================================== FAILURES ===================================\n_______ test_normal_vectorize_scopes_new_rows_and_never_touches_legacy ________\ntests\\test_kb_migration.py:121: in test_normal_vectorize_scopes_new_rows_and_never_touches_legacy\n    migration.migrate_hybrid()\napp\\kb\\migration.py:174: in migrate_hybrid\n    _save(manifest)\napp\\kb\\migration.py:56: in _save\n    os.replace(temporary, path)\nE   PermissionError: [WinError 5] 拒绝访问。: 'C:\\\\Users\\\\20968\\\\AppData\\\\Local\\\\Temp\\\\pytest-of-20968\\\\pytest-101\\\\test_normal_vectorize_scopes_n0\\\\manifest.json.0o886f86' -> 'C:\\\\Users\\\\20968\\\\AppData\\\\Local\\\\Temp\\\\pytest-of-20968\\\\pytest-101\\\\test_normal_vectorize_scopes_n0\\\\manifest.json'\n=========================== short test summary info ===========================\nFAILED tests/test_kb_migration.py::test_normal_vectorize_scopes_new_rows_and_never_touches_legacy\n1 failed, 558 passed in 43.58s\n"
+}
