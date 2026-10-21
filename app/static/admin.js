@@ -245,6 +245,7 @@
     }
     .admin-check input { accent-color: var(--teal); }
     .admin-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+    .admin-list[hidden] { display: none; }
     .admin-list-item {
       display: flex; align-items: flex-start; gap: 12px;
       padding: 10px 12px;
