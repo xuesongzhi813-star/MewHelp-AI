@@ -38,6 +38,7 @@ EXPECTED_ARGS: dict[str, set[str]] = {
 # 各工具的**系统注入**参数(标了 InjectedToolArg,模型不可见,由编排层注入)
 INJECTED_ARGS: dict[str, set[str]] = {
     "create_ticket": {"conversation_id"},
+    "query_faq": {"query_plan"},
 }
 
 
@@ -275,7 +276,8 @@ def test_tool_args_schema_properties_match_params():
         full = instance.args_schema.model_json_schema()
         expected_full = EXPECTED_ARGS[name] | INJECTED_ARGS.get(name, set())
         assert set(full["properties"]) == expected_full, f"{name} 完整参数集合不符"
-        assert set(full["required"]) == expected_full
+        expected_required = expected_full - ({"query_plan"} if name == "query_faq" else set())
+        assert set(full["required"]) == expected_required
     # create_ticket 的 ticket_type 是枚举,取值与业务口径一致
     ticket_type_prop = TOOL_REGISTRY["create_ticket"].args_schema.model_json_schema()[
         "properties"

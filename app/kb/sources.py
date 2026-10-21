@@ -5,16 +5,27 @@ from __future__ import annotations
 from pathlib import Path
 
 from app.kb.documents import Source
+from app.config import get_settings
 
 # 默认建库材料;路径相对项目根目录。
-SOURCES: list[Source] = [
+SOURCES: dict[str, list[Source]] = {'ch03': [
     Source(Path("data/kb/退货政策.md"), "退货政策", "文档章节"),
     Source(Path("data/kb/商品FAQ.md"), "商品FAQ", "商品FAQ"),
     Source(Path("data/kb/售后手册.md"), "售后手册", "文档章节"),
-]
+], 'ch04': [
+    Source(Path(f'data/kb/ch04/{filename}.md'), title, kind)
+    for filename, title, kind in (
+        ('returns-policy', 'MewHelp 古着退货政策', '文档章节'),
+        ('product-faq', 'MewHelp 古着商品FAQ', '商品FAQ'),
+        ('after-sales-manual', 'MewHelp 古着售后手册', '文档章节'),
+        ('product-specs', 'MewHelp 古着商品规格', '文档章节'),
+        ('member-benefits', 'MewHelp 古着会员与积分', '文档章节'),
+        ('billing-shipping', 'MewHelp 古着开票与配送', '文档章节'),
+    )
+]}
 
 
-def get_sources(base_dir: Path | None = None) -> list[Source]:
+def get_sources(base_dir: Path | None = None, *, corpus_version: str | None = None) -> list[Source]:
     """返回建库材料清单。
 
     Args:
@@ -27,7 +38,10 @@ def get_sources(base_dir: Path | None = None) -> list[Source]:
         按路径排序的 :class:`Source` 列表。
     """
     if base_dir is None:
-        return list(SOURCES)
+        version = corpus_version or get_settings().kb_corpus_version
+        if version not in SOURCES:
+            raise ValueError('未知知识材料版本')
+        return list(SOURCES[version])
 
     directory = Path(base_dir)
     sources: list[Source] = []

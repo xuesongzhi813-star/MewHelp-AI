@@ -1,8 +1,8 @@
 import json
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Literal
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
@@ -40,6 +40,20 @@ class Settings(BaseSettings):
     kb_max_markdown_bytes: int = 204800
     job_log_dir: str = "log/acceptance"
     make_exe: str = "make"
+    # ch04 默认仍为旧配置；迁移验证后通过启动环境显式切换。
+    kb_corpus_version: Literal['ch03', 'ch04'] = 'ch03'
+    knowledge_strategy: Literal['dense', 'bm25', 'hybrid', 'hybrid_rerank'] = 'dense'
+    hybrid_collection: str = 'knowledge_hybrid'
+    kb_migration_manifest: str = 'log/kb/ch04-migration.json'
+    rerank_model: str = 'BAAI/bge-reranker-v2-m3'
+    rerank_base_url: str = 'https://api.siliconflow.cn/v1'
+    rerank_api_key: str = ''
+    rerank_min_score: float = Field(default=0.5, ge=0, le=1, allow_inf_nan=False)
+    query_timeout: float = Field(default=12, gt=0, le=300)
+    rerank_timeout: float = Field(default=15, gt=0, le=300)
+    embedding_timeout: float = Field(default=10, gt=0, le=300)
+    knowledge_tool_timeout: float = Field(default=90, gt=0, le=300)
+    answer_timeout: float = Field(default=45, gt=0, le=300)
 
     @field_validator("llm_extra_body", mode="before")
     @classmethod

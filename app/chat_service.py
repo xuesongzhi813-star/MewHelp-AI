@@ -18,7 +18,9 @@
 import asyncio
 import json
 import logging
+import uuid
 from collections.abc import AsyncIterator
+from contextlib import aclosing
 
 from langchain_core.messages import (
     AIMessage,
@@ -29,10 +31,15 @@ from langchain_core.messages import (
 )
 
 from app.config import get_settings
-from app.executor import execute_tool
+from app.executor import execute_tool, execute_tool_result
 from app.history import SessionStore, trim_history
 from app.prompts import build_system_prompt
 from app.tools import get_tools
+from app.kb.query import build_query_plan
+from app.kb.low_confidence import record_low_confidence
+from app.kb.answering import (REFUSAL_TEXT, generate_answer, has_forbidden_promise,
+                              make_evidence, retrieval_rejection_reason)
+from app.kb.contracts import AnswerDecision, QueryPlan, RetrievalResult
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +95,8 @@ async def stream_chat(
     *,
     store: SessionStore,
     model,
+    planner=None,
+    answer_model=None,
 ) -> AsyncIterator[str]:
     """编排一次完整对话轮:可能含一轮工具调用,产出 SSE 帧字符串流。
 
@@ -97,6 +106,13 @@ async def stream_chat(
     """
     try:
         settings = get_settings()
+
+        if getattr(settings, "kb_corpus_version", "ch03") == "ch04":
+            async with aclosing(_stream_grounded(session_id, message, store=store, model=model,
+                                                planner=planner, answer_model=answer_model)) as stream:
+                async for frame in stream:
+                    yield frame
+            return
 
         # 1) 载历史(不含本轮 user 消息)+ 本轮 user 消息先落库
         history = store.get_history(session_id)
@@ -191,3 +207,115 @@ async def stream_chat(
         logger.warning("聊天编排异常(session_id=%s):%s: %s", session_id, type(exc).__name__, exc)
         yield _sse({"type": "error", "message": _error_text(exc)})
         return
+
+
+async def _gather_round(model, messages, *, final: bool = False):
+    kwargs = {"parallel_tool_calls": False}
+    if final:
+        kwargs["tool_choice"] = "none"
+    chunks = []
+    gathered = None
+    async with asyncio.timeout(get_settings().answer_timeout):
+        async for chunk in model.bind_tools(get_tools(), **kwargs).astream(messages):
+            if chunk.content:
+                chunks.append(str(chunk.content))
+            gathered = chunk if gathered is None else gathered + chunk
+    return gathered, chunks
+
+
+async def _stream_grounded(session_id: str, message: str, *, store, model,
+                           planner=None, answer_model=None) -> AsyncIterator[str]:
+    """ch04发布关口；任何模型草稿在结构化判定前都不进入SSE或最终消息。"""
+    try:
+        settings = get_settings()
+        history = store.get_history(session_id)
+        store.append_message(session_id, HumanMessage(content=message))
+        plan = await asyncio.to_thread(planner or build_query_plan, message)
+        if not isinstance(plan, QueryPlan) or plan.raw_query != message:
+            raise ValueError("QueryPlan与本轮原话不符")
+        trimmed = _drop_leading_orphan_tool_messages(
+            trim_history(history, settings.history_token_budget), session_id)
+        messages = [SystemMessage(content=build_system_prompt(settings)), *trimmed,
+                    HumanMessage(content=message)]
+        route, route_chunks = await _gather_round(model, messages)
+        calls = list(route.tool_calls) if route is not None else []
+        if len(calls) > 1:
+            logger.warning("本轮模型产出%d个工具，仅执行首个", len(calls))
+        call = calls[0] if calls else None
+        if (plan.intent == "knowledge"
+                or (call is None and plan.requires_knowledge)):
+            # 单轮计划已确定是知识问题：在执行前选FAQ，避免模型误选商品等
+            # 工具后才因没有知识证据拒答；业务意图仍按原工具执行一次。
+            call = {"name": "query_faq", "args": {"keyword": message},
+                    "id": "forced_" + uuid.uuid4().hex, "type": "tool_call"}
+        decision = None
+        evidence_result = None
+        pool_source = None
+        conversation_id = None
+        final_chunks = route_chunks
+        if call is not None:
+            conversation_id = store.get_or_create_conversation(session_id)
+            context = {"conversation_id": conversation_id, "query_plan": plan}
+            name = call["name"]
+            yield _sse({"type": "tool", "name": name, "phase": "start"})
+            execution = await asyncio.to_thread(execute_tool_result, name, call["args"],
+                context=context, tool_call_id=call["id"])
+            ai_tool = AIMessage(content="", tool_calls=[call])
+            tool_message = ToolMessage(content=execution.content, tool_call_id=call["id"], status=execution.status)
+            store.append_message(session_id, ai_tool)
+            store.append_message(session_id, tool_message)
+            yield _sse({"type": "tool", "name": name, "phase": "end"})
+            if execution.status != "success":
+                raise RuntimeError("工具服务失败")
+            if name == "query_faq":
+                if not isinstance(execution.artifact, RetrievalResult):
+                    raise RuntimeError("知识工具缺少结构化证据")
+                evidence_result = execution.artifact
+                if evidence_result.plan != plan:
+                    raise RuntimeError("知识证据不属于本轮计划")
+                rejection = retrieval_rejection_reason(evidence_result)
+                if rejection:
+                    decision = AnswerDecision(can_answer=False, reason=rejection, answer="")
+                    pool_source = "retrieval_low_conf"
+                else:
+                    if answer_model is None:
+                        from app.llm import build_answer_model
+                        answer_model = build_answer_model(settings)
+                    decision = await generate_answer(plan, evidence_result, model=answer_model)
+                    pool_source = "self_check" if not decision.can_answer else None
+                final_chunks = [decision.answer] if decision.can_answer else [REFUSAL_TEXT]
+            elif plan.intent == "knowledge" or plan.requires_knowledge:
+                # 已执行一个业务工具，不再补第二个；没有知识证据不能发政策猜测。
+                pool_source = "self_check"
+                decision = AnswerDecision(can_answer=False, reason="本轮知识问题未取得知识证据", answer="")
+                final_chunks = [REFUSAL_TEXT]
+            else:
+                _, final_chunks = await _gather_round(model, [*messages, ai_tool, tool_message], final=True)
+        final_text = "".join(final_chunks)
+        if has_forbidden_promise(final_text):
+            pool_source = "self_check"
+            decision = AnswerDecision(can_answer=False, reason="回答包含禁止承诺", answer="")
+            final_chunks, final_text = [REFUSAL_TEXT], REFUSAL_TEXT
+        if pool_source:
+            if conversation_id is None:
+                conversation_id = store.get_or_create_conversation(session_id)
+            await asyncio.to_thread(record_low_confidence, message, conversation_id,
+                                    pool_source, decision.reason)
+        # 持久化只接受验证后的文本；池写入或持久化失败时不能先展示成功正文。
+        store.append_message(session_id, AIMessage(content=final_text))
+        if decision is not None and decision.can_answer and evidence_result is not None:
+            used = set(decision.used_citation_numbers)
+            items = [{"number": e.number, "chunk_id": e.hit.chunk_id,
+                      "section_path": e.hit.section_path, "text": e.hit.answer,
+                      "original_url": f"/kb?chunk_id={e.hit.chunk_id}"}
+                     for e in make_evidence(evidence_result.hits) if e.number in used]
+            yield _sse({"type": "citations", "items": items})
+        for content in final_chunks:
+            # 质量关口已通过；分片仍遵守原token SSE协议。
+            for start in range(0, len(content), 32):
+                yield _sse({"type": "token", "content": content[start:start + 32]})
+                await asyncio.sleep(0)
+        yield _sse({"type": "done"})
+    except Exception as exc:
+        logger.warning("ch04聊天编排失败:%s", type(exc).__name__)
+        yield _sse({"type": "error", "message": "处理消息时出现错误，请稍后重试或联系人工客服。"})

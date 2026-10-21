@@ -18,9 +18,9 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Path as PathParam
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.config import get_settings
 from app.core.jobs import list_jobs
@@ -29,6 +29,8 @@ from app.kb import milvus, sources, store
 from app.kb.documents import Source, build_chunks, chunk_fingerprint
 from app.kb.dualwrite import consistency_snapshot, vectorize_pending
 from app.kb.retriever import search_hits
+from app.kb.retriever import retrieve_result
+from app.kb.contracts import RetrievalFilters, RetrievalStrategy
 from app.kb.sources import get_sources
 
 logger = logging.getLogger(__name__)
@@ -56,10 +58,11 @@ class VectorizeRequest(BaseModel):
 
 
 class SearchRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     query: str
-    top_k: int | None = None
-    # 本章只有稠密检索;未知路线由 Pydantic 返回 422。
-    route: Literal["dense"] = "dense"
+    top_k: int | None = Field(default=None, ge=1, le=50)
+    route: RetrievalStrategy = "dense"
+    filters: RetrievalFilters = Field(default_factory=RetrievalFilters)
 
 
 # ---------------------------------------------------------------------------
@@ -160,6 +163,8 @@ def _source_overview(source: Source) -> dict:
 def get_overview() -> dict:
     """七块总览;任一外部依赖失败只降级对应块。"""
     settings = get_settings()
+    if getattr(settings, "kb_corpus_version", "ch03") == "ch04":
+        return _get_hybrid_overview(settings)
 
     mysql: dict
     staging: dict | None = None
@@ -238,6 +243,57 @@ def get_overview() -> dict:
     }
 
 
+def _get_hybrid_overview(settings) -> dict:
+    """当前语料与全库分别统计；只核对新集合，未知范围不能猜成全库。"""
+    from app.kb.migration import verify_hybrid
+    try:
+        mysql = {"ok": True, **store.overview_counts()}
+        staging = store.staging_counts()
+        recent = [asdict(row) for row in store.list_recent(20)]
+    except Exception:
+        mysql = {"ok": False, "chunks": None, "pending": None, "done": None, "key_clauses": None}
+        staging, recent = None, []
+    try:
+        scoped = verify_hybrid()
+    except Exception as exc:
+        logger.warning("混合集合范围统计暂不可用:%s", type(exc).__name__)
+        mysql.update(mysql_total=mysql["chunks"], eligible_total=None, legacy_excluded=None,
+                     eligible_pending=None, eligible_done=None)
+        consistency = _unknown_consistency("迁移清单或当前语料读不到")
+        try:
+            client = milvus.get_client()
+            count = sum(1 for _ in milvus.iter_records(settings.hybrid_collection)) if client.has_collection(settings.hybrid_collection) else 0
+            milvus_block = {"ok": True, "count": count, "collection": settings.hybrid_collection}
+        except Exception:
+            milvus_block = {"ok": False, "count": None, "collection": settings.hybrid_collection}
+    else:
+        mysql.update({key: scoped[key] for key in ("mysql_total", "eligible_total", "legacy_excluded", "eligible_pending", "eligible_done")})
+        consistency = {"status": scoped["status"], "missing_in_milvus": scoped["missing_in_milvus"],
+                       "orphan_in_milvus": scoped["orphan_in_milvus"], "stale_ids": scoped["stale_ids"],
+                       "note": "逐 ID/原文/元数据核对"}
+        milvus_block = {"ok": True, "count": scoped["target_count"], "collection": settings.hybrid_collection}
+    try:
+        jobs, jobs_ok = list_jobs(), True
+    except Exception:
+        jobs, jobs_ok = [], False
+    return {"mysql": mysql, "milvus": milvus_block, "consistency": consistency,
+            "staging": staging, "recent": recent, "jobs": jobs, "jobs_ok": jobs_ok,
+            "sources": [_source_overview(source) for source in get_sources()]}
+
+
+@router.get("/chunks/{chunk_id}")
+def get_chunk(chunk_id: int = PathParam(ge=1)) -> dict:
+    try:
+        row = store.fetch_by_ids([chunk_id]).get(chunk_id)
+    except Exception:
+        raise HTTPException(status_code=503, detail="原文仓储暂时不可用，请稍后重试") from None
+    if row is None:
+        raise HTTPException(status_code=404, detail="来源知识块不存在")
+    return {"id": row.id, "questions": row.questions, "answer": row.answer,
+            "section_path": row.section_path or "", "category": row.category,
+            "content_type": row.content_type or "", "original_url": f"/kb?chunk_id={row.id}"}
+
+
 # ---------------------------------------------------------------------------
 # 材料清单 / 预览
 # ---------------------------------------------------------------------------
@@ -250,7 +306,7 @@ def get_source(path: str) -> dict:
     source = next(
         (
             item
-            for item in sources.SOURCES
+            for item in get_sources()
             if item.path.as_posix() == normalized
         ),
         None,
@@ -420,7 +476,21 @@ def get_staging(status: str | None = None, limit: int = 50) -> dict:
 
 @router.post("/search")
 def post_search(payload: SearchRequest) -> dict:
-    """检索自测:只走 dense;阈值以下不返回,Milvus/嵌入失败 502。"""
+    """四策略自测；展示裁剪不改变召回规模，分数类型不混用。"""
+    settings = get_settings()
+    if getattr(settings, "kb_corpus_version", "ch03") == "ch04":
+        try:
+            result = retrieve_result(payload.query, strategy=payload.route, filters=payload.filters)
+        except Exception:
+            raise HTTPException(status_code=502, detail="检索暂时不可用，请检查迁移验证状态与检索服务") from None
+        limit = payload.top_k or 10
+        return {"strategy": result.strategy, "plan": result.plan.model_dump(),
+                "hits": [asdict(hit) for hit in result.hits[:limit]],
+                "candidate_ids": list(result.candidate_ids), "reason": result.reason,
+                "threshold": settings.rerank_min_score if payload.route == "hybrid_rerank" else None,
+                "message": None if result.hits else "无匹配"}
+    if payload.route != "dense" or payload.filters != RetrievalFilters():
+        raise HTTPException(status_code=502, detail="元数据过滤及新策略需要先完成ch04迁移验证")
     threshold = get_settings().knowledge_min_score
     try:
         hits = search_hits(payload.query, payload.top_k)

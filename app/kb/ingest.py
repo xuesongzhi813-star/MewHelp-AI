@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import sys
 from collections.abc import Sequence
@@ -22,6 +23,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import select
 
+from app.config import get_settings
 from app.db import get_session_local
 from app.kb import dualwrite, milvus, store
 from app.kb.documents import Chunk, Source, build_chunks, chunk_fingerprint
@@ -51,10 +53,10 @@ def _read_source(source: Source) -> str:
     return source.path.read_text(encoding="utf-8")
 
 
-def run_preview() -> list[dict]:
+def run_preview(*, corpus_version: str | None = None) -> list[dict]:
     """返回每份材料的切块统计,不产生任何数据库或 Milvus 写入。"""
     preview: list[dict] = []
-    for source in get_sources():
+    for source in (get_sources() if corpus_version is None else get_sources(corpus_version=corpus_version)):
         chunks = build_chunks(_read_source(source), source)
         preview.append(
             {
@@ -94,6 +96,9 @@ def ingest_docs() -> IngestResult:
     同一轮内新插入的指纹也会并入 ``seen``,避免多份材料里的重复内容
     被连续插入。每份材料的新块单独串联前后指针。
     """
+    if get_settings().kb_corpus_version == "ch04":
+        from app.kb.migration import load_manifest
+        load_manifest()
     inserted_ids: list[int] = []
     skipped = 0
 
@@ -139,6 +144,8 @@ def ingest_docs() -> IngestResult:
 
 def ingest_faq() -> IngestResult:
     """把 ``faq`` 表全部行按指纹幂等录入为知识切片。"""
+    if get_settings().kb_corpus_version == "ch04":
+        raise ValueError("ch04 不收录旧 faq 种子；请使用 migrate-hybrid 或 docs")
     inserted_ids: list[int] = []
     skipped = 0
 
@@ -182,7 +189,7 @@ def build_all() -> IngestResult:
     的行保持 pending,补跑 ``vectorize`` 即可收敛。
     """
     docs = ingest_docs()
-    faq = ingest_faq()
+    faq = ingest_faq() if get_settings().kb_corpus_version != "ch04" else IngestResult(0, 0, ())
     result = IngestResult(
         inserted=docs.inserted + faq.inserted,
         skipped=docs.skipped + faq.skipped,
@@ -223,6 +230,20 @@ def status_report() -> dict:
     ``milvus_ok=True``、``milvus_count=0``、``milvus_note="集合未创建"``。
     """
     report: dict = dict(store.overview_counts())
+    if get_settings().kb_corpus_version == "ch04":
+        from app.kb.migration import verify_hybrid
+        try:
+            scoped = verify_hybrid()
+        except Exception:
+            report.update(milvus_ok=False, milvus_count=None, milvus_note="混合集合或迁移清单读不到",
+                          consistency="unknown", missing_in_milvus=(), orphan_in_milvus=(),
+                          consistency_note="尚未完成范围校验")
+        else:
+            report.update(scoped)
+            report.update(milvus_ok=True, milvus_count=scoped["target_count"], milvus_note=None,
+                          consistency=scoped["status"], consistency_note=
+                          f"逐 ID/文本/元数据比对；内容不符 {len(scoped['stale_ids'])} 条")
+        return report
 
     milvus_ok = False
     milvus_count: int | None = None
@@ -309,8 +330,8 @@ def _command_rebuild() -> int:
     return _vectorize_exit_code(result)
 
 
-def _command_preview() -> None:
-    preview = run_preview()
+def _command_preview(corpus_version: str | None = None) -> None:
+    preview = run_preview() if corpus_version is None else run_preview(corpus_version=corpus_version)
     for item in preview:
         features = "、".join(item["features"]) or "无"
         print(
@@ -329,6 +350,9 @@ def _command_status() -> None:
     print(f"  待向量化:{report['pending']}")
     print(f"  已向量化:{report['done']}")
     print(f"  关键条款:{report['key_clauses']}")
+    for key in ("mysql_total", "eligible_total", "legacy_excluded", "eligible_pending", "eligible_done", "target_count"):
+        if key in report:
+            print(f"  {key}:{report[key]}")
     print(f"  Milvus:{'可用' if report['milvus_ok'] else '不可用'}")
     if report.get("milvus_note"):
         print(f"  Milvus 说明:{report['milvus_note']}")
@@ -348,7 +372,11 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    subparsers.add_parser("preview", help="只预览切块结果,不写库")
+    preview_parser = subparsers.add_parser("preview", help="只预览切块结果,不写库")
+    preview_parser.add_argument("--corpus-version", choices=["ch03", "ch04"])
+    migration_parser = subparsers.add_parser("migrate-hybrid", help="按固定清单迁移到新混合集合，保留旧库")
+    migration_parser.add_argument("--dry-run", action="store_true", help="只读核对范围，不创建清单或写库")
+    subparsers.add_parser("verify-hybrid", help="逐 ID/原文/元数据核对混合集合")
     subparsers.add_parser("docs", help="按指纹幂等录入 Markdown 文档")
     subparsers.add_parser("faq", help="按指纹幂等录入 faq 表")
     subparsers.add_parser("vectorize", help="向量化所有 pending 切片")
@@ -374,7 +402,16 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     try:
         if args.command == "preview":
-            _command_preview()
+            _command_preview(args.corpus_version)
+        elif args.command == "migrate-hybrid":
+            from app.kb.migration import prepare_migration, migrate_hybrid
+            report = prepare_migration() if args.dry_run else migrate_hybrid()
+            print(json.dumps(report, ensure_ascii=False, indent=2))
+        elif args.command == "verify-hybrid":
+            from app.kb.migration import verify_hybrid
+            report = verify_hybrid()
+            print(json.dumps(report, ensure_ascii=False, indent=2))
+            return 0 if report["status"] == "consistent" else 1
         elif args.command == "docs":
             _print_ingest("文档录入完成", ingest_docs())
         elif args.command == "faq":

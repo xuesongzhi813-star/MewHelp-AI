@@ -232,6 +232,27 @@ def existing_fingerprints(session: Session | None = None) -> set[str]:
         }
 
 
+def all_chunk_ids(session: Session | None = None) -> list[int]:
+    with _session_scope(session) as active:
+        return list(active.scalars(select(KnowledgeChunk.id).order_by(KnowledgeChunk.id)))
+
+
+def iter_chunks_by_ids(ids: Sequence[int]) -> Iterator[StoredChunk]:
+    """有界批量回表，不受 Milvus query limit 限制。"""
+    ordered = sorted(set(ids))
+    for start in range(0, len(ordered), 500):
+        rows = fetch_by_ids(ordered[start:start + 500])
+        yield from (rows[key] for key in sorted(rows))
+
+
+def mark_pending(ids: Sequence[int], session: Session | None = None) -> None:
+    if not ids:
+        return
+    with _session_scope(session) as active:
+        active.execute(update(KnowledgeChunk).where(KnowledgeChunk.id.in_(list(ids)))
+                       .values(vectorize_status="pending", vector_id=None))
+
+
 def existing_questions_normalized(session: Session | None = None) -> set[str]:
     """全表归一化问法集合,供对话挖掘精确去重。"""
     with _session_scope(session) as active:

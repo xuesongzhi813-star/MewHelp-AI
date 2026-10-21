@@ -10,9 +10,10 @@ KB_DIR = Path("data/kb")
 
 
 def test_sources_are_three_markdown_files():
-    assert len(SOURCES) == 3
-    assert {s.content_type for s in SOURCES} == {"文档章节", "商品FAQ"}
-    assert all(s.path.exists() for s in SOURCES)
+    legacy = get_sources(corpus_version='ch03')
+    assert len(legacy) == 3
+    assert {s.content_type for s in legacy} == {"文档章节", "商品FAQ"}
+    assert all(s.path.exists() for s in legacy)
 
 
 def test_shipping_fee_section_exists():
@@ -90,6 +91,23 @@ def test_faq_headings_are_user_questions():
 
 
 def test_each_document_has_a_key_clause():
-    for source in SOURCES:
+    for source in get_sources(corpus_version='ch03'):
         chunks = build_chunks(_read(source.path.name), source)
         assert any(chunk.is_key_clause for chunk in chunks), source.title
+
+
+def test_source_versions_are_explicit_and_do_not_scan_reference_files():
+    current = get_sources(corpus_version='ch04')
+    assert len(current) == 6
+    assert {s.path.name for s in current} == {
+        'returns-policy.md', 'product-faq.md', 'after-sales-manual.md',
+        'product-specs.md', 'member-benefits.md', 'billing-shipping.md',
+    }
+    assert all(s.path.parent == Path('data/kb/ch04') for s in current)
+    assert all(build_chunks(s.path.read_text(encoding='utf-8'), s) for s in current)
+
+
+def test_unknown_source_version_is_rejected():
+    import pytest
+    with pytest.raises(ValueError):
+        get_sources(corpus_version='latest')

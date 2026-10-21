@@ -36,3 +36,17 @@ def test_invalid_extra_body_json_raises_clear_error(env_settings, monkeypatch):
     get_settings.cache_clear()
     with pytest.raises(ValueError, match="LLM_EXTRA_BODY"):
         get_settings()
+
+
+@pytest.mark.parametrize('key,value', [
+    ('QUERY_TIMEOUT', '0'), ('RERANK_TIMEOUT', '-1'),
+    ('EMBEDDING_TIMEOUT', '0'), ('KNOWLEDGE_TOOL_TIMEOUT', '0'),
+    ('ANSWER_TIMEOUT', '0'), ('RERANK_MIN_SCORE', '1.1'),
+    ('RERANK_MIN_SCORE', 'nan'), ('KB_CORPUS_VERSION', 'guess'),
+    ('KNOWLEDGE_STRATEGY', 'python_bm25'),
+])
+def test_ch04_settings_reject_invalid_operational_values(env_settings, monkeypatch, key, value):
+    from app.config import Settings
+    monkeypatch.setenv(key, value)
+    with pytest.raises(ValueError):
+        Settings(_env_file=None)

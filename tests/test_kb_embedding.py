@@ -75,3 +75,17 @@ def test_missing_api_key_raises_clear_error(monkeypatch):
     monkeypatch.setattr(emb, "_client", None)
     with pytest.raises(emb.EmbeddingError, match="EMBEDDING_API_KEY"):
         emb.embed_texts(["x"])
+
+
+def test_client_timeout_and_sdk_retry_budget(monkeypatch):
+    from app.config import get_settings
+    captured = {}
+    class FakeOpenAI:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+    monkeypatch.setattr(emb, 'OpenAI', FakeOpenAI)
+    monkeypatch.setattr(emb, '_client', None)
+    settings = get_settings()
+    emb._get_client(settings)
+    assert captured['timeout'] == settings.embedding_timeout
+    assert captured['max_retries'] == 0
