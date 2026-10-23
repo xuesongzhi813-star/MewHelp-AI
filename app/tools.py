@@ -32,6 +32,7 @@ from app.kb.contracts import QueryPlan
 from app.kb.retriever import retrieve
 from app.kb.retriever import retrieve_result
 from app.models import Ticket
+from app.demo_orders import get_demo_order, get_demo_logistics
 
 # ---------------------------------------------------------------------------
 # Mock 数据源(订单/商品/物流):进程内共享一个随机源即可,不需要跨进程可复现
@@ -125,6 +126,9 @@ def query_order(order_id: str) -> str:
     用户询问「我的订单怎么样了/到哪了/退款进度」等订单类问题时调用;
     输入订单号,返回 JSON 文本;查物流轨迹请改用 query_logistics。
     """
+    demo = get_demo_order(order_id)
+    if demo is not None:
+        return json.dumps(demo, ensure_ascii=False)
     if order_id not in _order_cache:
         placed_at = datetime.now() - timedelta(
             days=_RNG.randint(0, 30), minutes=_RNG.randint(0, 1439)
@@ -178,6 +182,9 @@ def query_logistics(order_id: str) -> str:
     用户询问「包裹到哪了/什么时候能送到/是什么快递」等物流类问题时调用;
     输入订单号,返回 JSON 文本;查订单状态/金额请改用 query_order。
     """
+    demo = get_demo_logistics(order_id)
+    if demo is not None:
+        return json.dumps(demo, ensure_ascii=False)
     if order_id not in _logistics_cache:
         eta = date.today() + timedelta(days=_RNG.randint(1, 7))
         data = {

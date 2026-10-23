@@ -120,7 +120,7 @@ async def run_agent_loop(question: str, *, gateway, execute, context, history=No
                     from app.kb.answering import REFUSAL_TEXT
                     from app.workflow.knowledge import retrieve_knowledge, evidence_gate
                     retrieved = await retrieve_knowledge(first['args'].get('keyword', question),
-                        gateway=gateway, budget=budget, retrieve=retrieve_result)
+                        gateway=gateway, budget=budget, retrieve=retrieve_result, already_understood=False)
                     faq_text = (REFUSAL_TEXT if evidence_gate(retrieved) else
                                 '\n\n'.join(f'[{i}] {hit.answer}' for i, hit in enumerate(retrieved.hits, 1)))
                 def metered_execute(name, args, **kwargs):

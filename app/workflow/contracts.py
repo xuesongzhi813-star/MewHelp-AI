@@ -9,13 +9,14 @@ from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
 
-Intent = Literal["物流", "订单", "商品咨询", "退款退货", "售后", "投诉", "闲聊"]
-Route = Literal["knowledge", "business", "complaint", "chat"]
+Intent = Literal["物流", "订单", "商品咨询", "退款退货", "售后", "投诉", "闲聊", "其他"]
+Route = Literal["knowledge", "business", "complaint", "chat", "other", "refund"]
 
 
 class IntentDecision(BaseModel):
     model_config = ConfigDict(extra="forbid")
     intent: Intent
+    confidence: float = Field(ge=0, le=1, allow_inf_nan=False, strict=True)
 
 
 class ControlDecision(BaseModel):
@@ -48,6 +49,15 @@ class WorkflowState(TypedDict, total=False):
     raw_question: str
     resolved_question: str
     intent: str
+    confidence: float
+    understanding: dict
+    selected_order_id: str | None
+    order: dict | None
+    selection: dict | None
+    expansion_queries: list[str]
+    expansion_fallback: bool
+    continuation_of: str | None
+    usage_segments: list[dict]
     route: str
     retrieval: dict | None
     gate_reason: str

@@ -137,3 +137,9 @@ def build_query_plan(raw_query: str, *, filters: RetrievalFilters | None = None,
     return QueryPlan(raw_query=raw_query, normalized_query=rewritten, lexical_query=_lexical(rewritten),
                      intent=intent, requires_knowledge=intent == 'knowledge' or bool(_POLICY_KNOWLEDGE.search(original)),
                      filters=selected_filters, rewrite_reason=reason, rewrite_fallback=fallback)
+
+
+def build_understood_query_plan(question: str) -> QueryPlan:
+    """The workflow already used history to understand this query; no second LLM."""
+    return QueryPlan(raw_query=question, normalized_query=question, lexical_query=_lexical(question),
+                     requires_knowledge=True, filters=_filters(question))

@@ -12,6 +12,19 @@ from app.tools import get_tools
 from app.workflow.budget import BudgetExceeded, reserve_call, settle_call
 from app.workflow.contracts import BudgetState, ControlDecision, IntentDecision
 
+
+def _unique_json_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError('JSON不允许重复字段')
+        result[key] = value
+    return result
+
+
+def _invalid_json_constant(value):
+    raise ValueError('JSON不允许非有限常量')
+
 RESPOND_SCHEMA = {
     "type": "function",
     "function": {
@@ -26,6 +39,35 @@ RESPOND_SCHEMA["function"]["parameters"]["required"] = ["response_mode"]
 class ModelGateway:
     def __init__(self, model):
         self.model = model
+        self.parse_events = []
+        self.intent_model = model
+        if model is not None:
+            from app.config import get_settings
+            settings = get_settings()
+            if settings.intent_model:
+                from app.llm import build_intent_model
+                self.intent_model = build_intent_model(settings)
+
+    async def _json(self, schema, messages, budget, *, output_cap, model=None):
+        reservation = reserve_call(budget, messages, schema_text=json.dumps(schema.model_json_schema(), ensure_ascii=False), output_cap=output_cap)
+        kwargs = self._kwargs(budget, reservation)
+        async with asyncio.timeout(kwargs['timeout']):
+            response = await (model or self.model).with_structured_output(schema, method='json_mode', include_raw=True, **kwargs).ainvoke(messages, **kwargs)
+        try:
+            result = self._parse(response, schema, budget, reservation, strict_json=True)
+        except ValueError:
+            self.parse_events.append({'schema': schema.__name__, 'parsed': False})
+            raise
+        self.parse_events.append({'schema': schema.__name__, 'parsed': True})
+        return result
+
+    async def understand(self, messages, budget):
+        from app.workflow.understanding import UnderstandingResult
+        return await self._json(UnderstandingResult, messages, budget, output_cap=512)
+
+    async def expand(self, messages, budget):
+        from app.kb.multi_query import QueryExpansion
+        return await self._json(QueryExpansion, messages, budget, output_cap=768)
 
     def _kwargs(self, budget, reservation):
         remaining = budget.deadline - time.time()
@@ -33,22 +75,22 @@ class ModelGateway:
             raise BudgetExceeded("本轮处理时间已用尽")
         return {"max_tokens": reservation.output_cap, "timeout": remaining}
 
-    def _parse(self, response, schema, budget, reservation):
+    def _parse(self, response, schema, budget, reservation, *, strict_json=False):
         raw = response.get("raw") if isinstance(response, dict) else None
         # Account even when the structured result is malformed.
         settle_call(budget, reservation, usage=getattr(raw, "usage_metadata", None),
                     output_text=json.dumps(raw.model_dump() if raw else response, ensure_ascii=False, default=str))
         if not isinstance(response, dict) or response.get("parsing_error") is not None:
             raise ValueError("模型结构化结果非法")
+        if strict_json:
+            if raw is None or not isinstance(raw.content, str):
+                raise ValueError('模型JSON原文缺失')
+            body = json.loads(raw.content, object_pairs_hook=_unique_json_object, parse_constant=_invalid_json_constant)
+            return schema.model_validate(body)
         return schema.model_validate(response.get("parsed"))
 
     async def classify(self, messages, budget):
-        schema = IntentDecision
-        reservation = reserve_call(budget, messages, schema_text=json.dumps(schema.model_json_schema(), ensure_ascii=False), output_cap=128)
-        kwargs = self._kwargs(budget, reservation)
-        async with asyncio.timeout(kwargs["timeout"]):
-            response = await self.model.with_structured_output(schema, method="function_calling", include_raw=True, **kwargs).ainvoke(messages, **kwargs)
-        return self._parse(response, schema, budget, reservation).intent
+        return await self._json(IntentDecision, messages, budget, output_cap=128, model=self.intent_model)
 
     def query_adapter(self, budget):
         gateway = self
@@ -64,7 +106,10 @@ class ModelGateway:
 
     async def decide(self, messages, budget):
         preloaded = any(message.additional_kwargs.get('workflow_evidence') for message in messages)
+        refund = any(message.additional_kwargs.get('workflow_refund') for message in messages)
         tools = [tool for tool in get_tools() if tool.name != "create_ticket" and not (preloaded and tool.name == 'query_faq')]
+        if refund:
+            tools = []
         schemas = [tool.tool_call_schema.model_json_schema() for tool in tools] + [RESPOND_SCHEMA]
         with budget._lock:
             if budget.decision_calls >= budget.max_decisions:

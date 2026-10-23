@@ -17,11 +17,17 @@ class Settings(BaseSettings):
     history_token_budget: int = 4000
     max_sessions: int = 1000
     chat_workflow_enabled: bool = False
+    intent_model: str | None = None
+    intent_min_confidence: float = Field(default=0.7, ge=0, le=1, allow_inf_nan=False)
+    # Seeds for a future chapter only. No small-model/upgrade execution path in ch06.
+    intent_small_model: str | None = None
+    intent_escalation_threshold: float = Field(default=0.7, ge=0, le=1, allow_inf_nan=False)
     agent_max_tool_calls: int = Field(default=6, gt=0)
     agent_token_budget: int = Field(default=12000, gt=0)
     agent_turn_timeout: float = Field(default=90, gt=0, le=300)
     agent_max_decisions: int = Field(default=10, gt=0)
     workflow_checkpoint_path: str = "log/ch05/checkpoints.sqlite"
+    workflow_debug_view: bool = False
     shop_name: str
     agent_name: str
     # 数据库连接串:默认值不含密码,真实密码只存在于本地 .env 的 DB_URL,绝不入库

@@ -299,6 +299,7 @@
 
 <script src="/static/chat-citations.js"></script>
 <script src="/static/chat-actions.js"></script>
+<script src="/static/chat-refund.js"></script>
 <script>
 (() => {
   const chatArea = document.getElementById("chatArea");
@@ -310,8 +311,10 @@
   const statusText = document.getElementById("statusText");
   const sessionIdText = document.getElementById("sessionIdText");
 
-  let sessionId = newSession();
+  let sessionId = sessionStorage.getItem('mewhelp-chat-session') || newSession();
+  sessionIdText.textContent = sessionId;
   let busy = false;
+  let viewVersion = 0;
 
   /* 工具名 → 徽章中文标签 */
   const TOOL_LABELS = {
@@ -322,6 +325,7 @@
   function newSession() {
     const id = (crypto.randomUUID ? crypto.randomUUID() : "s-" + Date.now()).slice(0, 8);
     sessionIdText.textContent = id;
+    sessionStorage.setItem('mewhelp-chat-session', id);
     return id;
   }
 
@@ -356,15 +360,17 @@
     return { row, bubble };
   }
 
-  async function sendMessage(text) {
-    if (busy || !text.trim()) return;
+  async function sendMessage(text, selectionRequest = null) {
+    if (busy || (!selectionRequest && !text.trim())) return false;
+    viewVersion++;
+    if (!selectionRequest) ChatRefundUI.expireSelections();
     busy = true;
     newChatBtn.disabled = true;
     sendBtn.disabled = true;
     input.value = "";
     input.style.height = "auto";
 
-    addRow("user", "YOU").bubble.textContent = text;
+    if (!selectionRequest) addRow("user", "YOU").bubble.textContent = text;
 
     /* AI 气泡:徽章行 + 正文容器分离,正文 innerHTML 重绘不会冲掉徽章 */
     const { bubble } = addRow("ai", "ETHAN_LEO");
@@ -373,11 +379,16 @@
     const body = document.createElement("span");
     const responseView = ChatResponseView.create({bubble, body, sessionId});
     const turnSessionId = sessionId;
+    const refundView = ChatRefundUI.create({container:bubble, sessionId:turnSessionId,
+      isBusy:()=>busy, onSelect:request=>sendMessage('',request)});
     const actionView = createActionView({container: bubble, sessionId: turnSessionId, appendMessage: text => {
       if (sessionId !== turnSessionId) return;
       addRow('ai', '客服小猫').bubble.textContent = text;
     }});
     let terminal = false;
+    let failed = false;
+    let restoreSelection = false;
+    let waitingForOrder = false;
     const typing = document.createElement("span");
     typing.className = "typing";
     typing.innerHTML = "<i></i><i></i><i></i>";
@@ -389,11 +400,15 @@
     cursor.className = "cursor";
 
     try {
-      const resp = await fetch("/chat", {
+      const resp = await fetch(selectionRequest ? '/api/chat/actions/order-selection' : '/chat', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId, message: text }),
+        body: JSON.stringify(selectionRequest || { session_id: sessionId, message: text }),
       });
+      if (selectionRequest && resp.status === 409) {
+        restoreSelection = true;
+        throw new Error('订单选择已失效，已为您恢复最新可用操作。');
+      }
       if (!resp.ok || !resp.body) throw new Error("HTTP " + resp.status);
 
       const reader = resp.body.getReader();
@@ -418,6 +433,13 @@
             responseView.setCitations(payload.items);
           } else if (payload.type === "actions") {
             actionView.setActions(payload.items);
+            refundView.setActions(payload.items);
+          } else if (payload.type === 'order_selection') {
+            waitingForOrder = true; typing.remove(); cursor.remove();
+            refundView.setSelection(payload);
+            scrollBottom();
+          } else if (payload.type === 'workflow') {
+            refundView.setStage(payload);
           } else if (payload.type === "tool") {
             if (payload.phase === "start") {
               typing.remove();
@@ -443,6 +465,7 @@
               }
             }
           } else if (payload.type === "error") {
+            failed = true; refundView.fail();
             terminal = true; responseView.fail(); actionView.fail();
             typing.remove(); cursor.remove();
             /* 评审 N-1:error 帧是所有未定格徽章的终止态 */
@@ -462,6 +485,7 @@
             body.textContent = "⚠ 生成失败:" + payload.message;
             scrollBottom();
           } else if (payload.type === "done") {
+            refundView.complete();
             terminal = true; responseView.complete(); actionView.complete();
             cursor.remove();
           }
@@ -469,12 +493,13 @@
       }
       cursor.remove();
       if (!terminal) throw new Error('连接提前结束，请重试');
-      if (!acc && !body.textContent) {
+      if (!acc && !body.textContent && !waitingForOrder) {
         typing.remove();
         if (!body.isConnected) bubble.appendChild(body);
         body.textContent = "(空回复)";
       }
     } catch (err) {
+      failed = true; refundView.fail();
       responseView.fail(); actionView.fail();
       typing.remove(); cursor.remove();
       badges.querySelectorAll(".tool-badge.running").forEach(b => {
@@ -487,14 +512,16 @@
       if (badges.children.length && !badges.isConnected) bubble.appendChild(badges);
       if (!body.isConnected) bubble.appendChild(body);
       bubble.classList.add("error");
-      body.textContent = "⚠ 连接失败:" + err.message + " — 请确认服务已启动";
+      body.textContent = restoreSelection ? '⚠ '+err.message : "⚠ 连接失败:" + err.message + " — 请确认服务已启动";
       scrollBottom();
     } finally {
       busy = false;
       newChatBtn.disabled = false;
       sendBtn.disabled = false;
       input.focus();
+      if (restoreSelection) await restoreChatActions();
     }
+    return terminal && !failed;
 
     function extractFrame() {
       const i = buf.indexOf("\n\n");
@@ -520,11 +547,26 @@
     b.addEventListener("click", () => sendMessage(b.dataset.q))
   );
   newChatBtn.addEventListener("click", () => {
+    viewVersion++; ChatRefundUI.expireSelections();
     chatArea.innerHTML = "";
     chatArea.appendChild(welcome);
     sessionId = newSession();
     input.focus();
   });
+  async function restoreChatActions(){
+    const wantedSession=sessionId, version=viewVersion;
+    try{
+      const response=await fetch('/api/chat/actions/state?session_id='+encodeURIComponent(wantedSession));
+      if(!response.ok)return;
+      const state=await response.json();
+      if(busy||sessionId!==wantedSession||version!==viewVersion||(!state.selection&&!state.actions?.length))return;
+      const {bubble}=addRow('ai','恢复待处理操作');
+      const view=ChatRefundUI.create({container:bubble,sessionId:wantedSession,isBusy:()=>busy,onSelect:request=>sendMessage('',request)});
+      if(state.selection)view.setSelection(state.selection);
+      view.setActions(state.actions);view.complete();scrollBottom();
+    }catch(_){ /* Service may be offline or legacy workflow disabled. */ }
+  }
+  restoreChatActions();
 })();
 </script>
 </body>
