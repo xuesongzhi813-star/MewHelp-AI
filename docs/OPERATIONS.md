@@ -1,426 +1,348 @@
-# MewHelp AI 启动、维护与关闭手册
+# MewHelp AI 整体启动、停止与运行维护手册
 
-适用环境：当前 Windows 电脑，项目目录 `E:\MewHelp AI`，ch04 混合检索版本。核对日期：2026-10-21。
+适用状态：ch05已完成后的整个项目，Windows本机。更新日期：2026-10-23。本文只提供一套当前运行流程，涵盖MySQL、Docker/etcd/Milvus、FastAPI、静态前端、LangGraph/SQLite及后台作业；不需要再拼接各章命令。
 
-本文中的启动、停止、备份和恢复命令供你操作，编写文档时没有替你执行启停、备份或恢复。下面的路径、服务名已经过本机只读核查；换电脑后应重新确认。
+当前代码尚未合回根目录，因此基础设施和应用目录不同，这是本机现状，不是两套系统。不要移动工作树来省略路径，也不要启动根目录旧应用。本文档改写未执行启停、备份、恢复或数据写入。
 
-## 1. 项目需要哪些服务
+## 1. 每个终端先准备这些路径与配置
 
-- **MySQL 8**：本机 Windows 服务名为 `MySQL80`，数据库 `melhelp`，默认端口 `3306`。保存知识原文、会话、消息、工单、挖掘暂存和低置信度问题。
-- **Docker Desktop**：提供 Linux 容器运行环境。先打开 Docker Desktop，等引擎就绪。
-- **etcd 3.5.23**：Compose 服务名 `etcd`，容器名 `mewhelp-etcd`，保存 Milvus 元数据。容器网络内端点为 `etcd:2379`。
-- **Milvus 3.0.0**：Compose 服务名 `standalone`，容器名 `milvus-standalone`。客户端端口 `19530`；健康检查端口 `9091`。
-- **FastAPI / Uvicorn**：一个 Python 进程同时提供聊天页、后台页、知识库页、静态资源和 API。本文统一使用 `127.0.0.1:8010`。
-- **远程模型 API**：DeepSeek 提供路由、改写、生成和评审；SiliconFlow 提供 `BAAI/bge-m3` 嵌入及 `BAAI/bge-reranker-v2-m3` 重排。无需在电脑上另外启动模型进程，但需要网络、有效密钥与供应商额度。
-
-**不需要另外启动前端开发服务器、Redis、Celery、Langfuse 或 MinIO。** 当前前端是 FastAPI 直接提供的静态页面，Milvus 使用本地存储。评估、建库、向量化和挖掘是按需命令，不是每次开机必须启动的守护服务。
-
-启动顺序：**MySQL → Docker Desktop → etcd/Milvus → FastAPI**。
-
-关闭顺序：**等待作业结束 → FastAPI/手工后台任务 → Milvus → etcd → MySQL（按需）→ Docker Desktop（按需）**。
-
-## 2. 终端和工具准备
-
-普通运行使用 PowerShell。启动/停止 Windows 服务时，另开“以管理员身份运行”的 PowerShell。下面每个新终端都应先进入项目目录。
+普通操作使用PowerShell；启动/停止Windows服务另开管理员PowerShell。每个新操作终端先执行本节。
 
 ```powershell
-Set-Location -LiteralPath 'E:\MewHelp AI'
-$taskDocker = 'C:/Users/20968/AppData/Local/Programs/DockerDesktop/resources/bin/docker.exe'
-$taskCompose = @('-f', 'deploy/milvus/docker-compose.yml', '-f', 'deploy/milvus/docker-compose.external-etcd.yml')
-```
+$projectRoot = 'E:\MewHelp AI'
+$projectApp = Join-Path $projectRoot '.worktrees/ch05-workflow-agent'
+$projectPython = Join-Path $projectRoot '.venv/Scripts/python.exe'
+$projectDocker = 'C:/Users/20968/AppData/Local/Programs/DockerDesktop/resources/bin/docker.exe'
+$projectCompose = @('-f', (Join-Path $projectRoot 'deploy/milvus/docker-compose.yml'), '-f', (Join-Path $projectRoot 'deploy/milvus/docker-compose.external-etcd.yml'))
+$projectState = Join-Path $projectApp 'log/ch05'
+$projectManifest = Join-Path $projectRoot 'log/kb/ch04-v2-final-migration.json'
+$projectProfile = if ($env:CH05_CALIBRATION_PROFILE) { $env:CH05_CALIBRATION_PROFILE } else { Join-Path $projectState 'calibration-20261023-final.json' }
+foreach ($requiredPath in @($projectApp,$projectPython,$projectDocker,$projectManifest,$projectProfile)) {
+    if (-not (Test-Path -LiteralPath $requiredPath)) { throw "缺少必要路径：$requiredPath，请先核对，不创建空库或重建知识。" }
+}
+Set-Location -LiteralPath $projectApp
 
-本机核查到的工具：
-
-- Python 版本由 `.python-version` 固定为 `3.12`。
-- uv：`C:\Users\20968\.local\bin\uv.exe`，本次核查版本 `0.13.0`。
-- MySQL 客户端：`E:\MySQL\bin\mysql.exe`。
-- 备份工具：`E:\MySQL\bin\mysqldump.exe`，本次核查版本 `8.0.45`。
-- GNU Make：`C:\Program Files (x86)\GnuWin32\bin\make.exe`。
-- Docker Compose：本次核查版本 `v5.5.0`，通过上述 Docker 客户端调用。
-
-首次准备环境，或确实变更了锁文件后执行：
-
-```powershell
-uv sync --locked
-```
-
-现有 `.venv` 正常时不需要每天同步。后续命令使用 `uv run --no-sync`，不会自动重新同步依赖；不要用它代替首次安装。不要为了启动随意升级 Python、依赖、Milvus 或 etcd。无需手动激活 `.venv`。
-
-### 配置文件
-
-真实配置只在本地 `.env`，变量清单见仓库根目录 `.env.example`。已有 `.env` 时**不要用示例覆盖**。新电脑可以在确认没有 `.env` 后复制示例，填入自己的连接信息和密钥；表结构由数据库管理员准备，应用不会自动建表。
-
-至少确认以下配置已经正确填写，但不要把真实值粘贴到日志、聊天或文档：
-
-- `DB_URL`：MySQL 地址、账号、密码、`melhelp` 数据库。
-- `LLM_BASE_URL`、`LLM_API_KEY`、`LLM_MODEL`、`LLM_EXTRA_BODY`：现有 DeepSeek 配置。
-- `EMBEDDING_BASE_URL`、`EMBEDDING_API_KEY`、`EMBEDDING_MODEL=BAAI/bge-m3`、`EMBEDDING_DIM=1024`。
-- `RERANK_BASE_URL`、`RERANK_MODEL=BAAI/bge-reranker-v2-m3`；`RERANK_API_KEY` 为空时复用嵌入密钥。
-- `MILVUS_URI=http://127.0.0.1:19530`；本机无认证服务的 `MILVUS_TOKEN` 留空。
-- 网页后台作业需要 Make；找不到时设置 `MAKE_EXE` 为上述绝对路径。
-
-## 3. 每次正常启动：已有数据库和知识库
-
-### 3.1 启动 MySQL
-
-在管理员 PowerShell 中：
-
-```powershell
-Get-Service -Name MySQL80
-# 已是 Running 则不用重复启动。
-Start-Service -Name MySQL80
-Get-Service -Name MySQL80
-```
-
-也可在 Windows 的“服务”应用中启动 `MySQL80`。若服务名不存在，不要新建另一套服务或重新初始化数据目录，先核对安装方式。
-
-端口可达与账号可用是两件事，分别检查：
-
-```powershell
-Test-NetConnection 127.0.0.1 -Port 3306
-& 'E:/MySQL/bin/mysql.exe' -h 127.0.0.1 -P 3306 -u root -p melhelp -e 'SELECT 1 AS ok;'
-```
-
-`-p` 后不写密码，按提示输入。本机若使用其他数据库账号，替换 `root`。这里不从 `.env` 输出或拼接密码。
-
-### 3.2 启动 Docker Desktop 与两个容器
-
-从 Windows 开始菜单打开 Docker Desktop，等待引擎运行。回到已执行第 2 节准备命令的普通 PowerShell：
-
-```powershell
-& $taskDocker info
-& $taskDocker compose @taskCompose up -d --wait --wait-timeout 120
-if ($LASTEXITCODE -ne 0) { throw '容器未按时就绪，请先检查状态和日志。' }
-& $taskDocker compose @taskCompose ps
-Invoke-RestMethod 'http://127.0.0.1:9091/healthz'
-```
-
-正常情况下 etcd 健康后才启动 Milvus。健康检查超过 120 秒不等于数据丢失，先看日志。
-
-**任何 Compose 启停、状态或日志命令都保留两份 `-f`。** 本文用 `$taskCompose` 统一传入。只使用原 `docker-compose.yml` 会退回旧的嵌入式 etcd 配置，该模式有已知启动竞态；也不要只执行 override 文件。
-
-`deploy/milvus/volumes/etcd-external` 是已有元数据工作目录，配置故意禁止缺失时自动创建空目录。若它不存在，应先恢复匹配的备份，而不是新建空目录后继续。
-
-### 3.3 显式启用 ch04 并核对阈值
-
-在运行应用的同一个普通 PowerShell 中：
-
-```powershell
+# 使后续知识检查/维护命令使用与应用一致的现有知识库。
 $env:KB_CORPUS_VERSION = 'ch04'
 $env:KNOWLEDGE_COLLECTION = 'knowledge'
 $env:HYBRID_COLLECTION = 'knowledge_hybrid_ch04_v2_final'
 $env:KNOWLEDGE_STRATEGY = 'hybrid_rerank'
-$env:KB_MIGRATION_MANIFEST = 'log/kb/ch04-v2-final-migration.json'
+$env:KB_MIGRATION_MANIFEST = $projectManifest
+$env:CH05_CALIBRATION_PROFILE = $projectProfile
+$projectCalibration = Get-Content -LiteralPath $projectProfile -Raw | ConvertFrom-Json
+$env:RERANK_MIN_SCORE = [string]$projectCalibration.threshold
 
-if (-not (Test-Path -LiteralPath 'log/kb/ch04-v2-final-calibration.json')) {
-    throw '缺少校准profile，请先按第8节核对备份或重新校准，不直接用开发阈值。'
+# 只定义函数，不立即执行；加载根.env到Python进程，不打印凭据。
+function Invoke-MewHelpKb {
+    param([Parameter(Mandatory=$true)][string]$Command)
+    & $projectPython -c "from dotenv import load_dotenv; load_dotenv('E:/MewHelp AI/.env'); from app.kb.ingest import main; raise SystemExit(main())" $Command
+    if ($LASTEXITCODE -ne 0) { throw "知识命令失败：$Command，请查看错误后处理。" }
 }
-$profile = Get-Content -LiteralPath 'log/kb/ch04-v2-final-calibration.json' -Raw | ConvertFrom-Json
-$env:RERANK_MIN_SCORE = [string]$profile.threshold
-
-# 检查profile与当前语料、ID/元数据、模型、Prompt及代码是否匹配。
-uv run --no-sync python -c "from pathlib import Path; from scripts.eval_retrieval import _identity, load_profile; load_profile(Path('log/kb/ch04-v2-final-calibration.json'), _identity()); print('profile OK')"
-if ($LASTEXITCODE -ne 0) { throw 'profile校验失败，请先处理，不启动为已校准服务。' }
 ```
 
-当前v2冻结阈值为 `0.25`。从 profile 读取，避免维护时把旧数字当永久配置。`_identity/load_profile` 是本仓库现有校验函数，内部会只读连接数据库核查语料。
+本机现有`.venv`已可运行，日常不必激活、不必重新安装。不要在工作树随手执行`uv sync`或升级依赖。Python为3.12，依赖版本以工作树的`pyproject.toml/uv.lock`为准；换电脑时另行按锁文件准备环境和配置。真实凭据仍在根`.env`，不要覆盖或输出。
 
-环境变量只影响**当前 PowerShell 及其子进程**。新开终端执行维护或评估时，也要设置本节变量。项目默认仍是 `ch03/dense`，直接运行 Uvicorn 而不设置变量会走旧版本。
+整个项目只需以下常驻组件：MySQL80（3306）、Docker Desktop里的etcd和Milvus（19530/9091）、一个FastAPI进程（8015）。SQLite由应用直接读写本地文件，不是额外服务；前端也是FastAPI提供，不需要Node前端服务、Redis、Celery、Langfuse或额外worker。DeepSeek/SiliconFlow等模型通过远程API调用，需要网络、有效密钥和供应商额度。
 
-`KNOWLEDGE_COLLECTION` 必须仍为旧 `knowledge`；新目标由 `HYBRID_COLLECTION` 指定，不能把两者都写成 `knowledge_hybrid`。
+## 2. 从全部关闭到可以使用
 
-### 3.4 检查知识库，启动应用
+### 先启动MySQL
+
+管理员PowerShell中执行；已是Running则跳过Start-Service：
 
 ```powershell
-uv run --no-sync python -m app.kb.ingest status
-uv run --no-sync python -m app.kb.ingest verify-hybrid
-if ($LASTEXITCODE -ne 0) { throw '知识库校验未通过，请先处理。' }
-uv run --no-sync uvicorn app.main:app --host 127.0.0.1 --port 8010
+Get-Service -Name MySQL80
+Start-Service -Name MySQL80
+Get-Service -Name MySQL80
 ```
 
-Uvicorn 在前台运行，这个终端留着看日志；需要检查时另开 PowerShell。不要把每日启动写成“建库→重建索引→启动”，已有知识库不需要每天重灌。
-
-页面入口：
-
-- 聊天：<http://127.0.0.1:8010/>
-- 后台总览：<http://127.0.0.1:8010/admin>
-- 知识库与检索自测：<http://127.0.0.1:8010/kb>
-- API 文档：<http://127.0.0.1:8010/docs>
-- 应用存活检查：<http://127.0.0.1:8010/health>
-
-### 3.5 启动后的检查
+普通终端验证登录（密码按提示输入，不写在命令里）：
 
 ```powershell
-Invoke-RestMethod 'http://127.0.0.1:8010/health'
-Invoke-RestMethod 'http://127.0.0.1:8010/api/kb/overview'
+& 'E:/MySQL/bin/mysql.exe' -h 127.0.0.1 -P 3306 -u root -p melhelp -e 'SELECT 1 AS ok;'
+if ($LASTEXITCODE -ne 0) { throw 'MySQL登录失败，先修复配置或权限。' }
 ```
 
-`/health` 只说明应用进程能响应，**不验证 MySQL、Milvus 或远程模型**。还应查看 `/kb` 库存及一致性，并进行一条实际问答。
+### 再启动Docker和检索服务
 
-2026-10-21 的基准快照是 MySQL 总 181 块、当前语料 124 块、排除历史 57 块、Milvus 最终集合 124 块、pending 为 0。后续合法新增知识会改变数量，应以一致性和自己的变更记录为准，不为凑回基准数量而删数据。
-
-演示检查可以问“MH-DJ101的胸围是多少”，点引用查看原文与章节，再点满意度反馈。未知 SKU 的拒答可能产生低置信度记录；实际聊天也会保存会话，模型调用会计费。反馈按钮目前仅前端保存，不会写后端表。
-
-## 4. 哪些任务需要单独启动
-
-默认无需任何额外 worker。网页作业由 FastAPI 启动固定 Make 子进程；不要为了运行后台再起一个 Celery 或第二个 Uvicorn。
-
-查看作业状态：
+从开始菜单打开Docker Desktop，等引擎就绪。在已执行第1节的普通终端：
 
 ```powershell
-Invoke-RestMethod 'http://127.0.0.1:8010/api/jobs'
-# 按需查看某个已注册作业：
-Invoke-RestMethod 'http://127.0.0.1:8010/api/jobs/kb-vectorize'
+& $projectDocker info
+if ($LASTEXITCODE -ne 0) { throw 'Docker引擎未就绪。' }
+& $projectDocker compose @projectCompose up -d --wait --wait-timeout 120
+if ($LASTEXITCODE -ne 0) { throw '容器未按时就绪，先看日志。' }
+& $projectDocker compose @projectCompose ps
+Invoke-RestMethod 'http://127.0.0.1:9091/healthz' -TimeoutSec 5
 ```
 
-应用内同一时间只允许一个作业，但这个互斥**不覆盖另一个应用进程或你手工启动的 CLI**。保持一个 Uvicorn 进程、一个 worker；不要同时从网页和终端做录入、向量化、迁移、重建或挖掘。评估期间保持知识库不变。
+Compose始终使用根目录这两份配置，不从worktree另起一套数据。etcd健康后才启动Milvus。`deploy/milvus/volumes/etcd-external`不存在时应恢复匹配备份，不能建空目录绕过保护；不切回单Compose旧启动方式。
 
-ch04 下网页“建库”对应的 `kb-build` 会跳过旧 `faq` 种子，按匹配的已有迁移清单录入文档并向量化；它不负责建立首次迁移基线，因此不能替代第 8 节的首次迁移命令。`kb-reset` 在 ch04 被禁止。
-
-确实需要从历史客服会话挖知识时，在单独终端设置第 3.3 节变量后，按需运行一次：
+### 检查已有知识与校准文件
 
 ```powershell
-uv run --no-sync python -m app.kb.mining --once --limit 5
+Invoke-MewHelpKb status
+Invoke-MewHelpKb verify-hybrid
+& $projectPython -c "from dotenv import load_dotenv; load_dotenv('E:/MewHelp AI/.env'); from pathlib import Path; import sys; from scripts.eval_retrieval import _identity, load_profile; load_profile(Path(sys.argv[1]), _identity()); print('profile OK')" $projectProfile
+if ($LASTEXITCODE -ne 0) { throw '校准profile不匹配，先排查，不启动为已校准服务。' }
 ```
 
-它会读取业务会话、调用模型、产生知识变更，不是健康检查。不要把真实客户对话拿来随意演示。当前没有必须常驻的挖掘进程；如果自己明确启用 `--interval` 循环，关闭时必须回到其终端按 Ctrl+C。
+这些是已有知识的检查，不是建库。当前冻结阈值0.25从profile读取；124当前块/181总块是此前快照，合法知识变更后数量可不同，不删数据凑数。材料、模型、Prompt或代码改变可能使profile失效，不能删JSON或强改hash跳过校验。
 
-## 5. 正常关闭与重启
-
-### 5.1 只停止/重启应用
-
-1. 不再提交聊天或新作业，在 `/admin` 或 `/api/jobs` 确认没有 `running` 作业；另行确认手工 CLI/评估终端也已结束。
-2. 在 Uvicorn 终端按一次 **Ctrl+C**，等待正常关闭日志。
-3. MySQL、etcd、Milvus 可以继续运行。要重启应用，在同一终端再次执行第 3.4 节 Uvicorn 命令；新终端需重新设置第 3.3 节环境。
-
-当前网页没有统一取消作业接口，应用重启也会丢失内存中的作业状态，不能假定退出应用会自动取消所有子进程。正常情况下等作业结束再关闭。
-
-终端遗失或端口占用时先定位，不要结束所有 Python 进程：
+### 最后启动应用，前端一起就绪
 
 ```powershell
-Get-NetTCPConnection -LocalPort 8010 -State Listen -ErrorAction SilentlyContinue |
+Set-Location -LiteralPath $projectApp
+& $projectPython scripts/demo_ch05.py
+```
+
+这个终端保持打开以查看日志。启动器在Python进程中加载根`.env`，显式启用工作流、既有最终知识集合/profile，并将检查点路径设为工作树内绝对路径；不改写`.env`。启动器读取阈值不等于上一步完整指纹核查。
+
+统一访问：聊天 <http://127.0.0.1:8015/>，后台 <http://127.0.0.1:8015/admin>，知识库 <http://127.0.0.1:8015/kb>，API说明 <http://127.0.0.1:8015/docs>。只运行一个应用进程，不加`--reload`或多worker；8010/8000旧端口不再作为本文操作入口。
+
+## 3. 启动后的检查与日常使用
+
+在另一个已准备好的终端执行：
+
+```powershell
+Invoke-RestMethod 'http://127.0.0.1:8015/health' -TimeoutSec 5
+Invoke-RestMethod 'http://127.0.0.1:8015/api/kb/overview' -TimeoutSec 5
+Invoke-RestMethod 'http://127.0.0.1:8015/api/jobs' -TimeoutSec 5
+```
+
+`/health`只验证应用响应，不证明MySQL/Milvus/模型全部可用。还应看`/kb`一致性并试一条问答，例如退货流程或订单1001物流。聊天会保存消息并消耗模型额度，未知问题可能写低置信度池。
+
+投诉会显示两个独立按钮；不点可继续聊天。转人工仅前端模拟接待，不创建工单；建工单必须另点并确认，**确认会真实写本地tickets**。满意度目前只在前端保存。不要为了健康检查随意确认建票。
+
+网页作业是固定Make子进程，通常无需额外常驻任务。后台与手工CLI不要同时修改知识；应用内作业互斥不覆盖其他进程。找不到Make时核对`C:/Program Files (x86)/GnuWin32/bin/make.exe`及本地MAKE_EXE配置。
+
+## 4. 运行中的维护
+
+### 日志、空间与服务状态
+
+```powershell
+& $projectDocker compose @projectCompose ps -a
+& $projectDocker compose @projectCompose logs --tail 100 standalone
+& $projectDocker compose @projectCompose logs --tail 100 etcd
+Get-ChildItem -LiteralPath $projectState -File | Select-Object Name,Length,LastWriteTime
+Get-PSDrive -PSProvider FileSystem
+```
+
+应用异常看启动终端；工作流节点/路由/工具与token日志在工作树`log/ch05/nodes.log`，网页作业日志在该工作树`log/acceptance/`。定期检查磁盘与供应商额度；日志/SQLite可能含业务对话，不公开上传。不要用清Docker卷、删除WAL或数据库文件腾空间。
+
+### 知识维护
+
+先运行`Invoke-MewHelpKb status`、`Invoke-MewHelpKb verify-hybrid`。有明确pending向量化需求时，先备份并暂停其他知识写入，再执行：
+
+```powershell
+Invoke-MewHelpKb vectorize
+Invoke-MewHelpKb verify-hybrid
+```
+
+向量化会写Milvus并产生嵌入费用，不是每日必跑项。失败保留pending续查，不手工改done。修改冻结文档、原文/元数据、检索模型或Prompt，需要核对语料指纹和校准结果；正式更新先制定新的材料/清单/评估方案。日常启动不运行build、rebuild、migrate或reset，不自动挖掘历史对话。
+
+### 评估和代码验证
+
+固定样例评估按需运行，输出使用新文件名以保留旧结果：
+
+```powershell
+& $projectPython scripts/demo_ch05.py eval --suite intents --output reports/ch05/intents-maintenance.json
+& $projectPython scripts/demo_ch05.py eval --suite agent --output reports/ch05/agent-maintenance.json
+```
+
+它们会调用模型、产生费用；不要同时跑多份同目标任务。业务代码变更后运行相关测试，必要时完整回归（真实依赖需要已就绪）：
+
+```powershell
+& $projectPython -c "from dotenv import load_dotenv; load_dotenv('E:/MewHelp AI/.env'); import pytest; raise SystemExit(pytest.main(['-q']))"
+```
+
+ch05交付时630 passed、分类28/28、Agent8/8是历史验证快照，不代替本次结果。本轮文档改写未重跑模型评估或全量测试。
+
+### SQLite状态保存
+
+实际位置：`E:\MewHelp AI\.worktrees\ch05-workflow-agent\log\ch05\checkpoints.sqlite`。这是本机E盘文件，保存LangGraph消息、节点状态和可选操作状态；业务归档/工单仍在MySQL，知识向量仍在Milvus。
+
+运行时可能同时存在`checkpoints.sqlite-wal`、`checkpoints.sqlite-shm`。WAL可能含已提交但尚未合并回主文件的内容，不能单独删除或漏备。Git忽略这些文件，不等于不需要备份。当前没有自动清理期限/压缩入口，不手工删内部表。
+
+相同文件和相同后端session_id可继续会话；当前前端刷新/新会话会生成新ID，不能自动重绘历史。中断的工具操作不会在下一轮自动重放。工单creating/uncertain要核实SQLite/MySQL实际结果，不反复点击或删状态后再试。
+
+## 5. 应用重启与整个项目停止
+
+### 仅重启应用
+
+1. 停新请求，等当前回答、确认工单请求和作业结束。看`/api/jobs`，并检查手工评估/CLI终端；内存状态idle不证明旧子进程已退出。
+2. 在应用终端按一次Ctrl+C，等待关闭日志和进程退出，SQLite连接随lifespan关闭。
+3. 用下列命令确认8015已不再监听；无结果即该端口已停止。端口仍在时先核实实际PID，不结束全部Python。
+
+```powershell
+Get-NetTCPConnection -LocalPort 8015 -State Listen -ErrorAction SilentlyContinue |
     Select-Object LocalAddress,LocalPort,OwningProcess
-# 得到实际PID后，用Get-Process -Id 该PID核实所属程序。
 ```
 
-只有确认 PID 是本项目且正常关闭已不可行时，才在任务管理器结束该具体进程；之后重新检查 pending、一致性和作业日志。不要照抄历史文档里的 PID。
+4. 保持MySQL与容器运行，在已准备好的终端再次执行`& $projectPython scripts/demo_ch05.py`。不要删除检查点；不要把旧PID当永久值。
 
-### 5.2 关闭项目的数据库容器
+### 找不到原启动终端：停止先前测试留下的8015服务
 
-完成应用与所有手工任务的关闭后，在项目根目录、具有第 2 节变量的 PowerShell 中：
+如果服务由先前测试或后台终端启动，当前终端按Ctrl+C不会影响那个进程。无需重新启动一份服务，先停止新请求，等聊天、工单确认和作业结束，再按下面步骤处理。本文没有替你执行结束进程。
+
+1. 新开PowerShell，查询**当前**监听8015的PID，无输出表示已经停止：
 
 ```powershell
-& $taskDocker compose @taskCompose stop -t 120 standalone
-if ($LASTEXITCODE -ne 0) { throw 'Milvus停止失败，先检查状态，不继续停元数据服务。' }
-& $taskDocker compose @taskCompose stop -t 120 etcd
-& $taskDocker compose @taskCompose ps -a
+Get-NetTCPConnection -LocalPort 8015 -State Listen -ErrorAction SilentlyContinue |
+    Select-Object LocalAddress,LocalPort,OwningProcess
 ```
 
-这里使用 `stop`，保留容器和数据，下一次仍用第 3.2 节 `up -d --wait` 启动。日常关闭不需要 `down`。`down` 默认会移除容器与项目网络，本项目 bind mount 数据目录仍在，但这不等于备份，更不是日常修复手段。
+2. 输入上一步实际看到的PID，检查可执行文件及启动命令。不要用历史文档中的PID，也不要给PowerShell自带的`$PID`变量赋值：
 
-不要运行 `down -v`、`docker system prune`、删除 `volumes`、删除 WAL 或清空知识库来“关服务”。
+```powershell
+$serverProcessId = [int](Read-Host '输入8015的OwningProcess编号')
+Get-CimInstance Win32_Process -Filter "ProcessId = $serverProcessId" |
+    Select-Object ProcessId,Name,ExecutablePath,CommandLine
+```
 
-### 5.3 关闭 MySQL 与 Docker Desktop
+应能核对为本项目共享venv的Python，命令为`demo_ch05.py`或已确认的本项目Uvicorn入口；若命令使用相对路径，应结合原测试记录/启动方式核对，单看python.exe名字不够。不确定就不要结束。
 
-MySQL 若也服务于其他项目，可以保持运行。确认无其他使用方、确实需要关闭时，在管理员 PowerShell 中：
+3. 确认没有正在处理的请求，且该PID仍在监听8015，才执行指定进程的停止命令；它会再次要求确认：
+
+```powershell
+$serverListeners = @(Get-NetTCPConnection -LocalPort 8015 -State Listen -ErrorAction SilentlyContinue)
+if ($serverProcessId -notin $serverListeners.OwningProcess) {
+    throw '该PID已不再监听8015，请重新查询，不结束其他进程。'
+}
+Stop-Process -Id $serverProcessId -Confirm
+```
+
+这是无法回到原终端时的**强制终止兜底**，不等同于Ctrl+C的正常关闭，不能保证执行应用shutdown/lifespan清理。不要用`Stop-Process -Name python`或结束所有Python。若提示拒绝访问，使用管理员PowerShell从查询PID开始重做，不直接照抄旧编号。
+
+4. 再查询端口，确认无监听后才重启：
+
+```powershell
+Get-NetTCPConnection -LocalPort 8015 -State Listen -ErrorAction SilentlyContinue |
+    Select-Object LocalAddress,LocalPort,OwningProcess
+```
+
+若仍有结果，核对是否自动重启或另一个进程占用，不能反复盲杀。MySQL和Docker容器不需要随应用一起停止。强制终止后保留SQLite主文件与wal/shm，让SQLite下次打开时处理恢复；不要删WAL。若终止时有工单确认在执行，先核实tickets与操作状态，不因页面报错就再次建票；后台子任务也要单独核对。重启仍按本文第1–2节使用同一检查点文件和选定profile。
+
+### 全部停止或准备关机
+
+先完成上述应用与所有手工任务的关闭，再执行：
+
+```powershell
+& $projectDocker compose @projectCompose stop -t 120 standalone
+if ($LASTEXITCODE -ne 0) { throw 'Milvus未正常停止，先检查，不继续停止etcd。' }
+& $projectDocker compose @projectCompose stop -t 120 etcd
+if ($LASTEXITCODE -ne 0) { throw 'etcd停止失败，先检查。' }
+& $projectDocker compose @projectCompose ps -a
+```
+
+只有确认MySQL无其他使用方、确实需要关闭时，管理员PowerShell执行：
 
 ```powershell
 Stop-Service -Name MySQL80
 Get-Service -Name MySQL80
 ```
 
-确认项目容器已停止后，可从系统托盘退出 Docker Desktop。不要直接结束 Docker 后台进程代替有序关闭。正常关机前可按这一顺序操作。
+最后可退出Docker Desktop。日常使用stop保留容器/数据，不用down -v、system prune、删volumes/WAL或清库来关闭项目。下次从第2节按顺序启动即可。
 
-## 6. 日常维护
+## 6. 整个项目的备份与恢复
 
-### 状态与日志
+完整恢复点需要**同一次停写窗口**中的MySQL、Milvus与外部etcd、SQLite、源码/配置、迁移清单和profile。Git只存代码，且当前工作树未提交，仅记录HEAD不够。备份完成后另存独立磁盘/受控存储；同E盘副本不能抵御整盘故障。
 
-```powershell
-& $taskDocker compose @taskCompose ps -a
-& $taskDocker compose @taskCompose logs --tail 100 standalone
-& $taskDocker compose @taskCompose logs --tail 100 etcd
-& $taskDocker inspect milvus-standalone --format '{{.State.Status}} | {{.State.Health.Status}} | {{.RestartCount}}'
-& $taskDocker inspect mewhelp-etcd --format '{{.State.Status}} | {{.State.Health.Status}} | {{.RestartCount}}'
-```
+### 冷备操作顺序
 
-应用日志直接看 Uvicorn 终端；网页作业日志在 `log/acceptance/`，页面也可查看日志尾部。`log/`、`.env` 和实际数据目录不进入 Git，但不表示可以随便删除。向外发日志前检查凭据、连接信息和客户消息。
-
-### 向量化补漏
-
-在已设置 ch04 环境的维护终端中，先查看再补跑：
+先按第5节停应用、作业、评估与所有SQLite连接，禁止其他工具写数据；此时先保持MySQL和容器运行。确认目标后手工执行，本文编写时未执行这些命令：
 
 ```powershell
-uv run --no-sync python -m app.kb.ingest status
-uv run --no-sync python -m app.kb.ingest vectorize
-uv run --no-sync python -m app.kb.ingest verify-hybrid
+$projectBackup = Join-Path 'E:\MewHelp-Backups' (Get-Date -Format 'yyyyMMdd-HHmmss')
+New-Item -ItemType Directory -Path $projectBackup -ErrorAction Stop | Out-Null
+$projectDump = Join-Path $projectBackup 'melhelp.sql'
+& 'E:/MySQL/bin/mysqldump.exe' -h 127.0.0.1 -P 3306 -u root -p --single-transaction --routines --events --triggers --hex-blob --no-tablespaces --set-gtid-purged=OFF "--result-file=$projectDump" melhelp
+if ($LASTEXITCODE -ne 0) { throw 'MySQL导出失败，不能标记完整备份。' }
+
+& $projectDocker compose @projectCompose stop -t 120 standalone
+if ($LASTEXITCODE -ne 0) { throw 'Milvus未停止，不能冷拷贝。' }
+& $projectDocker compose @projectCompose stop -t 120 etcd
+if ($LASTEXITCODE -ne 0) { throw 'etcd未停止，不能冷拷贝。' }
+Copy-Item -LiteralPath (Join-Path $projectRoot 'deploy/milvus/volumes') -Destination (Join-Path $projectBackup 'volumes') -Recurse -ErrorAction Stop
+Copy-Item -LiteralPath $projectManifest,$projectProfile -Destination $projectBackup -ErrorAction Stop
+
+$projectSqliteBackup = Join-Path $projectBackup 'sqlite'
+New-Item -ItemType Directory -Path $projectSqliteBackup -ErrorAction Stop | Out-Null
+if (-not (Test-Path -LiteralPath (Join-Path $projectState 'checkpoints.sqlite'))) {
+    throw '检查点缺失，核对路径，不能创建空文件冒充备份。'
+}
+foreach ($stateName in @('checkpoints.sqlite','checkpoints.sqlite-wal','checkpoints.sqlite-shm')) {
+    $stateFile = Join-Path $projectState $stateName
+    if (Test-Path -LiteralPath $stateFile) {
+        Copy-Item -LiteralPath $stateFile -Destination $projectSqliteBackup -ErrorAction Stop
+    }
+}
 ```
 
-这会写新集合并调用嵌入 API。失败时保留状态继续排查，不手工把 MySQL 的 pending 改为 done。若 pending 为 0，不必每天运行向量化。
+随后保存根目录`deploy/milvus/`配置文件，以及**实际应用工作树**的app、data、scripts、tests、docs、reports、dev-notes、Makefile、pyproject.toml、uv.lock、.python-version和`.superpowers`账本；包含未跟踪源码。工作树的`.git`只是指向根仓库的链接文件，需另保存根Git仓库元数据或完整版本记录，不能以仅拷worktree就保住Git历史。无需拷虚拟环境。
 
-ch04 下 `rebuild` 会重新嵌入当前 eligible 范围，保留集合而不是 drop，但仍有模型费用和数据写入；只在查明需要后备份并执行，不当作通用修复第一步。旧 ch03 路径的重建行为不同，运行前务必确认环境变量。
+根`.env`和数据库备份应加密或访问受限，不能进入公开压缩包。记录备份时间、源码快照、集合/配置版本并保存文件SHA256；确认SQL、完整volumes、SQLite文件集和源码全部齐全后才标记完整备份。最后一个SQLite连接正常关闭通常会合并WAL并清理侧文件，异常退出后可能残留；**冷备期间将存在的整套文件保留，不手删侧文件，也不在运行中逐文件复制**。本流程不是在线一致性备份。
 
-### 知识修改与 profile 失效
+### 恢复操作顺序
 
-- `/kb` 手工新增、挖掘知识或修改原文/元数据，都可能改变实际语料指纹；新增后原冻结 profile 不能自动视为仍有效。
-- `data/kb/ch04/` 六份文件与正式评估标签、迁移清单的 source hash 绑定，不能直接改文件后强行覆盖旧清单继续用原报告。
-- 需要更新冻结源时，先制定新语料版本、清单和评估标签方案，备份后迁移，再重新校准/评估；不是删除 JSON 后重新猜 ID 基线。
-- 改模型、Prompt 或相关后端代码同样需要核对 profile/cache。正式评估期间暂停知识写入。
+1. 明确恢复点和覆盖范围，停全部应用/任务，保全当前事故现场；恢复不是每日启动步骤。
+2. 使用同一备份包的SQL、整个volumes、SQLite文件集、源码/配置及清单/profile，不混用不同时刻数据。
+3. 管理员确认目标数据库后恢复SQL；替换已停止的Milvus/etcd数据与配置。原目录先保全，不对未经核实路径递归删除。
+4. 在无SQLite连接时恢复其文件集，目标旧主文件与wal/shm整体先另存；不能混搭旧侧文件，不向运行中的数据库覆盖文件。
+5. 恢复匹配源码、根配置与路径，按第1–3节启动并验证知识一致性、相同session_id历史和工单状态，再开放使用。
 
-### 常规检查频率
+SQL导入、数据目录覆盖和清理均有实际破坏性，本手册不提供一键恢复脚本。换电脑时重新核对磁盘、服务名、共享venv和启动器寻找根配置的布局；不只拷一个启动脚本。MySQL/SQLite不跨库原子，创建结果不明须核实，不能宣称exactly-once。
 
-- 每次启动：服务健康、profile 校验、知识库状态和一条实际问答。
-- 每次数据/配置变更前：做配套备份，记录旧值与恢复点，勿把密钥写入记录。
-- 每次代码修改后：运行相关测试；涉及完整链路时再跑全量 `uv run --no-sync pytest -q`。测试需要真实 MySQL/Milvus，维护窗口运行；不要同时修改业务数据。
-- 定期检查磁盘剩余空间、Docker 占用、模型供应商额度；不要通过盲目清理卷腾空间。
+## 7. 常见故障处理
 
-## 7. 配套备份与恢复
+- 8015占用：先查询实际PID及所属程序；不要同时启动第二个实例或连旧端口误判。缺工作流按钮时确认从实际应用目录启动且SSE以done结束；错误轮按钮禁用是保护。
+- MySQL登录失败：核对本地账号、DB_URL编码和服务；3306可达不等于有权限。不打印连接串。
+- Docker不可达/Milvus退出：确认Desktop就绪、两份Compose、etcd健康和已有etcd-external目录；保留日志，不删WAL、不反复切回旧嵌入模式。
+- ONLINE但问答失败：依次核对MySQL、Milvus/profile、模型网络/密钥/供应商额度；health不能代替端到端检查。
+- SQLite locked：查第二个进程或调试连接；当前仅单进程锁，不通过删除wal/shm或多worker规避。
+- SQLite打不开/磁盘满：核对绝对路径、目录权限和空间；不改`:memory:`绕过持久化，不自动清检查点。
+- 预算兜底：查节点与工具循环，默认6次工具、10次决策、12,000 tokens、90秒；不无限放宽额度掩盖问题。
+- 知识/profile不一致：核对源字节、清单、实际数据和配置变更，必要时在单独批准的维护方案中重新校准；不改hash或删库凑数。
+- 工单creating/uncertain：保留关联与发生时间，核对MySQL和SQLite状态；不自动重试或删除状态再建票。
+- 作业仍在运行：查看实际子进程与手工终端，应用重启不会证明任务已取消。
 
-**Git 不会保存实际数据库、Milvus 卷、本地密钥或 `log/` 中的迁移清单。** 完整备份必须包含同一维护窗口下的 MySQL、Milvus 数据、外部 etcd、对应源码/配置和清单。仅有报告或旧嵌入式 etcd 目录不够。
 
-### 7.1 推荐的本机冷备步骤
+### 检索、录入和初始化失败的处理顺序（2026-10-23实测）
 
-先停止接收请求，按第 5.1 节停应用和所有作业，并禁止其他工具直接写这两个数据库。MySQL 此时仍保持运行，便于导出。以下备份目录放在仓库外；默认示例仍在 E 盘，完成后另复制到独立磁盘/受控备份位置，防止同盘故障。
+**BM25成功，dense/hybrid/hybrid_rerank失败**：BM25不调用嵌入模型，其余三条路径需要嵌入；先看应用提示/终端的embedding错误，核对根.env的EMBEDDING_API_KEY、EMBEDDING_BASE_URL、EMBEDDING_MODEL与供应商余额、限流、网络/代理。401/403核对鉴权，402核对额度，429稍后重试，timeout/transport核对网络。不要将所有错误都归因于Milvus迁移，更不要reset。仅hybrid_rerank失败时再查重排模型/密钥/服务。修改根.env后须正常重启应用（配置与客户端在进程中缓存），仅刷新页面不会生效；不要输出密钥或连接串。
+
+**录入返回502且显示已入库pending**：不是MySQL完全失败。先查status/verify-hybrid，可能是MySQL成功而向量化失败，库存一致性闸显示mismatch属于正确保护。先修复上面的依赖，再运行Invoke-MewHelpKb vectorize和verify-hybrid；只补pending，不重复粘贴录入、不手改done、不重建所有向量。若仍失败，保留pending和日志继续排查。当前实际库125有效块、pending0、双写一致是2026-10-23快照，不是固定库存目标。
+
+**知识客服报错、订单查询正常**：知识路径多了改写/嵌入/重排，按上述依赖逐层检查。修复后先四策略自测，再问政策题确认citations与done。错误轮不开放按钮、不会写工单是正常保护。/health只代表应用活着，不能证明远程服务可用。HTTP诊断脚本访问127.0.0.1时也可能被系统代理接管，须只对本机请求排除代理；不要因此禁用所有远程API代理。
+
+**profile不符**：load_profile会列差异字段。仅runtime_corpus_hash变化通常表示真实知识新增/修改；code_hash表示相关检索/评估代码或源字节变化；model_parameters_hash/prompt_hash需核对配置/Prompt。2026-10-23定位时根/worktree代码字节相同，仅runtime_corpus_hash变化：知识从124有效块增至125，原冻结profile正确失效。此次修复修改相关代码后code_hash也改变。不要强改hash、删新增知识、关闭校验或覆盖旧profile来凑通过。
+
+本次已用原24条calibration标注生成独立文件，严格identity校验通过，阈值0.25；旧冻结文件不改动。使用本机修复版本时，**在执行本文第1节前**先选择它：
 
 ```powershell
-$backupRoot = 'E:\MewHelp-Backups'
-$backupStamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-$backupPath = Join-Path $backupRoot $backupStamp
-New-Item -ItemType Directory -Path $backupPath -ErrorAction Stop | Out-Null
-
-$dumpFile = Join-Path $backupPath 'melhelp.sql'
-& 'E:/MySQL/bin/mysqldump.exe' -h 127.0.0.1 -P 3306 -u root -p --single-transaction --routines --events --triggers --hex-blob --no-tablespaces --set-gtid-purged=OFF "--result-file=$dumpFile" melhelp
-if ($LASTEXITCODE -ne 0) { throw 'MySQL导出失败，不能把这个目录标为完整备份。' }
-
-& $taskDocker compose @taskCompose stop -t 120 standalone
-if ($LASTEXITCODE -ne 0) { throw 'Milvus未正常停止，不能继续冷拷贝。' }
-& $taskDocker compose @taskCompose stop -t 120 etcd
-if ($LASTEXITCODE -ne 0) { throw 'etcd未正常停止，不能继续冷拷贝。' }
-
-Copy-Item -LiteralPath 'deploy/milvus/volumes' -Destination (Join-Path $backupPath 'volumes') -Recurse -ErrorAction Stop
-Copy-Item -LiteralPath 'deploy/milvus/docker-compose.yml','deploy/milvus/docker-compose.external-etcd.yml','deploy/milvus/user.yaml','deploy/milvus/embedEtcd.yaml' -Destination $backupPath -ErrorAction Stop
-Copy-Item -LiteralPath 'log/kb/ch04-v2-final-migration.json','log/kb/ch04-v2-final-calibration.json' -Destination $backupPath -ErrorAction Stop
+$env:CH05_CALIBRATION_PROFILE = 'E:\MewHelp AI\.worktrees\ch05-workflow-agent\log\ch05\calibration-20261023-final.json'
 ```
 
-`--result-file` 避免 PowerShell 输出重定向造成备份编码问题；不要改成 `mysqldump > dump.sql`。`--single-transaction` 主要保证 InnoDB 的一致性，备份期间不进行 DDL；这里还先停止所有项目写入以保持 MySQL 与 Milvus 对应。
+第1节默认已选择本次修复文件；上面的变量可用于独立启动终端。随后从第1节重新准备路径和配置，profile核对命令会检查选中的文件。应用启动器也使用同一环境变量；新终端需重新设置。新文件位于Git忽略的log中，须与数据/源码一并备份。此结果仅是calibration，不冒称已重跑72条test部署评估。以后知识再变更，该文件也会失效，不能永久沿用。
 
-另保存当前完整工作区：`app/`、`data/`、`scripts/`、`tests/`、`docs/`、`reports/`、`dev-notes/`、`deploy/` 配置、`Makefile`、`pyproject.toml`、`uv.lock`、`.python-version`。本项目仍有未提交改动，仅记录 Git HEAD 不够。备份时不要遗漏未跟踪源码；`.venv` 可按锁文件重建，不必备份。
-
-`.env` 应放入受控、加密或访问受限的备份中，不能混入公开压缩包。SQL 备份也包含会话等业务数据，应按相同标准保护。
-
-记录备份时间、源码版本/工作区快照、MySQL 与 Milvus 版本、集合名及文件校验和。例如：
+后续需要重新校准时，先停知识写入、保证双写一致并完成第1节准备；用新的输出名，不覆盖既有报告/标签：
 
 ```powershell
-Get-FileHash -LiteralPath $dumpFile -Algorithm SHA256
-Get-ChildItem -LiteralPath (Join-Path $backupPath 'volumes') -Recurse -File |
-    Get-FileHash -Algorithm SHA256 |
-    Export-Csv -LiteralPath (Join-Path $backupPath 'volumes-sha256.csv') -NoTypeInformation -Encoding UTF8
+$calibrationStamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$newProfile = Join-Path $projectState ("calibration-$calibrationStamp.json")
+$newReport = "reports/ch05/calibration-$calibrationStamp"
+& $projectPython -c "from scripts.demo_ch05 import configure; configure(); from scripts.eval_retrieval import main; raise SystemExit(main())" --split calibration --calibrate --profile $newProfile --output-dir $newReport
+if ($LASTEXITCODE -ne 0) { throw '校准失败，保留报告并排查，不启用未完成的新文件。' }
+# 成功后明确选择新文件，再从第1节重新准备、核对并重启应用。
+$env:CH05_CALIBRATION_PROFILE = $newProfile
 ```
 
-确认备份完整后，按第 3 节恢复服务。冷拷贝命令只适用于两个容器已正常停止；不能复制正在写入的 etcd 数据文件并声称是完整备份。在线备份需要另行设计应用一致性快照，本手册不混用在线与冷备步骤。
+真实重校准会调用模型并计费；报告若有服务/评审失败，不宣称校准完成。正式质量结论还需要独立test部署评估与人工抽查。新profile不是数据库修复工具，也不代替双写一致性检查。
 
-### 7.2 恢复原则
+## 8. 当前边界与资料
 
-恢复会覆盖当前业务状态，应在明确选择恢复点、确认影响后进行；先备份当前事故现场，不能把恢复当每日启动步骤。
+应用仅本地演示、没有鉴权；SQLite文件和进程内会话锁不支持多实例共享，不放网络盘供多个应用共用。前置证据闸后流式输出，不再具有全文生成后硬校验发布保证。日常维护不自动提交/推送/合并/部署，不改变数据库表或基础设施。
 
-1. 停应用、全部作业及 Milvus/etcd，禁止其它写入。
-2. 选择同一备份包中的 SQL、整个 `volumes`、Compose/存储配置、源码版本、迁移清单和 profile。不要混合不同时刻的 etcd 与向量数据。
-3. 由数据库管理员将 SQL 恢复到确认的数据库；示例通过 MySQL 客户端的 `SOURCE` 导入，避免 PowerShell 的 `<` 重定向问题。导入可能覆盖现有表和数据，执行前检查备份内容及目标：
+2026-10-22此前只读快照为MySQL Running、etcd/Milvus healthy、8015可用；以后以当前检查为准。ch05功能与验证报告在应用工作树reports/ch05/summary.md，演示在reports/ch05/demo.md，过程在dev-notes/ch05.md，恢复入口为docs/CH05_CURRENT_PROGRESS.md。旧版手册已另存历史，不作为另一套启动方案。
 
-```powershell
-& 'E:/MySQL/bin/mysql.exe' -h 127.0.0.1 -P 3306 -u root -p melhelp
-```
-
-在 MySQL 客户端内执行，将路径替换为实际选中的备份目录：
-
-```sql
-SOURCE E:/MewHelp-Backups/20261021-120000/melhelp.sql;
-```
-
-4. 将当前目录另存为事故现场，恢复备份的 `volumes` 与配置，不向运行中的目录覆盖文件，也不对未经核实的路径递归删除。
-5. 恢复匹配的源码、`log/kb/ch04-v2-final-migration.json`、profile 和受保护的配置，按第 3 节启动。
-6. 检查 MySQL 登录、Milvus 健康、`verify-hybrid`、profile 指纹及引用/拒答入池，再恢复业务访问。新电脑上存储权限、路径与模型配置不相同时，profile 可能需重新校准，不能跳过错误。
-
-迁移前的 `deploy/milvus/volumes/milvus/etcd` 仅是历史保留目录，不能代替当前 `etcd-external` 备份。旧嵌入式启动竞态尚在，基础设施回退不等于“只换一个 -f”。详情见[Milvus 运行说明](../deploy/milvus/OPERATIONS.md)。
-
-## 8. 初始化、迁移、评估与版本回退
-
-### 已有数据的这台电脑
-
-当前已迁移，不需要再初始化。日常执行 `status` 和 `verify-hybrid` 即可。必须保留 `log/kb/ch04-v2-final-migration.json`；目标集合存在但清单丢失时应恢复原清单，不能删除集合或重新猜基线。
-
-### 确认需要首次迁移或按清单续跑
-
-仅在备份、检查目标环境后，于已配置 ch04 的终端执行：
-
-```powershell
-uv run --no-sync python -m app.kb.ingest preview --corpus-version ch04
-uv run --no-sync python -m app.kb.ingest migrate-hybrid --dry-run
-# 确认dry-run目标/排除范围正确后，才执行真实写入：
-uv run --no-sync python -m app.kb.ingest migrate-hybrid
-uv run --no-sync python -m app.kb.ingest verify-hybrid
-```
-
-迁移保留旧集合，但会录入并重新嵌入当前语料；重跑仍有调用费用，不是只读命令。迁移/schema/hash 检查失败时按错误恢复材料或备份，不清库绕过检查。项目不负责创建 MySQL 表。
-
-### 真实评估与重新校准
-
-不是启动前每天都跑。它们会调用远程模型、产生费用和报告；评估 CLI 不写业务会话或低置信度池。运行前备份已有报告和 profile，尤其不要用新结果覆盖旧报告后继续引用旧成绩。
-
-```powershell
-uv run --no-sync python scripts/eval_retrieval.py --validate-only
-uv run --no-sync python scripts/eval_retrieval.py --split calibration --calibrate --profile log/kb/ch04-v2-final-calibration.json --output-dir reports/ch04/v2/calibration-compare --cache-dir log/kb/ch04-v2-final-eval-cache
-uv run --no-sync python scripts/eval_retrieval.py --split test --mode compare --output-dir reports/ch04/v2/test-compare-recovered --cache-dir log/kb/ch04-v2-final-eval-cache
-uv run --no-sync python scripts/eval_retrieval.py --split test --mode deployment --profile log/kb/ch04-v2-final-calibration.json --output-dir reports/ch04/v2/test-deployment --cache-dir log/kb/ch04-v2-final-eval-cache
-```
-
-24 条校准用于选择阈值，72 条测试只用于报告，不能拿测试集调参。默认目录为 `reports/ch04/calibration-compare`、`test-compare`、`test-deployment`，每份都有汇总、逐题明细和配置；缓存是 `log/kb/ch04-eval-cache`。
-
-命令结束后检查退出码、报告行数和服务/评审失败数，不能把“进程退出”当成成功。中断时先保留缓存，确认没有旧进程仍在运行后再恢复；不要同时启动两份同目标评估。缓存键包含 QueryPlan，重跑不保证全部命中；不要任取缓存文件拼报告。
-
-### 回退到 ch03 的应用路径
-
-先停 FastAPI 与作业，在准备启动的终端设置：
-
-```powershell
-$env:KB_CORPUS_VERSION = 'ch03'
-$env:KNOWLEDGE_STRATEGY = 'dense'
-$env:KNOWLEDGE_COLLECTION = 'knowledge'
-uv run --no-sync uvicorn app.main:app --host 127.0.0.1 --port 8010
-```
-
-这是选择旧检索/聊天路径，不是数据库时间点恢复；旧模型/规则冲突也可能重新出现。新集合与数据仍保留，不能为回退执行 reset/drop。回到 ch04 时重新执行第 3.3 节，不要只改一个变量。
-
-## 9. 常见问题
-
-- **Docker 客户端找不到**：执行第 2 节绝对路径；路径变了先确认安装位置。`docker info` 报引擎不可达时先等 Docker Desktop 就绪。
-- **Milvus 启动就退出，日志 leader changed/134**：确认始终合并两份 Compose、`mewhelp-etcd` 健康且 `etcd-external` 正确存在；保留日志，勿删 WAL、原目录或反复切回嵌入模式。
-- **3306 通但数据库 Access denied**：核对数据库账号/密码、DB_URL 的 URL 转义和本地权限。不要打印连接串；MySQL 端口打开不代表登录成功。
-- **页面 ONLINE 但聊天失败**：`/health` 不检查依赖。依次看 MySQL 登录、Milvus 健康/一致性、模型密钥、供应商额度/限流/网络及后台错误日志。
-- **网页后台报找不到 make**：确认 GNU Make 路径，给应用启动终端设置 `MAKE_EXE` 后重启；CLI `uv run ...` 不依赖 Make。
-- **网页建库失败**：检查迁移清单是否缺失、源文件 hash 是否变化，以及嵌入是否失败；首次初始化按第 8 节迁移。ch04 的 `kb-build` 已跳过旧 FAQ，但直接运行 `faq` 子命令仍会被拒绝。
-- **profile/source hash 不匹配**：核对是否改了语料、ID/元数据、模型、Prompt 或后端代码；恢复匹配备份或完成新版本评估，不能只改 JSON 里的 hash/阈值让检查通过。
-- **知识库数不一致或 pending 不为 0**：先检查模型嵌入/数据库/存储日志，再按第 6 节补向量化及 verify；多余 ID 或 stale 需查明原因，禁止自动删行凑数。
-- **8010 被占用**：按第 5.1 节定位具体 PID；可以明确改为 8012 做临时演示，浏览器/API地址也要一起换，不能误连旧实例。
-- **停止 Uvicorn 后作业还在**：回到手工任务终端或核实具体子进程；作业状态仅内存，不以应用重启后的 idle 证明旧进程不存在。
-- **知识题被拒答但库里有答案**：v2已修复无引用引导语和知识意图误选商品工具；仍可能因分数门槛或证据不充分而拒答，当前72部署误拒答2/60，先看对应报告与日志，不通过禁用质量关口“修好”。
-
-## 10. 资料入口与核验依据
-
-- [ch04 交付与真实指标](../reports/ch04/summary.md)
-- [功能演示与评估命令](../reports/ch04/demo.md)
-- [当前维护/交接入口](CH04_CURRENT_PROGRESS.md)
-- [开发留痕](../dev-notes/ch04.md)
-- [Milvus 专项运维](../deploy/milvus/OPERATIONS.md)
-
-本手册按仓库源码、`.env.example`、Makefile、合并后的 Compose 配置及本机服务/CLI 帮助核对，具体工具语义通过 Context7 查询官方资料：
-
-- [Docker Compose 多文件合并](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/)
-- [Compose stop](https://docs.docker.com/reference/cli/docker/compose/stop/) 与 [down](https://docs.docker.com/reference/cli/docker/compose/down/)
-- [uv 环境同步与锁文件](https://docs.astral.sh/uv/concepts/projects/sync/)
-- [FastAPI 手动运行](https://fastapi.tiangolo.com/deployment/manually/)
-- [MySQL Windows 服务](https://dev.mysql.com/doc/refman/8.0/en/windows-start-service.html)
-- [mysqldump 与 Windows 输出注意事项](https://dev.mysql.com/doc/refman/8.0/en/mysqldump.html)
-- [SQL 备份恢复](https://dev.mysql.com/doc/refman/8.0/en/reloading-sql-format-dumps.html)
-
-本机后台页和 API 仍无鉴权，仅按本地演示使用；本文没有把它配置成公网部署。备份 SQL、真实会话、`.env` 和数据库日志均需受控保存。
-
+命令与接口依据现有源码/锁文件及已通过Context7核对的[LangGraph持久化](https://docs.langchain.com/oss/python/langgraph/persistence)、[SQLite WAL](https://www.sqlite.org/wal.html)、[Uvicorn生命周期](https://uvicorn.dev/concepts/lifespan)、[Docker多配置文件](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/)等官方说明。
