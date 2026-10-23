@@ -1,5 +1,8 @@
 # Milvus 本机运行说明
 
+> 本页只记录检索基础设施细节；截至ch06的整个项目启动、停止、维护与一致性备份统一见[整体运维手册](../../docs/OPERATIONS.md)。先按整体手册核对应用/作业停写，再操作共享MySQL、Milvus或etcd。
+
+
 2026-10-20：用户批准将嵌入式 etcd 拆为独立服务，保留 Milvus 3.0.0、etcd 3.5.23 与本地向量存储。原因是嵌入式 etcd 选举尚未完成时 Milvus 已访问元数据，触发 leader changed panic（退出码134），并非 Docker 标记的 OOM。
 
 ## 日常启动

@@ -1,10 +1,16 @@
 # MewHelp AI 开发交接文档（面向 OpenAI Codex）
 
+> 2026-10-23 ch06功能与本章验收完成：Tasks1–8，最终700 passed；真实意图/严格JSON75/75、订单9/9，问题字面74/75、有限语义75/75。原生interrupt/Command重启选单续跑、聊天卡片/固定原因表单、真实合成工单取消0/确认1/重复1已验证；主力默认、降级仅惰性配置种子。质量限制：12政策题扩写未提升召回（均83.33%），短指代可能低分拒答。产品仍在.worktrees/ch05-workflow-agent，8016；未提交/推送/合并/部署，保留既有改动。先读CH06_CURRENT_PROGRESS与产品reports/ch06/summary.md、demo.md；统一运维已更新。本条覆盖下文中断时“进行中”。
+
+
+> 2026-10-23 ch06进行中，未finish：Tasks1–7完成；两项用户裁决为原生LangGraph interrupt/Command订单续跑、意图降级仅配置种子。独立后端review3项Important已一轮修复、相关52passed；修后全量及真实75条最终验收/新校准/真实浏览器仍需核实。产品仍在.worktrees/ch05-workflow-agent，未提交/合并。先读 docs/CH06_CURRENT_PROGRESS.md 和 dev-notes/ch06.md，不沿用下文ch05通过数作为ch06结果。
+
+
 > 2026-10-23故障修复已验收：637项全量通过，四策略检索API和知识流式正常；125有效块双写一致。旧profile因知识变更正确失效，独立新校准文件为ch05工作树log/ch05/calibration-20261023-final.json（.25，严格匹配）。启动请先按OPERATIONS准备/核验新profile；报告与剩余Minor见工作树reports/ch05/bugfix-20261023/summary.md。ch05已提交并推送至分支ch05-workflow-agent，PR #5（base ch04-retrieval-quality）待评审合并；尚未合并、部署。
 
 > 2026-10-22 ch05功能与验证完成：Tasks1–8及最终评审修复/真实验收已完成，630项全量通过、分类28/28、Agent8/8。唯一产品实现位于`E:/MewHelp AI/.worktrees/ch05-workflow-agent`；原根仅同步文档。先读[CH05当前状态](CH05_CURRENT_PROGRESS.md)、[交付报告](../reports/ch05/summary.md)及dev-notes/ch05.md。保留未提交工作树，未commit/push/merge/deploy；Task9官方关闭见专属账本。
 
-整个项目的启动、检查、运行维护、停止与整套备份恢复统一见[运行维护手册](OPERATIONS.md)。现行手册只保留ch05完成后的整体流程，不再按历史章节拼接操作。
+整个项目的启动、检查、运行维护、停止与整套备份恢复统一见[运行维护手册](OPERATIONS.md)。现行手册统一覆盖截至ch06的准备、启动、停止、维护、校准及备份恢复。下文旧章节命令仅保留历史，不作为当前启动依据；不按章节拼接操作。
 
 > 2026-10-21 ch04 v2修复/扩写已finish：最新559项通过；当前知识124块，最终集合knowledge_hybrid_ch04_v2_final、阈值0.25。先读CH04_CURRENT_PROGRESS.md及dev-notes/ch04.md阶段30起。旧v1 finish/65块/.65仅历史；以下ch03主体也是历史。未提交/推送/合并/DDL。
 
