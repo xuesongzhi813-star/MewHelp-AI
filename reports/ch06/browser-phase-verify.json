@@ -1,0 +1,380 @@
+{
+  "session_id": "ch06-e2e-1792740477321",
+  "provider": "real",
+  "browser": "Chrome headless",
+  "streams": [
+    {
+      "path": "/chat",
+      "status": 200,
+      "frames": [
+        {
+          "type": "tool",
+          "name": "query_logistics",
+          "phase": "start"
+        },
+        {
+          "type": "tool",
+          "name": "query_logistics",
+          "phase": "end"
+        },
+        {
+          "type": "token",
+          "content": "订单"
+        },
+        {
+          "type": "token",
+          "content": "100"
+        },
+        {
+          "type": "token",
+          "content": "1"
+        },
+        {
+          "type": "token",
+          "content": "的"
+        },
+        {
+          "type": "token",
+          "content": "物流"
+        },
+        {
+          "type": "token",
+          "content": "信息"
+        },
+        {
+          "type": "token",
+          "content": "："
+        },
+        {
+          "type": "token",
+          "content": "承运"
+        },
+        {
+          "type": "token",
+          "content": "快递"
+        },
+        {
+          "type": "token",
+          "content": "为"
+        },
+        {
+          "type": "token",
+          "content": "顺"
+        },
+        {
+          "type": "token",
+          "content": "丰"
+        },
+        {
+          "type": "token",
+          "content": "速"
+        },
+        {
+          "type": "token",
+          "content": "运"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "当前"
+        },
+        {
+          "type": "token",
+          "content": "节点"
+        },
+        {
+          "type": "token",
+          "content": "是"
+        },
+        {
+          "type": "token",
+          "content": "「"
+        },
+        {
+          "type": "token",
+          "content": "已"
+        },
+        {
+          "type": "token",
+          "content": "签"
+        },
+        {
+          "type": "token",
+          "content": "收"
+        },
+        {
+          "type": "token",
+          "content": "」，"
+        },
+        {
+          "type": "token",
+          "content": "签"
+        },
+        {
+          "type": "token",
+          "content": "收"
+        },
+        {
+          "type": "token",
+          "content": "日期"
+        },
+        {
+          "type": "token",
+          "content": "为"
+        },
+        {
+          "type": "token",
+          "content": "202"
+        },
+        {
+          "type": "token",
+          "content": "6"
+        },
+        {
+          "type": "token",
+          "content": "-"
+        },
+        {
+          "type": "token",
+          "content": "10"
+        },
+        {
+          "type": "token",
+          "content": "-"
+        },
+        {
+          "type": "token",
+          "content": "21"
+        },
+        {
+          "type": "token",
+          "content": "。"
+        },
+        {
+          "type": "token",
+          "content": "包裹"
+        },
+        {
+          "type": "token",
+          "content": "已经"
+        },
+        {
+          "type": "token",
+          "content": "签"
+        },
+        {
+          "type": "token",
+          "content": "收"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "不在"
+        },
+        {
+          "type": "token",
+          "content": "运输"
+        },
+        {
+          "type": "token",
+          "content": "途中"
+        },
+        {
+          "type": "token",
+          "content": "。"
+        },
+        {
+          "type": "token",
+          "content": "如果您"
+        },
+        {
+          "type": "token",
+          "content": "想"
+        },
+        {
+          "type": "token",
+          "content": "核实"
+        },
+        {
+          "type": "token",
+          "content": "是谁"
+        },
+        {
+          "type": "token",
+          "content": "签"
+        },
+        {
+          "type": "token",
+          "content": "收"
+        },
+        {
+          "type": "token",
+          "content": "的"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "可以"
+        },
+        {
+          "type": "token",
+          "content": "凭"
+        },
+        {
+          "type": "token",
+          "content": "订单"
+        },
+        {
+          "type": "token",
+          "content": "号"
+        },
+        {
+          "type": "token",
+          "content": "联系"
+        },
+        {
+          "type": "token",
+          "content": "顺"
+        },
+        {
+          "type": "token",
+          "content": "丰"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "也可以"
+        },
+        {
+          "type": "token",
+          "content": "转"
+        },
+        {
+          "type": "token",
+          "content": "人工"
+        },
+        {
+          "type": "token",
+          "content": "协助"
+        },
+        {
+          "type": "token",
+          "content": "查询"
+        },
+        {
+          "type": "token",
+          "content": "。"
+        },
+        {
+          "type": "actions",
+          "items": [
+            {
+              "kind": "handoff",
+              "description": "再次查询订单1001物流：承运快递为顺丰速运，当前节点「已签收」，签收日期2026-10-21。包裹已签收，不在运输途中。如需核实签收人，可凭订单号联系顺丰，或转人工协助查询。",
+              "ticket_type": "咨询",
+              "action_id": "670e184ea3b94e628e43d3c21f6e29e6",
+              "status": "available",
+              "label": "转人工"
+            }
+          ]
+        },
+        {
+          "type": "done"
+        }
+      ]
+    }
+  ],
+  "page_errors": [],
+  "tickets_before": 1,
+  "public_state": {
+    "status": "completed",
+    "selection": null,
+    "actions": [
+      {
+        "kind": "create_ticket",
+        "description": "订单1001（复古水洗牛仔夹克，199元）状态为已签收，签收时间2026-10-21 14:00，商品状态字段为空，因此无法判断是否仍满足无理由退货的\"收到时状态、不影响再次销售\"条件[2]。另外，7天无理由自签收起算[2]，按签收日期看时限已过，但若属于质量问题或描述不符，仍可提供订单号、收到时与当前状态照片及处理经过，由人工核实[1][8]。是否可退需以审核结果为准，客服不能预先承诺审批结果[2]。\n\n如需申请：打开「我的订单」→ 选择该订单 → 点击「申请售后」，填写原因并上传商品状态照片[6]；寄回前请拍好正反面、问题部位、吊牌配件及包装[10]。申请表是否提交由您自行决定。",
+        "ticket_type": "咨询",
+        "action_id": "304ce9e3e3be48a986ea35e29d898de8",
+        "status": "available",
+        "label": "建工单"
+      },
+      {
+        "kind": "handoff",
+        "description": "订单1001（复古水洗牛仔夹克，199元）状态为已签收，签收时间2026-10-21 14:00，商品状态字段为空，因此无法判断是否仍满足无理由退货的\"收到时状态、不影响再次销售\"条件[2]。另外，7天无理由自签收起算[2]，按签收日期看时限已过，但若属于质量问题或描述不符，仍可提供订单号、收到时与当前状态照片及处理经过，由人工核实[1][8]。是否可退需以审核结果为准，客服不能预先承诺审批结果[2]。\n\n如需申请：打开「我的订单」→ 选择该订单 → 点击「申请售后」，填写原因并上传商品状态照片[6]；寄回前请拍好正反面、问题部位、吊牌配件及包装[10]。申请表是否提交由您自行决定。",
+        "ticket_type": "咨询",
+        "action_id": "de783f01b9074173a19addc4960de3eb",
+        "status": "available",
+        "label": "转人工"
+      },
+      {
+        "kind": "refund_application",
+        "ticket_type": "售后",
+        "order_id": "1001",
+        "product": "复古水洗牛仔夹克",
+        "reasons": [
+          "不喜欢/不合适",
+          "尺码问题",
+          "商品质量问题",
+          "与描述不符",
+          "其他"
+        ],
+        "description": "演示退款申请（待审核，不执行真实退款）\n订单：1001\n商品：复古水洗牛仔夹克\n原因：尺码问题\n补充说明：\n原问题：关于订单1001的复古水洗牛仔夹克：这个能退吗",
+        "action_id": "203b3ca0ff1a453d8d1b548383cc68d7",
+        "status": "completed",
+        "reason": "尺码问题",
+        "note": "",
+        "result": "工单创建成功,工单号 T202610230001",
+        "label": "提交演示退款申请"
+      }
+    ]
+  },
+  "duplicate_result": {
+    "action_id": "203b3ca0ff1a453d8d1b548383cc68d7",
+    "status": "completed",
+    "result": "演示申请已提交，待审核；未执行真实退款。工单创建成功,工单号 T202610230001"
+  },
+  "tickets_after_duplicate": 1,
+  "stale_selection_status": 409,
+  "logistics_state": {
+    "intent": "物流",
+    "confidence": 0.99,
+    "route": "business",
+    "status": "completed",
+    "raw_question": "先不退了，订单1001包裹在哪里？",
+    "resolved_question": "先不退了，订单1001包裹在哪里？",
+    "selected_order_id": null,
+    "node_trace": [
+      "resolve_reference",
+      "classify_intent",
+      "agent_decide",
+      "agent_tools",
+      "agent_decide",
+      "agent_tools",
+      "agent_answer",
+      "log_result"
+    ],
+    "gate_reason": "",
+    "expansion_queries": [],
+    "expansion_fallback": false,
+    "pending_interrupts": 0,
+    "user_messages": [
+      "这个能退吗",
+      "先不退了，订单1001包裹在哪里？",
+      "先不退了，订单1001包裹在哪里？"
+    ],
+    "usage_segments": []
+  },
+  "passed": true
+}

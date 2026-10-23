@@ -1,0 +1,657 @@
+{
+  "session_id": "ch06-e2e-1792740477321-ref-1792741433005",
+  "provider": "real",
+  "browser": "Chrome headless",
+  "streams": [
+    {
+      "path": "/chat",
+      "status": 200,
+      "frames": [
+        {
+          "type": "tool",
+          "name": "query_logistics",
+          "phase": "start"
+        },
+        {
+          "type": "tool",
+          "name": "query_logistics",
+          "phase": "end"
+        },
+        {
+          "type": "token",
+          "content": "订单"
+        },
+        {
+          "type": "token",
+          "content": "100"
+        },
+        {
+          "type": "token",
+          "content": "1"
+        },
+        {
+          "type": "token",
+          "content": "的"
+        },
+        {
+          "type": "token",
+          "content": "物流"
+        },
+        {
+          "type": "token",
+          "content": "信息"
+        },
+        {
+          "type": "token",
+          "content": "如下"
+        },
+        {
+          "type": "token",
+          "content": "："
+        },
+        {
+          "type": "token",
+          "content": "承运"
+        },
+        {
+          "type": "token",
+          "content": "快递"
+        },
+        {
+          "type": "token",
+          "content": "为"
+        },
+        {
+          "type": "token",
+          "content": "顺"
+        },
+        {
+          "type": "token",
+          "content": "丰"
+        },
+        {
+          "type": "token",
+          "content": "速"
+        },
+        {
+          "type": "token",
+          "content": "运"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "当前"
+        },
+        {
+          "type": "token",
+          "content": "节点"
+        },
+        {
+          "type": "token",
+          "content": "显示"
+        },
+        {
+          "type": "token",
+          "content": "“"
+        },
+        {
+          "type": "token",
+          "content": "已"
+        },
+        {
+          "type": "token",
+          "content": "签"
+        },
+        {
+          "type": "token",
+          "content": "收"
+        },
+        {
+          "type": "token",
+          "content": "”，"
+        },
+        {
+          "type": "token",
+          "content": "预计"
+        },
+        {
+          "type": "token",
+          "content": "送达"
+        },
+        {
+          "type": "token",
+          "content": "日期"
+        },
+        {
+          "type": "token",
+          "content": "为"
+        },
+        {
+          "type": "token",
+          "content": "202"
+        },
+        {
+          "type": "token",
+          "content": "6"
+        },
+        {
+          "type": "token",
+          "content": "-"
+        },
+        {
+          "type": "token",
+          "content": "10"
+        },
+        {
+          "type": "token",
+          "content": "-"
+        },
+        {
+          "type": "token",
+          "content": "21"
+        },
+        {
+          "type": "token",
+          "content": "["
+        },
+        {
+          "type": "token",
+          "content": "1"
+        },
+        {
+          "type": "token",
+          "content": "]。"
+        },
+        {
+          "type": "token",
+          "content": "如果"
+        },
+        {
+          "type": "token",
+          "content": "签"
+        },
+        {
+          "type": "token",
+          "content": "收"
+        },
+        {
+          "type": "token",
+          "content": "状态"
+        },
+        {
+          "type": "token",
+          "content": "和"
+        },
+        {
+          "type": "token",
+          "content": "实际"
+        },
+        {
+          "type": "token",
+          "content": "不符"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "可以"
+        },
+        {
+          "type": "token",
+          "content": "告诉我"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "我再"
+        },
+        {
+          "type": "token",
+          "content": "帮你"
+        },
+        {
+          "type": "token",
+          "content": "核实"
+        },
+        {
+          "type": "token",
+          "content": "。"
+        },
+        {
+          "type": "done"
+        }
+      ]
+    },
+    {
+      "path": "/chat",
+      "status": 200,
+      "frames": [
+        {
+          "type": "workflow",
+          "stage": "question_understood",
+          "question": "订单1001能退吗？"
+        },
+        {
+          "type": "workflow",
+          "stage": "read_order"
+        },
+        {
+          "type": "tool",
+          "name": "query_order",
+          "phase": "start"
+        },
+        {
+          "type": "tool",
+          "name": "query_order",
+          "phase": "end"
+        },
+        {
+          "type": "workflow",
+          "stage": "expand_queries"
+        },
+        {
+          "type": "workflow",
+          "stage": "retrieve_policy"
+        },
+        {
+          "type": "token",
+          "content": "抱歉，现有知识不足以可靠回答这个问题，我无法给出确定答案。建议联系人工客服核实。"
+        },
+        {
+          "type": "done"
+        }
+      ]
+    },
+    {
+      "path": "/chat",
+      "status": 200,
+      "frames": [
+        {
+          "type": "tool",
+          "name": "query_logistics",
+          "phase": "start"
+        },
+        {
+          "type": "tool",
+          "name": "query_logistics",
+          "phase": "end"
+        },
+        {
+          "type": "token",
+          "content": "订单"
+        },
+        {
+          "type": "token",
+          "content": "100"
+        },
+        {
+          "type": "token",
+          "content": "1"
+        },
+        {
+          "type": "token",
+          "content": "的"
+        },
+        {
+          "type": "token",
+          "content": "包裹"
+        },
+        {
+          "type": "token",
+          "content": "由"
+        },
+        {
+          "type": "token",
+          "content": "顺"
+        },
+        {
+          "type": "token",
+          "content": "丰"
+        },
+        {
+          "type": "token",
+          "content": "速"
+        },
+        {
+          "type": "token",
+          "content": "运"
+        },
+        {
+          "type": "token",
+          "content": "承运"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "物流"
+        },
+        {
+          "type": "token",
+          "content": "当前"
+        },
+        {
+          "type": "token",
+          "content": "节点"
+        },
+        {
+          "type": "token",
+          "content": "显示"
+        },
+        {
+          "type": "token",
+          "content": "“"
+        },
+        {
+          "type": "token",
+          "content": "已"
+        },
+        {
+          "type": "token",
+          "content": "签"
+        },
+        {
+          "type": "token",
+          "content": "收"
+        },
+        {
+          "type": "token",
+          "content": "”，"
+        },
+        {
+          "type": "token",
+          "content": "签"
+        },
+        {
+          "type": "token",
+          "content": "收"
+        },
+        {
+          "type": "token",
+          "content": "时间为"
+        },
+        {
+          "type": "token",
+          "content": "202"
+        },
+        {
+          "type": "token",
+          "content": "6"
+        },
+        {
+          "type": "token",
+          "content": "-"
+        },
+        {
+          "type": "token",
+          "content": "10"
+        },
+        {
+          "type": "token",
+          "content": "-"
+        },
+        {
+          "type": "token",
+          "content": "21"
+        },
+        {
+          "type": "token",
+          "content": " "
+        },
+        {
+          "type": "token",
+          "content": "14"
+        },
+        {
+          "type": "token",
+          "content": ":"
+        },
+        {
+          "type": "token",
+          "content": "00"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "预计"
+        },
+        {
+          "type": "token",
+          "content": "送达"
+        },
+        {
+          "type": "token",
+          "content": "日期"
+        },
+        {
+          "type": "token",
+          "content": "也是"
+        },
+        {
+          "type": "token",
+          "content": "202"
+        },
+        {
+          "type": "token",
+          "content": "6"
+        },
+        {
+          "type": "token",
+          "content": "-"
+        },
+        {
+          "type": "token",
+          "content": "10"
+        },
+        {
+          "type": "token",
+          "content": "-"
+        },
+        {
+          "type": "token",
+          "content": "21"
+        },
+        {
+          "type": "token",
+          "content": "["
+        },
+        {
+          "type": "token",
+          "content": "1"
+        },
+        {
+          "type": "token",
+          "content": "]。"
+        },
+        {
+          "type": "token",
+          "content": "也就是说"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "包裹"
+        },
+        {
+          "type": "token",
+          "content": "已"
+        },
+        {
+          "type": "token",
+          "content": "不在"
+        },
+        {
+          "type": "token",
+          "content": "运输"
+        },
+        {
+          "type": "token",
+          "content": "途中"
+        },
+        {
+          "type": "token",
+          "content": "；"
+        },
+        {
+          "type": "token",
+          "content": "如果你"
+        },
+        {
+          "type": "token",
+          "content": "实际"
+        },
+        {
+          "type": "token",
+          "content": "没"
+        },
+        {
+          "type": "token",
+          "content": "收到"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "可以"
+        },
+        {
+          "type": "token",
+          "content": "告诉我"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "我再"
+        },
+        {
+          "type": "token",
+          "content": "帮你"
+        },
+        {
+          "type": "token",
+          "content": "核实"
+        },
+        {
+          "type": "token",
+          "content": "。"
+        },
+        {
+          "type": "done"
+        }
+      ]
+    }
+  ],
+  "page_errors": [],
+  "first_logistics_state": {
+    "intent": "物流",
+    "confidence": 0.99,
+    "route": "business",
+    "status": "completed",
+    "raw_question": "订单1001的物流查一下。",
+    "resolved_question": "订单1001的物流查一下。",
+    "selected_order_id": null,
+    "node_trace": [
+      "resolve_reference",
+      "classify_intent",
+      "agent_decide",
+      "agent_tools",
+      "agent_decide",
+      "agent_tools",
+      "agent_answer",
+      "log_result"
+    ],
+    "gate_reason": "",
+    "expansion_queries": [],
+    "expansion_fallback": false,
+    "pending_interrupts": 0,
+    "user_messages": [
+      "订单1001的物流查一下。"
+    ],
+    "usage_segments": []
+  },
+  "refund_reference_state": {
+    "intent": "退款退货",
+    "confidence": 0.99,
+    "route": "refund",
+    "status": "completed",
+    "raw_question": "它能退吗？",
+    "resolved_question": "订单1001能退吗？",
+    "selected_order_id": "1001",
+    "node_trace": [
+      "resolve_reference",
+      "classify_intent",
+      "order_context",
+      "read_order",
+      "expand_queries",
+      "retrieve_policy",
+      "evidence_gate",
+      "refusal_reply",
+      "log_result"
+    ],
+    "gate_reason": "重排最高分低于部署阈值或无有效重排分数",
+    "expansion_queries": [
+      "订单1001能退吗？",
+      "订单1001复古水洗牛仔夹克已签收退货退款申请条件",
+      "订单1001复古水洗牛仔夹克退货限制及不支持退货的情形",
+      "订单1001复古水洗牛仔夹克退货退款办理流程及时效"
+    ],
+    "expansion_fallback": false,
+    "pending_interrupts": 0,
+    "user_messages": [
+      "订单1001的物流查一下。",
+      "它能退吗？"
+    ],
+    "usage_segments": []
+  },
+  "last_logistics_state": {
+    "intent": "物流",
+    "confidence": 0.98,
+    "route": "business",
+    "status": "completed",
+    "raw_question": "先不退了，这单包裹在哪？",
+    "resolved_question": "先不退了，订单1001的包裹在哪里？",
+    "selected_order_id": null,
+    "node_trace": [
+      "resolve_reference",
+      "classify_intent",
+      "agent_decide",
+      "agent_tools",
+      "agent_decide",
+      "agent_tools",
+      "agent_answer",
+      "log_result"
+    ],
+    "gate_reason": "",
+    "expansion_queries": [],
+    "expansion_fallback": false,
+    "pending_interrupts": 0,
+    "user_messages": [
+      "订单1001的物流查一下。",
+      "它能退吗？",
+      "先不退了，这单包裹在哪？"
+    ],
+    "usage_segments": []
+  },
+  "passed": true
+}

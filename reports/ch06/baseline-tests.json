@@ -1,0 +1,9 @@
+{
+  "passed": 637,
+  "failed": 0,
+  "skipped": 0,
+  "duration_seconds": 33.75,
+  "command": "E:/MewHelp AI/.venv/Scripts/python.exe -m pytest -q",
+  "log": "log/ch06/baseline-pytest.log",
+  "note": "Baseline before adding ch06 tests; normal host execution."
+}
