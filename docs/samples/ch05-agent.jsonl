@@ -1,0 +1,8 @@
+{"id":"simple-1","question":"查询订单1001目前的状态。","expected_tools":["query_order"],"expected_mode":"answer"}
+{"id":"simple-2","question":"订单1001的物流到哪了？","expected_tools":["query_logistics"],"expected_mode":"answer"}
+{"id":"complex-1","question":"请先查询订单1001的当前状态，再查询它的物流轨迹，并分别告诉我结果。","expected_tools":["query_order","query_logistics"],"expected_mode":"answer"}
+{"id":"complex-2","question":"先查订单1002的实付金额，然后查这张订单的物流节点，分别汇总。","expected_tools":["query_order","query_logistics"],"expected_mode":"answer"}
+{"id":"missing-1","question":"帮我查一下订单状态。","expected_tools":[],"expected_mode":"clarify"}
+{"id":"missing-2","question":"我的物流到哪了？","expected_tools":[],"expected_mode":"clarify"}
+{"id":"actions-1","question":"请给我一个创建投诉工单的选项，记录商品破损问题，先别执行。","expected_tools":[],"expected_action":"create_ticket","expected_mode":"answer"}
+{"id":"actions-2","question":"我要转人工客服，给我转人工选项，不要建工单。","expected_tools":[],"expected_action":"handoff","expected_mode":"answer"}

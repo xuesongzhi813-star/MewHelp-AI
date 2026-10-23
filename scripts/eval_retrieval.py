@@ -95,7 +95,12 @@ class UsageRecorder:
 def load_profile(path: Path, identity: dict) -> dict:
     profile = json.loads(path.read_text(encoding='utf-8'))
     if profile.get('identity') != identity or profile.get('split') != 'calibration':
-        raise ValueError('冻结profile与当前语料/模型/Prompt/代码hash不符')
+        previous = profile.get('identity') or {}
+        fields = sorted(k for k in set(previous) | set(identity) if previous.get(k) != identity.get(k))
+        if profile.get('split') != 'calibration':
+            fields.append('split')
+        raise ValueError('冻结profile与当前语料/模型/Prompt/代码hash不符；差异字段：' + ', '.join(fields)
+                         + '。知识新增或修改后需重新校准，请保留旧profile，不要强改hash。')
     if not isinstance(profile.get('threshold'), (int,float)) or not .1 <= profile['threshold'] <= .9:
         raise ValueError('profile阈值非法')
     return profile
