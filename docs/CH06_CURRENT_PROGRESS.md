@@ -4,7 +4,7 @@
 
 真实浏览器已完成原生interrupt暂停/重启/同session点选续跑、取消0/确认1/重复1、刷新/过期409与前端恢复、390px检查。新增唯一合成工单T202610230001，无资金退款。短历史“它能退吗”会完成订单/政策检索但可能因证据分低安全拒答；12题政策单/多查Recall均83.33%，未观察到提升。24题单查询校准阈值.25，额外ch06管线hash已实施并先测后改，不再是待办建议。
 
-产品仍在 E:/MewHelp AI/.worktrees/ch05-workflow-agent，ch05-workflow-agent分支。保留所有未提交修改与专属账本，未commit/push/merge/deploy。本轮8016演示已启动；共享8015未动。
+产品位于 E:/MewHelp AI/.worktrees/ch05-workflow-agent；2026-10-23经用户明确授权后切分支ch06-router，5个提交已推送origin/ch06-router，PR #6（base ch05-workflow-agent）待评审合并，尚未合并/部署。专属账本保留。8016为演示端口；共享8015未动。
 
 最终恢复入口：产品reports/ch06/summary.md与demo.md；根docs/OPERATIONS.md为当前统一命令；dev-notes/ch06.md阶段14起为恢复过程、阶段17为finish。下文均为中断时历史记录，不能用来重做已完成任务或声称仍未开发。
 
@@ -16,7 +16,7 @@
 
 ## 工作位置与授权
 
-产品仅在 `E:/MewHelp AI/.worktrees/ch05-workflow-agent`，分支ch05-workflow-agent，继承大量未提交ch05内容；根E:/MewHelp AI仍ch04旧产品，仅同步本章spec/plan/dev-notes。BASE=HEAD43516c8。禁止commit/push/merge/deploy/DDL/清库/依赖升级/真实退款，不修改或输出真实.env。根.venv解释器用于产品工作树执行。
+产品仅在 `E:/MewHelp AI/.worktrees/ch05-workflow-agent`，分支ch05-workflow-agent，继承大量未提交ch05内容；根E:/MewHelp AI仍ch04旧产品，仅同步本章spec/plan/dev-notes。BASE=HEAD43516c8。阶段21起经用户明确授权提交/推送/建PR（分支ch06-router，PR #6），但仍不合并/部署，禁止DDL/清库/依赖升级/真实退款，不修改或输出真实.env。根.venv解释器用于产品工作树执行。
 
 用户批准设计及8任务计划，采用推荐Native；前端Vibe Coding，不做前端TDD/review。两项新裁决必须保留：订单选择原生LangGraph interrupt()+Command(resume,update)，不能退回应用层手工as_node续跑；意图默认主力大模型，降级只留intent_small_model/intent_escalation_threshold两个惰性配置种子，不能启用小模型路径。默认低分归其他不等于升级。
 

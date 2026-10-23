@@ -1,6 +1,6 @@
 # MewHelp AI 开发交接文档（面向 OpenAI Codex）
 
-> 2026-10-23 ch06功能与本章验收完成：Tasks1–8，最终700 passed；真实意图/严格JSON75/75、订单9/9，问题字面74/75、有限语义75/75。原生interrupt/Command重启选单续跑、聊天卡片/固定原因表单、真实合成工单取消0/确认1/重复1已验证；主力默认、降级仅惰性配置种子。质量限制：12政策题扩写未提升召回（均83.33%），短指代可能低分拒答。产品仍在.worktrees/ch05-workflow-agent，8016；未提交/推送/合并/部署，保留既有改动。先读CH06_CURRENT_PROGRESS与产品reports/ch06/summary.md、demo.md；统一运维已更新。本条覆盖下文中断时“进行中”。
+> 2026-10-23 ch06功能与本章验收完成：Tasks1–8，最终700 passed；真实意图/严格JSON75/75、订单9/9，问题字面74/75、有限语义75/75。原生interrupt/Command重启选单续跑、聊天卡片/固定原因表单、真实合成工单取消0/确认1/重复1已验证；主力默认、降级仅惰性配置种子。质量限制：12政策题扩写未提升召回（均83.33%），短指代可能低分拒答。产品在同一工作树，已切分支ch06-router提交并推送，PR #6（base ch05-workflow-agent）待评审合并；8016为演示端口，尚未合并、部署。先读CH06_CURRENT_PROGRESS与产品reports/ch06/summary.md、demo.md；统一运维已更新。本条覆盖下文中断时“进行中”。
 
 
 > 2026-10-23 ch06进行中，未finish：Tasks1–7完成；两项用户裁决为原生LangGraph interrupt/Command订单续跑、意图降级仅配置种子。独立后端review3项Important已一轮修复、相关52passed；修后全量及真实75条最终验收/新校准/真实浏览器仍需核实。产品仍在.worktrees/ch05-workflow-agent，未提交/合并。先读 docs/CH06_CURRENT_PROGRESS.md 和 dev-notes/ch06.md，不沿用下文ch05通过数作为ch06结果。
