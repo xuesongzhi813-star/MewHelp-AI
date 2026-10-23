@@ -4,7 +4,7 @@
 
 ## 唯一实现位置
 
-`E:/MewHelp AI/.worktrees/ch05-workflow-agent`，branch ch05-workflow-agent；BASE/HEAD b1e6906d07b908ecc3efaee610c8f09dcecc1b8d，无本章提交。用户禁止自动commit/push/merge/deploy，保留全部未提交改动及专属账本。原根目录E:/MewHelp AI仅同步文档；不要在根目录误跑旧产品实现。手工worktree不是可自动归档的受管附件。
+`E:/MewHelp AI/.worktrees/ch05-workflow-agent`，branch ch05-workflow-agent；BASE b1e6906d07b908ecc3efaee610c8f09dcecc1b8d。2026-10-23经用户明确授权完成Git交付：5个提交（ca9a86c…0ce8378）已推送origin/ch05-workflow-agent，PR #5（base ch04-retrieval-quality）待评审合并。此前阶段按用户指示保留未提交改动及专属账本；尚未合并、部署。原根目录E:/MewHelp AI仅同步文档；不要在根目录误跑旧产品实现。手工worktree不是可自动归档的受管附件。
 
 用户审批链：「2.官方SQLite」「A」「通过」「批准」「计划通过，Native」；恢复指示要求先只读核对再继续。本轮按实际文件/测试恢复，没有假定失效测试进程通过，未覆盖用户修改。
 
@@ -28,7 +28,7 @@
 
 本章无未解决Critical/Important、无延期Minor；不继续扩正式分类/指代、MCP、上下文、Langfuse/飞轮/真人客服。SQLite单机与无鉴权演示、A方案没有全文硬校验、跨库不原子及不能强杀同步线程均已记录批准边界。评审未覆盖新增demo脚本与最新真实报告，由主执行者静态/实际执行验证，没有伪称独立评审覆盖。
 
-未提交、推送、合并、部署；原根用户未跟踪.codex/、旧运行维护手册、reports/ch04/v1/snapshot/保持原状。后续集成需用户明确授权。不要重新brainstorm或重做已验证任务。
+已提交并推送、创建PR #5，但未合并、未部署；原根用户未跟踪.codex/、旧运行维护手册、reports/ch04/v1/snapshot/保持原状。后续合并/集成需用户明确授权。不要重新brainstorm或重做已验证任务。
 
 
 维护文档更新（2026-10-22）：docs/OPERATIONS.md第0节已覆盖ch05启动/停止/SQLite冷备与恢复、实际运行快照；旧根目录简表标为历史。此更新仅文档，只读核验，未启停服务或改数据；不沿用630通过作为本次重跑结果。

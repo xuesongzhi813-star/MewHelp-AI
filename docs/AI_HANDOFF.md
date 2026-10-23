@@ -1,6 +1,6 @@
 # MewHelp AI 开发交接文档（面向 OpenAI Codex）
 
-> 2026-10-23故障修复已验收：637项全量通过，四策略检索API和知识流式正常；125有效块双写一致。旧profile因知识变更正确失效，独立新校准文件为ch05工作树log/ch05/calibration-20261023-final.json（.25，严格匹配）。启动请先按OPERATIONS准备/核验新profile；报告与剩余Minor见工作树reports/ch05/bugfix-20261023/summary.md。产品仍仅在ch05工作树，未提交合并。
+> 2026-10-23故障修复已验收：637项全量通过，四策略检索API和知识流式正常；125有效块双写一致。旧profile因知识变更正确失效，独立新校准文件为ch05工作树log/ch05/calibration-20261023-final.json（.25，严格匹配）。启动请先按OPERATIONS准备/核验新profile；报告与剩余Minor见工作树reports/ch05/bugfix-20261023/summary.md。ch05已提交并推送至分支ch05-workflow-agent，PR #5（base ch04-retrieval-quality）待评审合并；尚未合并、部署。
 
 > 2026-10-22 ch05功能与验证完成：Tasks1–8及最终评审修复/真实验收已完成，630项全量通过、分类28/28、Agent8/8。唯一产品实现位于`E:/MewHelp AI/.worktrees/ch05-workflow-agent`；原根仅同步文档。先读[CH05当前状态](CH05_CURRENT_PROGRESS.md)、[交付报告](../reports/ch05/summary.md)及dev-notes/ch05.md。保留未提交工作树，未commit/push/merge/deploy；Task9官方关闭见专属账本。
 
