@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.jobs import router as jobs_router
 from app.api.kb import router as kb_router
 from app.chat_service import stream_chat
-from app.dependencies import get_chat_model, get_extractor
+from app.dependencies import get_chat_model, get_extractor, get_answer_model
 from app.history import SessionStore
 from app.schemas import AfterSalesInfo, ChatRequest, ExtractRequest
 from app.session_store import MySQLSessionStore
@@ -46,13 +46,14 @@ def create_app() -> FastAPI:
     async def chat(
         request: ChatRequest,
         llm=Depends(get_chat_model),
+        answer_llm=Depends(get_answer_model),
     ) -> StreamingResponse:
         # ch01 的手拼消息 + astream 已整体下沉到 chat_service.stream_chat,
         # 这里只做接线;帧协议、media_type、响应头全部保持不变。
         # model 仍走每请求构建的 FastAPI 依赖(与 ch01 同款注入模式,测试可 override)。
         store: SessionStore = application.state.session_store
         return StreamingResponse(
-            stream_chat(request.session_id, request.message, store=store, model=llm),
+            stream_chat(request.session_id, request.message, store=store, model=llm, answer_model=answer_llm),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )

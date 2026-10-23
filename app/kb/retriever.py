@@ -10,26 +10,18 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import replace
 
 from app.config import get_settings
 from app.kb import milvus, store
 from app.kb.embedding import embed_texts
+from app.kb.contracts import Hit, QueryPlan, RetrievalFilters, RetrievalResult, RetrievalStrategy
+from app.kb.catalog import infer_product_category
+from app.kb.documents import embedding_text
+from app.kb.query import build_query_plan
+from app.kb.reranker import rerank
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class Hit:
-    """一条检索命中:向量分数 + MySQL 中的完整切片内容。"""
-
-    chunk_id: int
-    score: float
-    category: str
-    questions: str
-    answer: str
-    content_type: str
-    section_path: str
 
 
 def search_hits(
@@ -54,6 +46,12 @@ def search_hits(
     settings = get_settings()
     limit = settings.faq_max_results if top_k is None else top_k
     threshold = settings.knowledge_min_score if min_score is None else min_score
+
+    if getattr(settings, "kb_corpus_version", "ch03") == "ch04":
+        # 挖掘去重的旧入口始终保持dense/COSINE，不把RRF分数当相似度。
+        plan = QueryPlan(raw_query=query, normalized_query=query, lexical_query=query)
+        result = retrieve_result(query, strategy="dense", plan=plan)
+        return [hit for hit in result.hits if hit.score >= threshold][:limit]
 
     vector = embed_texts([query])[0]
     candidates = [
@@ -93,10 +91,83 @@ def search_hits(
 
 def retrieve(query: str) -> str:
     """把检索命中格式化为「序号. 问题 + → 答案」文本,供 query_faq 工具返回。"""
-    hits = search_hits(query)
+    if getattr(get_settings(), "kb_corpus_version", "ch03") == "ch04":
+        hits = retrieve_result(query).hits
+    else:
+        hits = search_hits(query)
     if not hits:
         return f"FAQ 库中没有找到与「{query}」相关的条目"
     return "\n\n".join(
         f"{index}. {hit.questions}\n→ {hit.answer}"
         for index, hit in enumerate(hits, 1)
     )
+
+
+def retrieve_result(query: str, *, strategy: RetrievalStrategy | None = None,
+                    plan: QueryPlan | None = None,
+                    filters: RetrievalFilters | None = None,
+                    query_vector: list[float] | None = None) -> RetrievalResult:
+    settings = get_settings()
+    selected = strategy or getattr(settings, "knowledge_strategy", "dense")
+    if selected not in ("dense", "bm25", "hybrid", "hybrid_rerank"):
+        raise ValueError("未知检索策略")
+    if not query or not query.strip():
+        empty = plan or QueryPlan(raw_query=query, normalized_query="", lexical_query="")
+        return RetrievalResult(empty, selected, reason="empty_query")
+    if getattr(settings, "kb_corpus_version", "ch03") != "ch04":
+        if selected != "dense":
+            raise ValueError("混合策略需要已验证的ch04迁移")
+        legacy_plan = plan or QueryPlan(raw_query=query, normalized_query=query, lexical_query=query,
+                                       filters=filters or RetrievalFilters())
+        if any(value for key, value in legacy_plan.filters.model_dump().items() if key != "include_general"):
+            raise ValueError("旧集合不支持元数据过滤，请迁移ch04")
+        hits = tuple(search_hits(legacy_plan.normalized_query, top_k=50, min_score=-1))
+        return RetrievalResult(legacy_plan, selected, hits, tuple(h.chunk_id for h in hits))
+    from app.kb.migration import load_manifest
+    manifest = load_manifest()
+    if manifest.phase != "validated":
+        raise ValueError("ch04迁移尚未验证，禁止搜索未完成的新集合")
+    plan = plan if plan is not None else build_query_plan(query, filters=filters)
+    if not plan.normalized_query.strip():
+        return RetrievalResult(plan, selected, reason="empty_query")
+    search_kwargs = {"collection_name": settings.hybrid_collection, "filters": plan.filters}
+    if selected == "bm25":
+        candidates = milvus.search_bm25(plan.lexical_query, 50, **search_kwargs)
+    else:
+        vector = query_vector if query_vector is not None else embed_texts([plan.normalized_query])[0]
+        if selected == "dense":
+            candidates = milvus.search_dense(vector, 50, **search_kwargs)
+        else:
+            candidates = milvus.search_hybrid(vector, plan.lexical_query, **search_kwargs)
+    # 服务端已融合去重；额外防御重复ID，保留首次出现的相关性顺序。
+    unique = {}
+    excluded = set(manifest.legacy_excluded_ids)
+    for key, score in candidates:
+        key = int(key)
+        if key not in excluded:
+            unique.setdefault(key, float(score))
+    stored_by_id = store.fetch_by_ids(list(unique))
+    score_type = "fusion" if selected in ("hybrid", "hybrid_rerank") else selected
+    hits = []
+    missing = 0
+    for key, score in unique.items():
+        row = stored_by_id.get(key)
+        if row is None:
+            missing += 1
+            continue
+        scores = {"dense_score": None, "bm25_score": None, "fusion_score": None}
+        scores[score_type + "_score"] = score
+        hits.append(Hit(key, score, row.category, row.questions, row.answer,
+                        row.content_type or "", row.section_path or "",
+                        product_category=infer_product_category(row.section_path or "", row.questions, row.answer),
+                        score_type=score_type, **scores))
+    if missing:
+        logger.warning("召回候选中MySQL缺失%d条，已跳过", missing)
+    candidate_ids = tuple(h.chunk_id for h in hits)
+    if selected == "hybrid_rerank" and hits:
+        ranking = rerank(plan.normalized_query,
+                         [embedding_text(h.category, h.questions, h.answer) for h in hits], top_n=10)
+        hits = [replace(hits[index], score=score, score_type="rerank", rerank_score=score)
+                for index, score in ranking]
+    return RetrievalResult(plan, selected, tuple(hits), candidate_ids,
+                           reason=f"missing_mysql:{missing}" if missing else ("no_hits" if not hits else ""))

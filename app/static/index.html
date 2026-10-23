@@ -297,6 +297,7 @@
   <div class="hint">SESSION · <span id="sessionIdText">—</span> · 回复由 AI 逐字生成,上下文连续保持</div>
 </footer>
 
+<script src="/static/chat-citations.js"></script>
 <script>
 (() => {
   const chatArea = document.getElementById("chatArea");
@@ -331,12 +332,6 @@
     statusDot.className = "status-dot offline"; statusText.textContent = "OFFLINE";
   });
 
-  /* 极简 markdown:转义 → **加粗** → 原样换行(white-space: pre-wrap) */
-  function renderText(el, text) {
-    const esc = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    el.innerHTML = esc.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-  }
-
   function scrollBottom() { chatArea.scrollTop = chatArea.scrollHeight; }
 
   function addRow(role, senderLabel) {
@@ -363,6 +358,7 @@
   async function sendMessage(text) {
     if (busy || !text.trim()) return;
     busy = true;
+    newChatBtn.disabled = true;
     sendBtn.disabled = true;
     input.value = "";
     input.style.height = "auto";
@@ -374,6 +370,8 @@
     const badges = document.createElement("div");
     badges.className = "tool-badges";
     const body = document.createElement("span");
+    const responseView = ChatResponseView.create({bubble, body, sessionId});
+    let terminal = false;
     const typing = document.createElement("span");
     typing.className = "typing";
     typing.innerHTML = "<i></i><i></i><i></i>";
@@ -407,9 +405,11 @@
             if (badges.children.length && !badges.isConnected) bubble.appendChild(badges);
             if (!body.isConnected) bubble.appendChild(body);
             acc += payload.content;
-            renderText(body, acc);
+            responseView.render(acc);
             body.appendChild(cursor);
             scrollBottom();
+          } else if (payload.type === "citations") {
+            responseView.setCitations(payload.items);
           } else if (payload.type === "tool") {
             if (payload.phase === "start") {
               typing.remove();
@@ -417,7 +417,8 @@
               badge.className = "tool-badge running";
               badge.dataset.name = payload.name;
               badge.title = "调用工具:" + payload.name;
-              badge.innerHTML = "<i>◌</i>" + (TOOL_LABELS[payload.name] || payload.name);
+              const toolIcon = document.createElement('i'); toolIcon.textContent='◌';
+              badge.append(toolIcon, document.createTextNode(TOOL_LABELS[payload.name] || payload.name));
               badges.appendChild(badge);
               if (body.isConnected) bubble.insertBefore(badges, body);
               else bubble.appendChild(badges);
@@ -434,6 +435,7 @@
               }
             }
           } else if (payload.type === "error") {
+            terminal = true; responseView.fail();
             typing.remove(); cursor.remove();
             /* 评审 N-1:error 帧是所有未定格徽章的终止态 */
             badges.querySelectorAll(".tool-badge.running").forEach(b => {
@@ -452,17 +454,20 @@
             body.textContent = "⚠ 生成失败:" + payload.message;
             scrollBottom();
           } else if (payload.type === "done") {
+            terminal = true; responseView.complete();
             cursor.remove();
           }
         }
       }
       cursor.remove();
+      if (!terminal) throw new Error('连接提前结束，请重试');
       if (!acc && !body.textContent) {
         typing.remove();
         if (!body.isConnected) bubble.appendChild(body);
         body.textContent = "(空回复)";
       }
     } catch (err) {
+      responseView.fail();
       typing.remove(); cursor.remove();
       badges.querySelectorAll(".tool-badge.running").forEach(b => {
         b.classList.remove("running");
@@ -478,6 +483,7 @@
       scrollBottom();
     } finally {
       busy = false;
+      newChatBtn.disabled = false;
       sendBtn.disabled = false;
       input.focus();
     }

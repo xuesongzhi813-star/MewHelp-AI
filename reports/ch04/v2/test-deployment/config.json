@@ -1,0 +1,28 @@
+{
+  "evaluation_version": "ch04-v2",
+  "corpus_hash": "ae2d028d0e18bf1d17d5274f0fad7fe4b7b078456b591d11144b8233c21fcdd0",
+  "cases_sha256": "6e97242b11052b5ec7510c864c08d933c689eb17c728f9cd55ff58abec528efa",
+  "runtime_corpus_hash": "f1c0680b0adb5e9ecad5a0cd2351d5e9207787d00ed3af5e0be8040191b6d446",
+  "llm_model": "deepseek-flash",
+  "embedding_model": "BAAI/bge-m3",
+  "rerank_model": "BAAI/bge-reranker-v2-m3",
+  "temperature": 0,
+  "dense_top_k": 50,
+  "bm25_top_k": 50,
+  "rrf_k": 60,
+  "rerank_top_k": 10,
+  "model_parameters_hash": "63645a8159068ff5a34310383df1a52fef030d73629b796c0166949fd76ed18a",
+  "prompt_hash": "d798a1bb649d755074a49c5bef22615b5573cf80ef71d161ad2b9bf75fc861cf",
+  "code_hash": "9297d94dbe94b8bf7c57d1624dc47408a6afd85bd904e1e8b4203cd3cc8bc8ea",
+  "split": "test",
+  "mode": "deployment",
+  "strategies": [
+    "hybrid_rerank"
+  ],
+  "score_gate": true,
+  "threshold": 0.25,
+  "diagnostic_subset": false,
+  "usage_note": "记录API返回的answer/judge token用量；query/embedding/rerank薄接口未暴露用量，未估算费用。",
+  "latency_note": "elapsed_seconds为检索/生成/评审，不含单列的共享Query和embedding时延；缓存行保留原执行时延并标cache_hit。",
+  "judge_limitation": "生成与评审默认同一模型，存在相关偏差；需每桶至少2题及高分冲突人工抽查。"
+}

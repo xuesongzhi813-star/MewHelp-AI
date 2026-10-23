@@ -1,0 +1,28 @@
+{
+  "identity_matches_all_reports": true,
+  "row_counts": {
+    "calibration-compare": 24,
+    "test-compare": 288,
+    "test-deployment": 72
+  },
+  "hybrid_consistent": {
+    "status": "consistent",
+    "mysql_total": 113,
+    "eligible_total": 65,
+    "legacy_excluded": 48,
+    "eligible_pending": 0,
+    "eligible_done": 65,
+    "target_count": 65,
+    "missing_in_milvus": [],
+    "orphan_in_milvus": [],
+    "stale_ids": []
+  },
+  "legacy_mysql_count": 48,
+  "legacy_vectors_count": 48,
+  "legacy_hashes_unchanged": true,
+  "local_server": "127.0.0.1:8010",
+  "health_status": 200,
+  "secret_pattern_files_checked": 172,
+  "secret_pattern_findings": [],
+  "secret_scan_scope": "versioned/untracked delivery text; no .env or private IDE configs; known-pattern scan only"
+}

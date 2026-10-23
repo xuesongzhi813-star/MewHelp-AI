@@ -1,0 +1,61 @@
+{
+  "before_mysql_count": 172,
+  "before_mysql_hash": "0b755edb4ed2f23be207a1b11dc08d81c36f5894ff2b056a45c92fc778494493",
+  "preserved_collections": {
+    "knowledge": {
+      "count": 48,
+      "sha256": "20cb255da0b0d2fd2539c453353de88f1942ccd6132a00ccb6d4d85e915afced"
+    },
+    "knowledge_hybrid": {
+      "count": 65,
+      "sha256": "46fc15b052c8f4b1dee8d526b7beba6017ce57d1c2abd69810cccc5ee0bc5cea"
+    },
+    "knowledge_hybrid_ch04_v2": {
+      "count": 124,
+      "sha256": "1f8108ea4b94b063956449af8751e6aaaa9bf9afbc9dbad9eb86e787683e1ad8"
+    }
+  },
+  "dry_run": {
+    "target_collection": "knowledge_hybrid_ch04_v2_final",
+    "mysql_total": 172,
+    "source_hashes": {
+      "data\\kb\\ch04\\returns-policy.md": "dc0d76614131af0d7ccba46b7b9091dd3ac9231a3e2bdaa78f44ae12fe1d2a02",
+      "data\\kb\\ch04\\product-faq.md": "11a8b89d497d3760499c2c79bcc560a5bf117c8d6d52cf5a2e2f7e461f693b54",
+      "data\\kb\\ch04\\after-sales-manual.md": "4057352f2da5256b0c9bb1030fe90395946134aef154c68235a096d10d5f217e",
+      "data\\kb\\ch04\\product-specs.md": "bdb27a49565e18bf732cbd9be6b654a126be2a88a9d411202f0f956716ac6266",
+      "data\\kb\\ch04\\member-benefits.md": "13b9a11d908a08d96bc808fa46ee8fe4c34adabcdccbea6da7031010fc89b388",
+      "data\\kb\\ch04\\billing-shipping.md": "2d0d0d02fabdcf41489853d85fd1a1d9482df7955565eeb0e586f053a71ac983"
+    },
+    "legacy_excluded": 57,
+    "reused": 115,
+    "phase": "snapshot",
+    "dry_run": true
+  },
+  "migration": {
+    "status": "consistent",
+    "mysql_total": 181,
+    "eligible_total": 124,
+    "legacy_excluded": 57,
+    "eligible_pending": 0,
+    "eligible_done": 124,
+    "target_count": 124,
+    "missing_in_milvus": [],
+    "orphan_in_milvus": [],
+    "stale_ids": []
+  },
+  "after_mysql_hash": "0b755edb4ed2f23be207a1b11dc08d81c36f5894ff2b056a45c92fc778494493",
+  "after_collections": {
+    "knowledge": {
+      "count": 48,
+      "sha256": "20cb255da0b0d2fd2539c453353de88f1942ccd6132a00ccb6d4d85e915afced"
+    },
+    "knowledge_hybrid": {
+      "count": 65,
+      "sha256": "46fc15b052c8f4b1dee8d526b7beba6017ce57d1c2abd69810cccc5ee0bc5cea"
+    },
+    "knowledge_hybrid_ch04_v2": {
+      "count": 124,
+      "sha256": "1f8108ea4b94b063956449af8751e6aaaa9bf9afbc9dbad9eb86e787683e1ad8"
+    }
+  }
+}

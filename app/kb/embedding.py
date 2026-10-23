@@ -68,6 +68,8 @@ def _get_client(settings: Any) -> OpenAI:
         _client = OpenAI(
             base_url=settings.embedding_base_url,
             api_key=settings.embedding_api_key,
+            timeout=settings.embedding_timeout,
+            max_retries=0,
         )
     return _client
 

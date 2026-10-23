@@ -7,6 +7,9 @@
 </head>
 <body class="admin-body">
 <main class="admin-wrap">
+  <section id="originalChunk" class="admin-card" hidden style="border:2px solid #2dd4bf;padding:24px;margin-bottom:24px;scroll-margin-top:20px">
+    <h2>引用原文</h2><p id="originalPath"></p><pre id="originalText" style="white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8"></pre>
+  </section>
   <header class="admin-hero">
     <h1>知识<span>库</span></h1>
     <p>录入 → 切分 → 入库 → 向量化 → 双写核对 → 检索自测;所有作业只走白名单</p>
@@ -137,7 +140,7 @@
     <article class="admin-card admin-span-2">
       <div class="admin-card-head">
         <h2>检索自测</h2>
-        <span class="admin-hint">本章只开放 dense 稠密检索</span>
+        <span class="admin-hint">支持 dense、BM25、混合 RRF 与混合加重排</span>
       </div>
       <div class="admin-form-row">
         <label class="admin-field admin-grow">
@@ -148,6 +151,9 @@
         <label class="admin-field">
           <span>检索路线 route</span>
           <select class="admin-select" id="searchRoute">
+            <option value="bm25">BM25 关键词</option>
+            <option value="hybrid">混合 RRF</option>
+            <option value="hybrid_rerank">混合 + 重排</option>
             <option value="dense">dense</option>
           </select>
         </label>
@@ -157,7 +163,7 @@
         </label>
         <button class="admin-btn admin-btn-teal" type="button" id="searchBtn">检索</button>
       </div>
-      <p class="admin-hint" id="searchHint">结果按向量分数倒序,低于阈值的命中不会返回。</p>
+      <p class="admin-hint" id="searchHint">按所选策略排序；BM25、RRF 和重排分数口径不同。</p>
       <div class="admin-list" id="searchResult"></div>
     </article>
 
@@ -360,6 +366,7 @@
 
   function renderStock(data) {
     const mysql = data.mysql || {};
+    const scoped = 'eligible_total' in mysql;
     const milvus = data.milvus || {};
     const staging = data.staging;
     const consistency = data.consistency || {};
@@ -370,8 +377,9 @@
       : null;
 
     renderStats(stockStats, [
-      { label: "知识块 chunks", value: mysql.ok ? fmt(mysql.chunks) : "读不到", tone: mysql.ok ? "" : "bad" },
-      { label: "待向量化 pending", value: mysql.ok ? fmt(mysql.pending) : "读不到", tone: mysql.ok ? "warn" : "bad" },
+      { label: scoped ? "当前语料知识块" : "知识块 chunks", value: mysql.ok ? fmt(scoped ? mysql.eligible_total : mysql.chunks) : "读不到", tone: mysql.ok ? "" : "bad" },
+      ...(scoped ? [{ label: "MySQL 全部 / 历史排除", value: fmt(mysql.mysql_total) + " / " + fmt(mysql.legacy_excluded) }] : []),
+      { label: "待向量化 pending", value: mysql.ok ? fmt(mysql.eligible_pending ?? mysql.pending) : "读不到", tone: mysql.ok ? "warn" : "bad" },
       { label: "关键条款", value: mysql.ok ? fmt(mysql.key_clauses) : "读不到", tone: mysql.ok ? "" : "bad" },
       { label: "Milvus 向量", value: milvus.ok ? fmt(milvus.count) : "读不到", tone: milvus.ok ? "good" : "bad" },
       { label: "暂存三态", value: stagingTotal === null ? "读不到" : fmt(stagingTotal), tone: stagingTotal === null ? "bad" : "" },
@@ -387,7 +395,7 @@
     if (!milvus.ok) {
       setBadge(stockState, "Milvus 读不到", "warn");
       stockNote.textContent =
-        "MySQL 有 " + fmt(mysql.chunks) + " 块知识,但 Milvus 读不到,向量检索暂不可用。";
+        "MySQL 有 " + fmt(mysql.eligible_total ?? mysql.chunks) + " 块知识,但 Milvus 读不到,向量检索暂不可用。";
       stockNote.className = "admin-note admin-note-warn";
       return;
     }
@@ -406,11 +414,11 @@
     }
 
     setBadge(stockState, "已同步", "good");
-    const pending = Number(mysql.pending || 0);
+    const pending = Number(mysql.eligible_pending ?? mysql.pending ?? 0);
     stockNote.textContent =
       pending > 0
-        ? "库存一致:" + fmt(mysql.chunks) + " 块知识,其中 " + fmt(pending) + " 块 pending,记得补跑向量化。"
-        : "库存一致:" + fmt(mysql.chunks) + " 块知识全部完成向量化。";
+        ? "库存一致:" + fmt(mysql.eligible_total ?? mysql.chunks) + " 块知识,其中 " + fmt(pending) + " 块 pending,记得补跑向量化。"
+        : "库存一致:" + fmt(mysql.eligible_total ?? mysql.chunks) + " 块知识全部完成向量化。";
     stockNote.className = "admin-note" + (pending > 0 ? " admin-note-warn" : " admin-note-good");
   }
 
@@ -491,8 +499,8 @@
     const info = consistencyInfo(consistency);
 
     renderStats(vectorStats, [
-      { label: "pending", value: mysql.ok ? fmt(mysql.pending) : "读不到", tone: mysql.ok ? "warn" : "bad" },
-      { label: "done", value: mysql.ok ? fmt(mysql.done) : "读不到", tone: mysql.ok ? "good" : "bad" },
+      { label: "pending", value: mysql.ok ? fmt(mysql.eligible_pending ?? mysql.pending) : "读不到", tone: mysql.ok ? "warn" : "bad" },
+      { label: "done", value: mysql.ok ? fmt(mysql.eligible_done ?? mysql.done) : "读不到", tone: mysql.ok ? "good" : "bad" },
       { label: "Milvus", value: milvus.ok ? fmt(milvus.count) : "读不到", tone: milvus.ok ? "good" : "bad" },
       { label: "一致性", value: info.text, tone: info.tone },
     ]);
@@ -835,7 +843,7 @@
   function renderSearch(data) {
     const hits = data.hits || [];
     searchHint.textContent =
-      "阈值 " + data.threshold + " · 命中 " + fmt(hits.length) + " 条" +
+      (data.strategy || "dense") + (data.threshold == null ? "" : " · 生成阈值 " + data.threshold) + " · 命中 " + fmt(hits.length) + " 条" +
       (data.message ? " · " + data.message : "");
     searchHint.className = "admin-hint";
 
@@ -857,7 +865,7 @@
       const pre = document.createElement("pre");
       pre.textContent =
         "chunk_id:" + hit.chunk_id +
-        "\n分数:" + Number(hit.score).toFixed(6) +
+        "\n分数:" + Number(hit.score).toFixed(6) + " (" + (hit.score_type || 'dense') + ")" +
         "\n类型:" + (hit.content_type || "—") +
         "\n章节:" + (hit.section_path || "—") +
         "\n\n问题:" + (hit.questions || "—") +
@@ -894,6 +902,16 @@
     button.addEventListener("click", () => runJob(button.dataset.job));
   });
 
+  const originalId = new URLSearchParams(location.search).get('chunk_id');
+  if (originalId !== null) {
+    const section = $('originalChunk'); section.hidden = false;
+    if (!/^[1-9]\d*$/.test(originalId)) $('originalText').textContent = '来源编号无效。';
+    else api('/api/kb/chunks/' + originalId).then(chunk => {
+      $('originalPath').textContent = '#' + chunk.id + ' · ' + chunk.section_path;
+      $('originalText').textContent = chunk.questions + '\n\n' + chunk.answer;
+      section.scrollIntoView({block:'start'});
+    }).catch(error => { $('originalText').textContent = '无法加载来源原文：' + error.message; });
+  }
   loadOverview();
   // 空闲时每 15 秒刷新一次总览;作业运行中跳过,避免和入库/向量化抢读数。
   setInterval(() => {

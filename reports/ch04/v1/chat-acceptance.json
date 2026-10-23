@@ -1,0 +1,384 @@
+[
+  {
+    "bm25_query": "MH-DJ101的胸围是多少",
+    "result": {
+      "strategy": "bm25",
+      "plan": {
+        "raw_query": "MH-DJ101的胸围是多少",
+        "normalized_query": "MH-DJ101的胸围是多少",
+        "lexical_query": "MH-DJ101的胸围是多少 胸宽 平铺胸围",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "商品规格咨询，原句已为标准问法，保留SKU原样。",
+        "rewrite_fallback": false
+      },
+      "hits": [
+        {
+          "chunk_id": 22745,
+          "score": 9.560990333557129,
+          "category": "MewHelp 古着商品规格 > 牛仔夹克",
+          "questions": "MH-DJ102 宽松水洗牛仔夹克",
+          "answer": "型号 MH-DJ102；品类牛仔夹克；标签 L。肩宽50、胸围120、衣长66、袖长61厘米。棉98%、氨纶2%，微弹，成色B；领口轻微褪色。版型比MH-DJ101宽松，比较尺寸时以胸围120厘米为准；翻面冷水洗涤并阴干。",
+          "content_type": "文档章节",
+          "section_path": "MewHelp 古着商品规格 > 牛仔夹克 > MH-DJ102 宽松水洗牛仔夹克",
+          "product_category": "牛仔夹克",
+          "score_type": "bm25",
+          "dense_score": null,
+          "bm25_score": 9.560990333557129,
+          "fusion_score": null,
+          "rerank_score": null
+        },
+        {
+          "chunk_id": 22744,
+          "score": 9.29885196685791,
+          "category": "MewHelp 古着商品规格 > 牛仔夹克",
+          "questions": "MH-DJ101 复古靛蓝牛仔夹克",
+          "answer": "型号 MH-DJ101；品类牛仔夹克；标签 M。肩宽46、胸围110、衣长62、袖长60厘米。棉100%，无弹力，成色B；袖口有自然磨白，右袖口有一处已披露的浅色磨痕。建议翻面冷水轻柔洗涤、阴干，避免高温烘干。不能把MH-DJ102的宽松版尺寸套用到本件。",
+          "content_type": "文档章节",
+          "section_path": "MewHelp 古着商品规格 > 牛仔夹克 > MH-DJ101 复古靛蓝牛仔夹克",
+          "product_category": "牛仔夹克",
+          "score_type": "bm25",
+          "dense_score": null,
+          "bm25_score": 9.29885196685791,
+          "fusion_score": null,
+          "rerank_score": null
+        },
+        {
+          "chunk_id": 22746,
+          "score": 8.591489791870117,
+          "category": "MewHelp 古着商品规格 > 牛仔夹克",
+          "questions": "MH-DJ103 短款黑色牛仔夹克",
+          "answer": "型号 MH-DJ103；品类牛仔夹克；标签 S。肩宽44、胸围104、衣长56、袖长58厘米。棉100%，无弹力，成色C；左下摆有已披露的小面积磨损。短款衣长56厘米不等于MH-DJ101的62厘米；勿用漂白剂，轻柔洗涤阴干。",
+          "content_type": "文档章节",
+          "section_path": "MewHelp 古着商品规格 > 牛仔夹克 > MH-DJ103 短款黑色牛仔夹克",
+          "product_category": "牛仔夹克",
+          "score_type": "bm25",
+          "dense_score": null,
+          "bm25_score": 8.591489791870117,
+          "fusion_score": null,
+          "rerank_score": null
+        }
+      ],
+      "candidate_ids": [
+        22745,
+        22744,
+        22746,
+        22753,
+        22747,
+        22755,
+        22749,
+        22752,
+        22748,
+        22750,
+        22751,
+        22754,
+        22724,
+        22743,
+        22727,
+        22722,
+        22707,
+        22765,
+        22758,
+        22714,
+        22729,
+        22730,
+        22770,
+        22710,
+        22723,
+        22769,
+        22709,
+        22760,
+        22716,
+        22764,
+        22766,
+        22761,
+        22739,
+        22734,
+        22737,
+        22756,
+        22757,
+        22728,
+        22768,
+        22720,
+        22713,
+        22711,
+        22708,
+        22712,
+        22715,
+        22741
+      ],
+      "reason": "",
+      "threshold": null,
+      "message": null
+    }
+  },
+  {
+    "bm25_query": "MH-DJ102的胸围是多少",
+    "result": {
+      "strategy": "bm25",
+      "plan": {
+        "raw_query": "MH-DJ102的胸围是多少",
+        "normalized_query": "MH-DJ102的胸围是多少",
+        "lexical_query": "MH-DJ102的胸围是多少 胸宽 平铺胸围",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "询问指定型号商品规格，原句已为标准问法，保留SKU原样。",
+        "rewrite_fallback": false
+      },
+      "hits": [
+        {
+          "chunk_id": 22745,
+          "score": 11.349639892578125,
+          "category": "MewHelp 古着商品规格 > 牛仔夹克",
+          "questions": "MH-DJ102 宽松水洗牛仔夹克",
+          "answer": "型号 MH-DJ102；品类牛仔夹克；标签 L。肩宽50、胸围120、衣长66、袖长61厘米。棉98%、氨纶2%，微弹，成色B；领口轻微褪色。版型比MH-DJ101宽松，比较尺寸时以胸围120厘米为准；翻面冷水洗涤并阴干。",
+          "content_type": "文档章节",
+          "section_path": "MewHelp 古着商品规格 > 牛仔夹克 > MH-DJ102 宽松水洗牛仔夹克",
+          "product_category": "牛仔夹克",
+          "score_type": "bm25",
+          "dense_score": null,
+          "bm25_score": 11.349639892578125,
+          "fusion_score": null,
+          "rerank_score": null
+        },
+        {
+          "chunk_id": 22744,
+          "score": 8.795364379882812,
+          "category": "MewHelp 古着商品规格 > 牛仔夹克",
+          "questions": "MH-DJ101 复古靛蓝牛仔夹克",
+          "answer": "型号 MH-DJ101；品类牛仔夹克；标签 M。肩宽46、胸围110、衣长62、袖长60厘米。棉100%，无弹力，成色B；袖口有自然磨白，右袖口有一处已披露的浅色磨痕。建议翻面冷水轻柔洗涤、阴干，避免高温烘干。不能把MH-DJ102的宽松版尺寸套用到本件。",
+          "content_type": "文档章节",
+          "section_path": "MewHelp 古着商品规格 > 牛仔夹克 > MH-DJ101 复古靛蓝牛仔夹克",
+          "product_category": "牛仔夹克",
+          "score_type": "bm25",
+          "dense_score": null,
+          "bm25_score": 8.795364379882812,
+          "fusion_score": null,
+          "rerank_score": null
+        },
+        {
+          "chunk_id": 22753,
+          "score": 8.577912330627441,
+          "category": "MewHelp 古着商品规格 > 卫衣",
+          "questions": "MH-HD402 素色圆领卫衣",
+          "answer": "型号 MH-HD402；品类卫衣；标签 L。肩宽55、胸围124、衣长69、袖长60厘米。棉100%，成色C；领口轻微松弛。圆领款无帽，尺寸和材质不同于MH-HD401；冷水轻柔洗涤，平铺或折叠晾干。",
+          "content_type": "文档章节",
+          "section_path": "MewHelp 古着商品规格 > 卫衣 > MH-HD402 素色圆领卫衣",
+          "product_category": "卫衣",
+          "score_type": "bm25",
+          "dense_score": null,
+          "bm25_score": 8.577912330627441,
+          "fusion_score": null,
+          "rerank_score": null
+        }
+      ],
+      "candidate_ids": [
+        22745,
+        22744,
+        22753,
+        22747,
+        22755,
+        22746,
+        22749,
+        22752,
+        22748,
+        22750,
+        22751,
+        22754,
+        22743,
+        22727,
+        22722,
+        22707,
+        22765,
+        22758,
+        22724,
+        22714,
+        22729,
+        22730,
+        22770,
+        22710,
+        22723,
+        22769,
+        22709,
+        22760,
+        22716,
+        22764,
+        22766,
+        22761,
+        22739,
+        22734,
+        22737,
+        22756,
+        22757,
+        22728,
+        22768,
+        22720,
+        22713,
+        22711,
+        22708,
+        22712,
+        22715,
+        22741
+      ],
+      "reason": "",
+      "threshold": null,
+      "message": null
+    }
+  },
+  {
+    "session_id": "ch04-acceptance-c112352d06a0458fa845068ddc8d5c25",
+    "query": "MH-DJ101的胸围是多少",
+    "events": [
+      {
+        "type": "tool",
+        "name": "query_product",
+        "phase": "start"
+      },
+      {
+        "type": "tool",
+        "name": "query_product",
+        "phase": "end"
+      },
+      {
+        "type": "token",
+        "content": "抱歉，现有知识不足以可靠回答这个问题，我无法给出确定答案。建议联"
+      },
+      {
+        "type": "token",
+        "content": "系人工客服核实。"
+      },
+      {
+        "type": "done"
+      }
+    ],
+    "pool": [
+      {
+        "raw_question": "MH-DJ101的胸围是多少",
+        "source": "self_check",
+        "reason": "本轮知识问题未取得知识证据",
+        "created_at": "2026-10-20 21:57:06",
+        "conversation_id": 3922
+      }
+    ]
+  },
+  {
+    "session_id": "ch04-acceptance-db5a162149b34a5da0f473e9f4aa493b",
+    "query": "MH-SH299的胸围是多少",
+    "events": [
+      {
+        "type": "tool",
+        "name": "query_faq",
+        "phase": "start"
+      },
+      {
+        "type": "tool",
+        "name": "query_faq",
+        "phase": "end"
+      },
+      {
+        "type": "token",
+        "content": "抱歉，现有知识不足以可靠回答这个问题，我无法给出确定答案。建议联"
+      },
+      {
+        "type": "token",
+        "content": "系人工客服核实。"
+      },
+      {
+        "type": "done"
+      }
+    ],
+    "pool": [
+      {
+        "raw_question": "MH-SH299的胸围是多少",
+        "source": "self_check",
+        "reason": "证据中未包含型号 MH-SH299 的任何规格信息，仅有 MH-SH201、MH-SH202、MH-SH203 等相近型号，不能将相近SKU的胸围当作本SKU尺寸，故无法回答。",
+        "created_at": "2026-10-20 21:57:10",
+        "conversation_id": 3923
+      }
+    ]
+  },
+  {
+    "session_id": "ch04-acceptance-752535077dd4413a8f1c90b1ed2b11b5",
+    "query": "新疆地区实付99元的运费精确是多少",
+    "events": [
+      {
+        "type": "tool",
+        "name": "query_faq",
+        "phase": "start"
+      },
+      {
+        "type": "tool",
+        "name": "query_faq",
+        "phase": "end"
+      },
+      {
+        "type": "token",
+        "content": "抱歉，现有知识不足以可靠回答这个问题，我无法给出确定答案。建议联"
+      },
+      {
+        "type": "token",
+        "content": "系人工客服核实。"
+      },
+      {
+        "type": "done"
+      }
+    ],
+    "pool": [
+      {
+        "raw_question": "新疆地区实付99元的运费精确是多少",
+        "source": "self_check",
+        "reason": "证据仅说明新疆等偏远地区运费另行计算、以下单页展示为准，知识库没有统一附加费数字，无法给出新疆地区实付99元订单的精确运费金额。",
+        "created_at": "2026-10-20 21:57:14",
+        "conversation_id": 3924
+      }
+    ]
+  },
+  {
+    "session_id": "ch04-acceptance-83c883ce21ba4055aec8e57ba2163334",
+    "query": "给我讲一下月球采矿许可证怎么办",
+    "events": [
+      {
+        "type": "tool",
+        "name": "query_faq",
+        "phase": "start"
+      },
+      {
+        "type": "tool",
+        "name": "query_faq",
+        "phase": "end"
+      },
+      {
+        "type": "token",
+        "content": "抱歉，现有知识不足以可靠回答这个问题，我无法给出确定答案。建议联"
+      },
+      {
+        "type": "token",
+        "content": "系人工客服核实。"
+      },
+      {
+        "type": "done"
+      }
+    ],
+    "pool": [
+      {
+        "raw_question": "给我讲一下月球采矿许可证怎么办",
+        "source": "retrieval_low_conf",
+        "reason": "重排最高分低于部署阈值或无有效重排分数",
+        "created_at": "2026-10-20 21:57:18",
+        "conversation_id": 3925
+      }
+    ]
+  }
+]

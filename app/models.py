@@ -154,3 +154,21 @@ class QaExtractionStaging(Base):
     created_at: Mapped[datetime] = mapped_column(
         server_default=func.current_timestamp()
     )
+
+
+class LowConfidenceQuestion(Base):
+    """映射已有问题池；本章不创建或修改表。"""
+
+    __tablename__ = 'low_confidence_questions'
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    conversation_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey('conversations.id'), nullable=True
+    )
+    raw_question: Mapped[str] = mapped_column(Text, nullable=False)
+    source: Mapped[str] = mapped_column(
+        Enum('retrieval_low_conf', 'self_check', 'user_feedback', name='low_confidence_source'),
+        nullable=False,
+    )
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.current_timestamp())

@@ -1,0 +1,39 @@
+# 2026-10-20 经用户批准应用：etcd 就绪后再启动 Milvus。
+# volumes/etcd-external 已由停止时的原元数据复制并逐文件 SHA-256 校验。
+# 只与 docker-compose.yml 合并使用，不单独启动；不创建空元数据目录。
+services:
+  etcd:
+    container_name: mewhelp-etcd
+    image: quay.io/coreos/etcd:v3.5.23
+    command:
+      - etcd
+      - --name=default
+      - --data-dir=/etcd-data
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --advertise-client-urls=http://etcd:2379
+      - --listen-peer-urls=http://0.0.0.0:2380
+      - --initial-advertise-peer-urls=http://localhost:2380
+      - --initial-cluster=default=http://localhost:2380
+      - --quota-backend-bytes=4294967296
+      - --auto-compaction-mode=revision
+      - --auto-compaction-retention=1000
+    volumes:
+      - type: bind
+        source: ./volumes/etcd-external
+        target: /etcd-data
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: ["CMD", "etcdctl", "--endpoints=http://127.0.0.1:2379", "endpoint", "health"]
+      interval: 3s
+      timeout: 3s
+      start_period: 10s
+      retries: 30
+
+  standalone:
+    environment:
+      ETCD_USE_EMBED: "false"
+      ETCD_ENDPOINTS: etcd:2379
+    depends_on:
+      etcd:
+        condition: service_healthy

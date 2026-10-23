@@ -1,4 +1,4 @@
-"""ch02 统一工具执行器:execute_tool(name, args, *, context=None) -> str。
+"""统一工具执行器：execute_tool_result返回结构化结果，execute_tool保留str兼容包装。
 
 契约:**永不向上抛异常,永远返回 str**——返回值会包成 ToolMessage 回灌给模型,
 错误也一律转成模型可读的中文文本(模型据此向用户致歉或转人工),
@@ -33,15 +33,20 @@
 """
 
 import logging
+import uuid
+from dataclasses import dataclass
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeoutError
 from typing import Any
 
 from pydantic import ValidationError
+from langchain_core.messages import ToolMessage
+from langchain_core.tools import BaseTool
 
 from app.config import get_settings
 from app import tools as tools_mod
+from app.kb.contracts import RetrievalResult
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +55,19 @@ _EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="tool-exec")
 
 # 首次 + 重试 1 次,共最多 2 次尝试
 _MAX_ATTEMPTS = 2
+
+
+@dataclass(frozen=True)
+class ToolExecutionResult:
+    content: str
+    artifact: RetrievalResult | None = None
+    status: str = "success"
+
+
+def _invoke(tool, name: str, args: dict, tool_call_id: str):
+    if isinstance(tool, BaseTool) and tool.response_format == "content_and_artifact":
+        return tool.invoke({"type": "tool_call", "name": name, "id": tool_call_id, "args": args})
+    return tool.invoke(args)
 
 
 def _unknown_tool_text(name: str) -> str:
@@ -66,7 +84,7 @@ def _failure_text(name: str, category: str) -> str:
     )
 
 
-def _run_with_retry(tool, name: str, args: dict) -> str:
+def _run_with_retry(tool, name: str, args: dict, tool_call_id: str) -> ToolExecutionResult:
     """带重试的执行主循环;假定 name/tool 已合法,异常处理只覆盖执行本身。
 
     submit 也在 try 内:线程池已 shutdown 时 submit 抛 RuntimeError,
@@ -78,15 +96,21 @@ def _run_with_retry(tool, name: str, args: dict) -> str:
         # 超时上限运行时读取(而非 import 时固化),测试 monkeypatch
         # app.executor.get_settings 即可改;每次尝试单独 submit,
         # 超时的旧任务留在池里自然跑完,不阻塞新一轮尝试
-        future = _EXECUTOR.submit(tool.invoke, args)
         try:
-            return str(future.result(timeout=get_settings().tool_timeout))
+            settings = get_settings()
+            budget = getattr(settings, "knowledge_tool_timeout", settings.tool_timeout) if name == "query_faq" else settings.tool_timeout
+            future = _EXECUTOR.submit(_invoke, tool, name, args, tool_call_id)
+            output = future.result(timeout=budget)
+            if isinstance(output, ToolMessage):
+                artifact = output.artifact if output.status == "success" and isinstance(output.artifact, RetrievalResult) else None
+                return ToolExecutionResult(str(output.content), artifact, output.status)
+            return ToolExecutionResult(str(output))
         except ValidationError:
             # 参数校验错不值得重试:同样的 args 再跑必然同样失败
             logger.warning("工具 %s 第 %d 次调用参数校验失败(ValidationError)", name, attempt)
-            return (
+            return ToolExecutionResult(
                 f'工具"{name}"参数校验失败:参数缺失或类型错误,'
-                "请检查并补全调用参数后重试"
+                "请检查并补全调用参数后重试", status="error"
             )
         except FutureTimeoutError:
             last_category = "超时"
@@ -94,24 +118,24 @@ def _run_with_retry(tool, name: str, args: dict) -> str:
                 "工具 %s 第 %d 次调用超时(上限 %s 秒)",
                 name,
                 attempt,
-                get_settings().tool_timeout,
+                budget,
             )
         except Exception as exc:
             last_category = "执行出错"
-            # exc 本体只进服务端日志(不回灌模型,无泄漏),便于排查
+            # 只记异常类型；远端正文可能含敏感信息，不进入作业/服务日志。
             logger.warning(
-                "工具 %s 第 %d 次调用异常:%s: %s",
+                "工具 %s 第 %d 次调用异常:%s",
                 name,
                 attempt,
                 type(exc).__name__,
-                exc,
             )
-    return _failure_text(name, last_category)
+    return ToolExecutionResult(_failure_text(name, last_category), status="error")
 
 
-def execute_tool(
-    name: str, args: dict, *, context: Mapping[str, Any] | None = None
-) -> str:
+def execute_tool_result(
+    name: str, args: dict, *, context: Mapping[str, Any] | None = None,
+    tool_call_id: str | None = None,
+) -> ToolExecutionResult:
     """按名字执行注册表中的工具,任何失败都转成中文错误文本返回。
 
     - name 不在 TOOL_REGISTRY → 「工具不存在」提示;
@@ -129,18 +153,25 @@ def execute_tool(
         tool = tools_mod.TOOL_REGISTRY.get(name)
         if tool is None:
             # name 不可哈希时 .get 抛 TypeError,由兜底 except 统一接住
-            return _unknown_tool_text(name)
+            return ToolExecutionResult(_unknown_tool_text(name), status="error")
         # context 放后面:即便模型伪造了同名参数,也被系统注入的真实值覆盖
         # (安全语义——模型无法决定工单挂到哪条会话)。args 非 dict 时
         # {**args} 抛的 TypeError 由最外层兜底 except 接住,契约不破。
-        call_args = {**args, **(context or {})}
-        return _run_with_retry(tool, name, call_args)
+        model_args = {**args}
+        if name == "query_faq":
+            model_args.pop("query_plan", None)
+        call_args = {**model_args, **(context or {})}
+        return _run_with_retry(tool, name, call_args, tool_call_id or uuid.uuid4().hex)
     except Exception as exc:
-        # 兜底:细粒度分支漏网的任何异常,保证「永不抛、永远返回 str」契约
+        # 兜底:细粒度分支漏网异常，同样不泄漏正文或artifact。
         logger.warning(
-            "工具 %s 执行器兜底捕获异常:%s: %s",
+            "工具 %s 执行器兜底捕获异常:%s",
             name,
             type(exc).__name__,
-            exc,
         )
-        return _failure_text(f"{name}", "执行出错")
+        return ToolExecutionResult(_failure_text(f"{name}", "执行出错"), status="error")
+
+
+def execute_tool(name: str, args: dict, *, context: Mapping[str, Any] | None = None) -> str:
+    """旧字符串契约包装，与结构化入口共享注入、验证、预算及重试。"""
+    return execute_tool_result(name, args, context=context).content

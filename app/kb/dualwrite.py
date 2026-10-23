@@ -58,6 +58,9 @@ def vectorize_pending(limit: int | None = None) -> VectorizeResult:
         ``processed`` 为成功写入的行数,``failed`` 为失败批次的行数,
         ``pending_left`` 为本轮结束后的全局待处理行数。
     """
+    if getattr(get_settings(), "kb_corpus_version", "ch03") == "ch04":
+        from app.kb.migration import vectorize_hybrid
+        return VectorizeResult(*vectorize_hybrid(limit=limit))
     # 全新 Milvus 上集合尚不存在;先幂等建集合,否则第一次 upsert 必然失败,
     # 而「补跑 vectorize」也会因为集合始终缺失而无限循环。Milvus 不可达时
     # 让异常直接冒泡,由 CLI / API / 作业运行器报告失败。
@@ -116,6 +119,9 @@ def vectorize_pending(limit: int | None = None) -> VectorizeResult:
 
 def rebuild_all() -> VectorizeResult:
     """清空 Milvus 后按 MySQL 全量重建向量索引。"""
+    if getattr(get_settings(), "kb_corpus_version", "ch03") == "ch04":
+        from app.kb.migration import vectorize_hybrid
+        return VectorizeResult(*vectorize_hybrid(pending_only=False))
     store.reset_all_pending()
     milvus.drop()
     milvus.ensure_collection()
@@ -124,12 +130,23 @@ def rebuild_all() -> VectorizeResult:
 
 def reset_all() -> None:
     """删除全部知识切片并清空 Milvus 集合。"""
+    if getattr(get_settings(), "kb_corpus_version", "ch03") == "ch04":
+        raise ValueError("ch04 禁止全库 reset；混合集合恢复请用范围受限的 rebuild")
     store.delete_all_chunks()
     milvus.drop()
 
 
 def consistency_snapshot() -> Consistency:
     """按精确 id 比对 MySQL(done)与 Milvus 的主键集合。"""
+    if getattr(get_settings(), "kb_corpus_version", "ch03") == "ch04":
+        from app.kb.migration import verify_hybrid
+        try:
+            report = verify_hybrid()
+            return Consistency(report["status"], tuple(report["missing_in_milvus"]),
+                               tuple(report["orphan_in_milvus"]),
+                               f"逐 ID/文本/元数据比对；内容不符 {len(report['stale_ids'])} 条")
+        except Exception:
+            return Consistency("unknown", (), (), "混合集合或迁移清单读不到")
     try:
         reachable = milvus.ping()
     except Exception as exc:  # noqa: BLE001 - 可用性探测失败一律 unknown

@@ -1,0 +1,49 @@
+{
+  "milvus_version": "3.0.0",
+  "legacy_mysql_count": 48,
+  "legacy_milvus_count": 48,
+  "legacy_mysql_hash_before": "9006bf82db268fc7ac5b5eb1ef10424bc4567ddc99776888a83b3860c1dec7db",
+  "legacy_milvus_hash_before": "20cb255da0b0d2fd2539c453353de88f1942ccd6132a00ccb6d4d85e915afced",
+  "dry_run": {
+    "target_collection": "knowledge_hybrid",
+    "mysql_total": 48,
+    "source_hashes": {
+      "data\\kb\\ch04\\returns-policy.md": "184e4ed99dd76f8d3e06d6bebe2e85d395f9fc623d4a3eb77c17a775a265372b",
+      "data\\kb\\ch04\\product-faq.md": "33e6f0fa13bf7f2000bc00a3e32b48e17f1fa8b8be0d5fb83e0759d07f808ed8",
+      "data\\kb\\ch04\\after-sales-manual.md": "83a5f3cab6039ebcc6298692a41418b3524742e5095f1bb24bba6e49b93d47e1",
+      "data\\kb\\ch04\\product-specs.md": "5996221354500418d552f128470ceca8b116eea121a23518fb21e99c2115ad19",
+      "data\\kb\\ch04\\member-benefits.md": "652d38f960ba3c6b7e26d1535c555c28d637e5bd3f5eb78a1683f2e68bc4060f",
+      "data\\kb\\ch04\\billing-shipping.md": "851b8b81c816ec974efca1b7d0adac7be7a75bd0e0f9ddd25822fc9d78e671ac"
+    },
+    "legacy_excluded": 48,
+    "reused": 0,
+    "phase": "snapshot",
+    "dry_run": true
+  },
+  "migration": {
+    "status": "consistent",
+    "mysql_total": 113,
+    "eligible_total": 65,
+    "legacy_excluded": 48,
+    "eligible_pending": 0,
+    "eligible_done": 65,
+    "target_count": 65,
+    "missing_in_milvus": [],
+    "orphan_in_milvus": [],
+    "stale_ids": []
+  },
+  "verify": {
+    "status": "consistent",
+    "mysql_total": 113,
+    "eligible_total": 65,
+    "legacy_excluded": 48,
+    "eligible_pending": 0,
+    "eligible_done": 65,
+    "target_count": 65,
+    "missing_in_milvus": [],
+    "orphan_in_milvus": [],
+    "stale_ids": []
+  },
+  "legacy_mysql_hash_after": "9006bf82db268fc7ac5b5eb1ef10424bc4567ddc99776888a83b3860c1dec7db",
+  "legacy_milvus_hash_after": "20cb255da0b0d2fd2539c453353de88f1942ccd6132a00ccb6d4d85e915afced"
+}

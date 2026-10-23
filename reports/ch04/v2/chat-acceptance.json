@@ -1,0 +1,541 @@
+[
+  {
+    "bm25_query": "MH-DJ101的胸围是多少",
+    "result": {
+      "strategy": "bm25",
+      "plan": {
+        "raw_query": "MH-DJ101的胸围是多少",
+        "normalized_query": "MH-DJ101的胸围是多少",
+        "lexical_query": "MH-DJ101的胸围是多少 胸宽 平铺胸围",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "商品规格咨询，原句已为标准问法，保留SKU原样",
+        "rewrite_fallback": false
+      },
+      "hits": [
+        {
+          "chunk_id": 24872,
+          "score": 14.201616287231445,
+          "category": "MewHelp 古着商品规格",
+          "questions": "平铺胸围和身体胸围的区别",
+          "answer": "商品页胸围是对应单品的实测尺寸，不直接等于适合穿着者的身体胸围。先核对商品页是否标注平铺宽度、整圈尺寸及测量方式，再与自己合身衣服按相同方式对比；不同标注不能直接当作同一口径比较。",
+          "content_type": "文档章节",
+          "section_path": "MewHelp 古着商品规格 > 平铺胸围和身体胸围的区别",
+          "product_category": "通用",
+          "score_type": "bm25",
+          "dense_score": null,
+          "bm25_score": 14.201616287231445,
+          "fusion_score": null,
+          "rerank_score": null
+        },
+        {
+          "chunk_id": 22745,
+          "score": 12.767698287963867,
+          "category": "MewHelp 古着商品规格 > 牛仔夹克",
+          "questions": "MH-DJ102 宽松水洗牛仔夹克",
+          "answer": "型号 MH-DJ102；品类牛仔夹克；标签 L。肩宽50、胸围120、衣长66、袖长61厘米。棉98%、氨纶2%，微弹，成色B；领口轻微褪色。版型比MH-DJ101宽松，比较尺寸时以胸围120厘米为准；翻面冷水洗涤并阴干。",
+          "content_type": "文档章节",
+          "section_path": "MewHelp 古着商品规格 > 牛仔夹克 > MH-DJ102 宽松水洗牛仔夹克",
+          "product_category": "牛仔夹克",
+          "score_type": "bm25",
+          "dense_score": null,
+          "bm25_score": 12.767698287963867,
+          "fusion_score": null,
+          "rerank_score": null
+        },
+        {
+          "chunk_id": 22744,
+          "score": 12.162874221801758,
+          "category": "MewHelp 古着商品规格 > 牛仔夹克",
+          "questions": "MH-DJ101 复古靛蓝牛仔夹克",
+          "answer": "型号 MH-DJ101；品类牛仔夹克；标签 M。肩宽46、胸围110、衣长62、袖长60厘米。棉100%，无弹力，成色B；袖口有自然磨白，右袖口有一处已披露的浅色磨痕。建议翻面冷水轻柔洗涤、阴干，避免高温烘干。不能把MH-DJ102的宽松版尺寸套用到本件。",
+          "content_type": "文档章节",
+          "section_path": "MewHelp 古着商品规格 > 牛仔夹克 > MH-DJ101 复古靛蓝牛仔夹克",
+          "product_category": "牛仔夹克",
+          "score_type": "bm25",
+          "dense_score": null,
+          "bm25_score": 12.162874221801758,
+          "fusion_score": null,
+          "rerank_score": null
+        }
+      ],
+      "candidate_ids": [
+        24872,
+        22745,
+        22744,
+        22746,
+        22753,
+        22747,
+        22755,
+        22749,
+        22748,
+        22752,
+        24873,
+        22754,
+        22750,
+        22751,
+        22724,
+        24900,
+        22743,
+        22722,
+        24874,
+        22765,
+        24898,
+        24857,
+        22758,
+        24840,
+        24850,
+        24839,
+        24862,
+        22714,
+        22729,
+        24865,
+        22730,
+        22770,
+        22710,
+        22723,
+        24878,
+        24905,
+        22709,
+        24866,
+        22716,
+        24880,
+        24881,
+        24841,
+        24875,
+        24896,
+        24906,
+        24864,
+        24889,
+        24887,
+        22766,
+        24904
+      ],
+      "reason": "",
+      "threshold": null,
+      "message": null
+    }
+  },
+  {
+    "bm25_query": "MH-DJ102的胸围是多少",
+    "result": {
+      "strategy": "bm25",
+      "plan": {
+        "raw_query": "MH-DJ102的胸围是多少",
+        "normalized_query": "MH-DJ102的胸围是多少",
+        "lexical_query": "MH-DJ102的胸围是多少 胸宽 平铺胸围",
+        "intent": "knowledge",
+        "requires_knowledge": true,
+        "filters": {
+          "category": null,
+          "product_category": null,
+          "content_type": null,
+          "include_general": false
+        },
+        "rewrite_reason": "询问指定型号商品的规格尺寸，属商品规格类知识问题，原句已简洁标准，保留SKU原样。",
+        "rewrite_fallback": false
+      },
+      "hits": [
+        {
+          "chunk_id": 22745,
+          "score": 14.815160751342773,
+          "category": "MewHelp 古着商品规格 > 牛仔夹克",
+          "questions": "MH-DJ102 宽松水洗牛仔夹克",
+          "answer": "型号 MH-DJ102；品类牛仔夹克；标签 L。肩宽50、胸围120、衣长66、袖长61厘米。棉98%、氨纶2%，微弹，成色B；领口轻微褪色。版型比MH-DJ101宽松，比较尺寸时以胸围120厘米为准；翻面冷水洗涤并阴干。",
+          "content_type": "文档章节",
+          "section_path": "MewHelp 古着商品规格 > 牛仔夹克 > MH-DJ102 宽松水洗牛仔夹克",
+          "product_category": "牛仔夹克",
+          "score_type": "bm25",
+          "dense_score": null,
+          "bm25_score": 14.815160751342773,
+          "fusion_score": null,
+          "rerank_score": null
+        },
+        {
+          "chunk_id": 24872,
+          "score": 14.201616287231445,
+          "category": "MewHelp 古着商品规格",
+          "questions": "平铺胸围和身体胸围的区别",
+          "answer": "商品页胸围是对应单品的实测尺寸，不直接等于适合穿着者的身体胸围。先核对商品页是否标注平铺宽度、整圈尺寸及测量方式，再与自己合身衣服按相同方式对比；不同标注不能直接当作同一口径比较。",
+          "content_type": "文档章节",
+          "section_path": "MewHelp 古着商品规格 > 平铺胸围和身体胸围的区别",
+          "product_category": "通用",
+          "score_type": "bm25",
+          "dense_score": null,
+          "bm25_score": 14.201616287231445,
+          "fusion_score": null,
+          "rerank_score": null
+        },
+        {
+          "chunk_id": 22744,
+          "score": 11.4396390914917,
+          "category": "MewHelp 古着商品规格 > 牛仔夹克",
+          "questions": "MH-DJ101 复古靛蓝牛仔夹克",
+          "answer": "型号 MH-DJ101；品类牛仔夹克；标签 M。肩宽46、胸围110、衣长62、袖长60厘米。棉100%，无弹力，成色B；袖口有自然磨白，右袖口有一处已披露的浅色磨痕。建议翻面冷水轻柔洗涤、阴干，避免高温烘干。不能把MH-DJ102的宽松版尺寸套用到本件。",
+          "content_type": "文档章节",
+          "section_path": "MewHelp 古着商品规格 > 牛仔夹克 > MH-DJ101 复古靛蓝牛仔夹克",
+          "product_category": "牛仔夹克",
+          "score_type": "bm25",
+          "dense_score": null,
+          "bm25_score": 11.4396390914917,
+          "fusion_score": null,
+          "rerank_score": null
+        }
+      ],
+      "candidate_ids": [
+        22745,
+        24872,
+        22744,
+        22753,
+        22747,
+        22755,
+        22746,
+        22749,
+        22748,
+        22752,
+        24873,
+        22754,
+        22750,
+        22751,
+        24900,
+        22743,
+        22722,
+        24874,
+        22765,
+        24898,
+        24857,
+        22758,
+        24840,
+        22724,
+        24850,
+        24839,
+        24862,
+        22714,
+        22729,
+        24865,
+        22730,
+        22770,
+        22710,
+        22723,
+        24878,
+        24905,
+        22709,
+        24866,
+        22716,
+        24880,
+        24881,
+        24841,
+        24875,
+        24896,
+        24906,
+        24864,
+        24889,
+        24887,
+        22766,
+        24904
+      ],
+      "reason": "",
+      "threshold": null,
+      "message": null
+    }
+  },
+  {
+    "session_id": "ch04-v2-acceptance-f8d057b8d07a4777b8e675a64f13677a",
+    "query": "你们家的退货流程是什么",
+    "events": [
+      {
+        "type": "tool",
+        "name": "query_faq",
+        "phase": "start"
+      },
+      {
+        "type": "tool",
+        "name": "query_faq",
+        "phase": "end"
+      },
+      {
+        "type": "citations",
+        "items": [
+          {
+            "number": 1,
+            "chunk_id": 24839,
+            "section_path": "MewHelp 古着退货政策 > 退货完整流程",
+            "text": "退货分为申请、审核、寄回、入库验收和退款处理几个环节。先在「我的订单」选择商品，点击「申请售后」并填写原因、商品照片及联系方式；审核通过后，按订单售后页面确认的收件地址寄回，填写退回物流单号。仓库验收后按审核结果办理退款。申请成功、审核通过和退款到账是不同状态，不把其中某一步当作最终到账。",
+            "original_url": "/kb?chunk_id=24839"
+          },
+          {
+            "number": 2,
+            "chunk_id": 22710,
+            "section_path": "MewHelp 古着退货政策 > 退货申请步骤",
+            "text": "打开「我的订单」，选择对应订单，点击「申请售后」，填写原因并提供商品状态照片。审核通过后按订单页面确认的地址寄回并填写物流单号。不要自行寄往未确认地址。",
+            "original_url": "/kb?chunk_id=22710"
+          },
+          {
+            "number": 3,
+            "chunk_id": 22715,
+            "section_path": "MewHelp 古着退货政策 > 退款路径与到账",
+            "text": "核验通过后的退款按原支付路径办理。**禁止承诺：不保证具体到账日期、天数或几个工作日到账。** 实际到账取决于支付机构处理进度；发起退款、审核、仓库验收和到账不是同一个时间点。",
+            "original_url": "/kb?chunk_id=22715"
+          },
+          {
+            "number": 5,
+            "chunk_id": 24841,
+            "section_path": "MewHelp 古着退货政策 > 寄回前要准备什么",
+            "text": "寄回前拍摄商品正反面、问题部位、吊牌配件及包装情况，保留订单和审核记录。按原订单核对件数，商品与配件一并整理。收件信息以本次已确认的售后页面为准，不直接照抄快递外箱上的原发件地址。",
+            "original_url": "/kb?chunk_id=24841"
+          }
+        ]
+      },
+      {
+        "type": "token",
+        "content": "退货分为申请、审核、寄回、入库验收和退款处理几个环节。[1]\n\n"
+      },
+      {
+        "type": "token",
+        "content": "1. 申请：打开「我的订单」，选择对应订单，点击「申请售后」，填"
+      },
+      {
+        "type": "token",
+        "content": "写原因并提供商品状态照片及联系方式。[2][1]\n2. 寄回前准"
+      },
+      {
+        "type": "token",
+        "content": "备：拍摄商品正反面、问题部位、吊牌配件及包装情况，保留订单和审核"
+      },
+      {
+        "type": "token",
+        "content": "记录；按原订单核对件数，商品与配件一并整理。[5]\n3. 寄回："
+      },
+      {
+        "type": "token",
+        "content": "审核通过后，按订单售后页面确认的收件地址寄回，并填写退回物流单号"
+      },
+      {
+        "type": "token",
+        "content": "；不要自行寄往未确认地址，也不直接照抄快递外箱上的原发件地址。["
+      },
+      {
+        "type": "token",
+        "content": "1][2][5]\n4. 验收与退款：仓库验收后按审核结果办理退款"
+      },
+      {
+        "type": "token",
+        "content": "，退款按原支付路径办理。[1][3]\n\n申请成功、审核通过、仓库"
+      },
+      {
+        "type": "token",
+        "content": "验收和退款到账是不同状态，不能把其中某一步当作最终到账；不保证具"
+      },
+      {
+        "type": "token",
+        "content": "体到账日期或天数，实际到账取决于支付机构处理进度。[1][3]"
+      },
+      {
+        "type": "done"
+      }
+    ],
+    "pool": []
+  },
+  {
+    "session_id": "ch04-v2-acceptance-d32c45af815d4084811b763a202633e4",
+    "query": "怎么下单买衣服",
+    "events": [
+      {
+        "type": "tool",
+        "name": "query_faq",
+        "phase": "start"
+      },
+      {
+        "type": "tool",
+        "name": "query_faq",
+        "phase": "end"
+      },
+      {
+        "type": "citations",
+        "items": [
+          {
+            "number": 1,
+            "chunk_id": 24848,
+            "section_path": "MewHelp 古着商品FAQ > 怎么在商城下单",
+            "text": "先打开商品详情核对完整型号、实测尺寸、材质、成色与瑕疵照片，再选择页面可用规格加入购物车或直接购买。结算时检查收货地址、商品数量、优惠券、积分及最终实付金额，确认后按页面支持的方式付款。商品放入购物车不等于已经支付成功或永久锁定库存。",
+            "original_url": "/kb?chunk_id=24848"
+          }
+        ]
+      },
+      {
+        "type": "token",
+        "content": "先打开商品详情核对完整型号、实测尺寸、材质、成色与瑕疵照片，再选"
+      },
+      {
+        "type": "token",
+        "content": "择页面可用规格加入购物车或直接购买。[1] 结算时检查收货地址、"
+      },
+      {
+        "type": "token",
+        "content": "商品数量、优惠券、积分及最终实付金额，确认后按页面支持的方式付款"
+      },
+      {
+        "type": "token",
+        "content": "。[1] 商品放入购物车不等于已经支付成功或永久锁定库存。[1]"
+      },
+      {
+        "type": "done"
+      }
+    ],
+    "pool": []
+  },
+  {
+    "session_id": "ch04-v2-acceptance-686f9c558c82482fb0f528e670afccde",
+    "query": "MH-DJ101的胸围是多少",
+    "events": [
+      {
+        "type": "tool",
+        "name": "query_faq",
+        "phase": "start"
+      },
+      {
+        "type": "tool",
+        "name": "query_faq",
+        "phase": "end"
+      },
+      {
+        "type": "citations",
+        "items": [
+          {
+            "number": 1,
+            "chunk_id": 22744,
+            "section_path": "MewHelp 古着商品规格 > 牛仔夹克 > MH-DJ101 复古靛蓝牛仔夹克",
+            "text": "型号 MH-DJ101；品类牛仔夹克；标签 M。肩宽46、胸围110、衣长62、袖长60厘米。棉100%，无弹力，成色B；袖口有自然磨白，右袖口有一处已披露的浅色磨痕。建议翻面冷水轻柔洗涤、阴干，避免高温烘干。不能把MH-DJ102的宽松版尺寸套用到本件。",
+            "original_url": "/kb?chunk_id=22744"
+          }
+        ]
+      },
+      {
+        "type": "token",
+        "content": "MH-DJ101 复古靛蓝牛仔夹克的胸围为110厘米（平铺实测尺"
+      },
+      {
+        "type": "token",
+        "content": "寸，单位厘米）。[1]"
+      },
+      {
+        "type": "done"
+      }
+    ],
+    "pool": []
+  },
+  {
+    "session_id": "ch04-v2-acceptance-9226e19a7b684e29a04b3823ffb4ac13",
+    "query": "MH-SH299的胸围是多少",
+    "events": [
+      {
+        "type": "tool",
+        "name": "query_faq",
+        "phase": "start"
+      },
+      {
+        "type": "tool",
+        "name": "query_faq",
+        "phase": "end"
+      },
+      {
+        "type": "token",
+        "content": "抱歉，现有知识不足以可靠回答这个问题，我无法给出确定答案。建议联"
+      },
+      {
+        "type": "token",
+        "content": "系人工客服核实。"
+      },
+      {
+        "type": "done"
+      }
+    ],
+    "pool": [
+      {
+        "raw_question": "MH-SH299的胸围是多少",
+        "source": "self_check",
+        "reason": "证据中没有MH-SH299这一型号的任何规格信息，仅有MH-SH201、MH-SH202、MH-SH203等相近型号的胸围数据，不能把相近SKU的尺寸当作MH-SH299的尺寸。",
+        "created_at": "2026-10-21 16:27:29",
+        "conversation_id": 4335
+      }
+    ]
+  },
+  {
+    "session_id": "ch04-v2-acceptance-9016ac133bdd41fda6ead374c1458582",
+    "query": "新疆地区实付99元的运费精确是多少",
+    "events": [
+      {
+        "type": "tool",
+        "name": "query_faq",
+        "phase": "start"
+      },
+      {
+        "type": "tool",
+        "name": "query_faq",
+        "phase": "end"
+      },
+      {
+        "type": "token",
+        "content": "抱歉，现有知识不足以可靠回答这个问题，我无法给出确定答案。建议联"
+      },
+      {
+        "type": "token",
+        "content": "系人工客服核实。"
+      },
+      {
+        "type": "done"
+      }
+    ],
+    "pool": [
+      {
+        "raw_question": "新疆地区实付99元的运费精确是多少",
+        "source": "self_check",
+        "reason": "证据明确说明新疆等偏远地区运费另行计算、以下单页展示为准，且当前没有统一附加费数字，不能自行补出固定金额；因此无法给出新疆地区实付99元的精确运费金额。",
+        "created_at": "2026-10-21 16:27:33",
+        "conversation_id": 4336
+      }
+    ]
+  },
+  {
+    "session_id": "ch04-v2-acceptance-cb04b4b0ca1d4985b3e2e7031d0c0205",
+    "query": "给我讲一下月球采矿许可证怎么办",
+    "events": [
+      {
+        "type": "tool",
+        "name": "query_faq",
+        "phase": "start"
+      },
+      {
+        "type": "tool",
+        "name": "query_faq",
+        "phase": "end"
+      },
+      {
+        "type": "token",
+        "content": "抱歉，现有知识不足以可靠回答这个问题，我无法给出确定答案。建议联"
+      },
+      {
+        "type": "token",
+        "content": "系人工客服核实。"
+      },
+      {
+        "type": "done"
+      }
+    ],
+    "pool": [
+      {
+        "raw_question": "给我讲一下月球采矿许可证怎么办",
+        "source": "retrieval_low_conf",
+        "reason": "重排最高分低于部署阈值或无有效重排分数",
+        "created_at": "2026-10-21 16:27:36",
+        "conversation_id": 4337
+      }
+    ]
+  }
+]

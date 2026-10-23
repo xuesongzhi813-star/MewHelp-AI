@@ -5,17 +5,42 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from typing import Any
 
-from pymilvus import DataType, MilvusClient
+import json
+import math
+
+from pymilvus import AnnSearchRequest, DataType, Function, FunctionType, MilvusClient, RRFRanker
 from pymilvus.milvus_client.index import IndexParams
 
 from app.config import get_settings
+from app.kb.contracts import RetrievalFilters
+from app.kb.filters import compile_filter
 
 
 class MilvusUnavailable(RuntimeError):
     """Milvus 客户端无法初始化或连接失败。"""
+
+
+def iter_records(collection_name: str) -> Iterator[dict]:
+    """遍历所有检索副本，逐页精确核对原文和元数据。"""
+    iterator = get_client().query_iterator(
+        collection_name=collection_name, batch_size=500, filter="",
+        output_fields=["id", "text", "category", "product_category", "content_type"],
+        consistency_level="Strong", timeout=30,
+    )
+    try:
+        while True:
+            try:
+                batch = iterator.next()
+            except StopIteration:
+                break
+            if not batch:
+                break
+            yield from batch
+    finally:
+        iterator.close()
 
 
 # 模块级懒加载客户端;测试可 monkeypatch 成假对象。
@@ -114,6 +139,7 @@ def search(vector: Sequence[float], limit: int) -> list[tuple[str, float]]:
         limit=limit,
         output_fields=["id"],
         search_params={"metric_type": "COSINE"},
+        anns_field='vector',
     )
     if not results:
         return []
@@ -154,3 +180,118 @@ def list_ids(max_count: int = 5000) -> list[str]:
         limit=max_count,
     )
     return [str(row["id"]) for row in rows]
+
+
+def _hybrid_schema(client: Any):
+    schema = client.create_schema(auto_id=False, enable_dynamic_field=False)
+    schema.add_field('id', DataType.VARCHAR, is_primary=True, max_length=64)
+    schema.add_field('vector', DataType.FLOAT_VECTOR, dim=get_settings().embedding_dim)
+    schema.add_field('text', DataType.VARCHAR, max_length=65535, enable_analyzer=True,
+                     analyzer_params={'type': 'chinese'})
+    schema.add_field('sparse', DataType.SPARSE_FLOAT_VECTOR)
+    for name, length in [('category', 255), ('product_category', 64), ('content_type', 32)]:
+        schema.add_field(name, DataType.VARCHAR, max_length=length)
+    schema.add_function(Function(name='text_bm25', function_type=FunctionType.BM25,
+                                 input_field_names=['text'], output_field_names=['sparse']))
+    return schema
+
+
+def _validate_hybrid_schema(description: dict) -> None:
+    fields = {f['name']: f for f in description.get('fields', [])}
+    expected_types = {'id': DataType.VARCHAR, 'vector': DataType.FLOAT_VECTOR,
+                      'text': DataType.VARCHAR, 'sparse': DataType.SPARSE_FLOAT_VECTOR,
+                      'category': DataType.VARCHAR, 'product_category': DataType.VARCHAR,
+                      'content_type': DataType.VARCHAR}
+    if set(fields) != set(expected_types) or any(
+        fields[n].get('type') != dtype for n, dtype in expected_types.items()
+    ):
+        raise ValueError('hybrid schema字段不匹配，未修改集合')
+    text_params = fields['text'].get('params', {})
+    analyzer = text_params.get('analyzer_params', {})
+    if isinstance(analyzer, str):
+        analyzer = json.loads(analyzer)
+    funcs = description.get('functions', [])
+    scalar_lengths_ok = all(
+        int(fields[name].get('params', {}).get('max_length', 0)) == length
+        for name, length in [('category', 255), ('product_category', 64), ('content_type', 32)]
+    )
+    bm25 = any(int(f.get('type', f.get('function_type', 0))) == int(FunctionType.BM25)
+               and f.get('input_field_names') == ['text']
+               and f.get('output_field_names') == ['sparse'] for f in funcs)
+    if (not fields['id'].get('is_primary') or description.get('auto_id', False)
+            or description.get('enable_dynamic_field', False)
+            or int(fields['id'].get('params', {}).get('max_length', 0)) != 64
+            or int(fields['vector'].get('params', {}).get('dim', 0)) != get_settings().embedding_dim
+            or int(text_params.get('max_length', 0)) != 65535
+            or str(text_params.get('enable_analyzer', '')).lower() != 'true'
+            or analyzer != {'type': 'chinese'} or not bm25 or not scalar_lengths_ok):
+        raise ValueError('hybrid schema配置不匹配，未修改集合')
+
+
+def ensure_hybrid_collection(collection_name: str) -> None:
+    client = get_client()
+    if client.has_collection(collection_name):
+        _validate_hybrid_schema(client.describe_collection(collection_name))
+    else:
+        schema = _hybrid_schema(client)
+        indexes = IndexParams()
+        indexes.add_index(field_name='vector', index_type='AUTOINDEX', metric_type='COSINE')
+        indexes.add_index(field_name='sparse', index_type='SPARSE_INVERTED_INDEX',
+                          metric_type='BM25', params={'inverted_index_algo': 'DAAT_MAXSCORE'})
+        client.create_collection(collection_name=collection_name, schema=schema, index_params=indexes)
+    client.load_collection(collection_name)
+
+
+def upsert_records(records: Sequence[dict], *, collection_name: str) -> None:
+    for record in records:
+        if len(record.get('text', '').encode('utf-8')) > 65535:
+            raise ValueError('text超过65535 UTF-8字节，未写入')
+    if records:
+        get_client().upsert(collection_name=collection_name, data=list(records), timeout=30)
+
+
+def _pairs(results: list) -> list[tuple[str, float]]:
+    if not results:
+        return []
+    pairs = [(str(hit['id']), float(hit['distance'])) for hit in results[0]]
+    if any(not math.isfinite(score) for _, score in pairs):
+        raise ValueError('Milvus返回非有限分数')
+    return pairs
+
+
+def _search_field(data: Any, field: str, metric: str, limit: int, *,
+                  collection_name: str, filters: RetrievalFilters) -> list[tuple[str, float]]:
+    if not 1 <= limit <= 100:
+        raise ValueError('limit必须在1至100之间')
+    expr, params = compile_filter(filters)
+    return _pairs(get_client().search(
+        collection_name=collection_name, data=[data], anns_field=field,
+        search_params={'metric_type': metric}, limit=limit, output_fields=['id'],
+        filter=expr, filter_params=params, timeout=10, consistency_level='Strong',
+    ))
+
+
+def search_dense(vector: Sequence[float], limit: int, *, collection_name: str,
+                  filters: RetrievalFilters) -> list[tuple[str, float]]:
+    return _search_field(list(vector), 'vector', 'COSINE', limit,
+                         collection_name=collection_name, filters=filters)
+
+
+def search_bm25(text: str, limit: int, *, collection_name: str,
+                 filters: RetrievalFilters) -> list[tuple[str, float]]:
+    return _search_field(text, 'sparse', 'BM25', limit,
+                         collection_name=collection_name, filters=filters)
+
+
+def search_hybrid(vector: Sequence[float], text: str, *, collection_name: str,
+                   filters: RetrievalFilters) -> list[tuple[str, float]]:
+    expr, params = compile_filter(filters)
+    requests = [
+        AnnSearchRequest(data=[data], anns_field=field, param={'metric_type': metric},
+                          limit=50, expr=expr or None, expr_params=params)
+        for data, field, metric in [(list(vector), 'vector', 'COSINE'), (text, 'sparse', 'BM25')]
+    ]
+    return _pairs(get_client().hybrid_search(
+        collection_name=collection_name, reqs=requests, ranker=RRFRanker(k=60),
+        limit=100, output_fields=['id'], timeout=10, consistency_level='Strong',
+    ))

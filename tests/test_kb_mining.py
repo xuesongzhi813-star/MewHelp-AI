@@ -23,7 +23,7 @@ import app.kb.mining as mining
 import app.kb.store as store
 from app.db import get_engine
 from app.kb.embedding import EmbeddingError
-from app.models import Conversation, Message, QaExtractionStaging, Ticket
+from app.models import Conversation, LowConfidenceQuestion, Message, QaExtractionStaging, Ticket
 from app.kb.store import ConversationForMining
 
 
@@ -45,11 +45,12 @@ def kb_tx(monkeypatch):
             with session.begin():
                 session.execute(delete(QaExtractionStaging))
                 session.execute(delete(store.KnowledgeChunk))
-                # run_once 读取整张 conversations 表;先清引用方(tickets /
-                # messages)再清会话,避免真实工单触发外键错误。rollback 会
+                # run_once 读取整张 conversations 表;先清引用方，再清会话。
+                # ch04真实拒答入池后也有外键引用；所有清理仅在外层事务，rollback 会
                 # 恢复已提交行(包括 seed-ch03-* 演示会话),不会污染真实库。
                 session.execute(delete(Ticket))
                 session.execute(delete(Message))
+                session.execute(delete(LowConfidenceQuestion))
                 session.execute(delete(Conversation))
         try:
             yield conn

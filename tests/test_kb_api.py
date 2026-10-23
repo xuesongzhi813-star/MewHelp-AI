@@ -847,7 +847,7 @@ async def test_search_all_below_threshold_returns_no_match(client, monkeypatch):
 
 async def test_search_unknown_route_returns_422(client):
     response = await client.post(
-        "/api/kb/search", json={"query": "邮费", "route": "hybrid"}
+        "/api/kb/search", json={"query": "邮费", "route": "unsupported"}
     )
 
     assert response.status_code == 422

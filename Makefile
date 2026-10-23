@@ -1,4 +1,14 @@
 .PHONY: kb-preview kb-build seed-conv kb-mine kb-vectorize kb-rebuild kb-reset
+.PHONY: kb-ch04-preview kb-ch04-migrate kb-ch04-verify
+
+kb-ch04-preview:
+	uv run python -m app.kb.ingest preview --corpus-version ch04
+
+kb-ch04-migrate:
+	uv run python -m app.kb.ingest migrate-hybrid
+
+kb-ch04-verify:
+	uv run python -m app.kb.ingest verify-hybrid
 
 kb-preview:
 	uv run python -m app.kb.ingest preview

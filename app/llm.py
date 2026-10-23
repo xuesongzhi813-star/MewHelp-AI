@@ -21,3 +21,34 @@ def build_extractor(settings: Settings) -> Runnable:
     return build_chat_model(settings).with_structured_output(
         AfterSalesInfo, method="function_calling"
     )
+
+
+def build_query_model(settings: Settings) -> Runnable:
+    from app.kb.query import QueryRewrite
+
+    return ChatOpenAI(
+        model=settings.llm_model, api_key=settings.llm_api_key,
+        base_url=settings.llm_base_url, temperature=0,
+        extra_body=settings.llm_extra_body,
+        timeout=settings.query_timeout, max_retries=0,
+    ).with_structured_output(QueryRewrite, method="function_calling")
+
+
+def build_answer_model(settings: Settings) -> Runnable:
+    from app.kb.contracts import AnswerDecision
+
+    return ChatOpenAI(
+        model=settings.llm_model, api_key=settings.llm_api_key,
+        base_url=settings.llm_base_url, temperature=0,
+        extra_body=settings.llm_extra_body, timeout=settings.answer_timeout, max_retries=0,
+    ).with_structured_output(AnswerDecision, method="function_calling", include_raw=True)
+
+
+def build_judge_models(settings: Settings) -> tuple[Runnable, Runnable]:
+    from app.kb.evaluation_judge import JudgeFactsOutput, RequiredFactsOutput
+
+    base = ChatOpenAI(model=settings.llm_model, api_key=settings.llm_api_key,
+        base_url=settings.llm_base_url, temperature=0, extra_body=settings.llm_extra_body,
+        timeout=settings.answer_timeout, max_retries=0)
+    return (base.with_structured_output(JudgeFactsOutput, method="function_calling", include_raw=True),
+            base.with_structured_output(RequiredFactsOutput, method="function_calling", include_raw=True))

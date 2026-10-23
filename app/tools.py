@@ -27,7 +27,10 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_session_local
+from app.config import get_settings
+from app.kb.contracts import QueryPlan
 from app.kb.retriever import retrieve
+from app.kb.retriever import retrieve_result
 from app.models import Ticket
 
 # ---------------------------------------------------------------------------
@@ -93,6 +96,7 @@ class QueryFaqArgs(BaseModel):
     """query_faq 的入参 schema。"""
 
     keyword: str = Field(description="用户原话中的问题或关键词,完整问句效果更好,例如 退货政策、邮费怎么算、尺码怎么选")
+    query_plan: Annotated[QueryPlan | None, InjectedToolArg] = None
 
 
 class CreateTicketArgs(BaseModel):
@@ -191,8 +195,8 @@ def query_logistics(order_id: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-@tool(args_schema=QueryFaqArgs)
-def query_faq(keyword: str) -> str:
+@tool(args_schema=QueryFaqArgs, response_format="content_and_artifact")
+def query_faq(keyword: str, query_plan: Annotated[QueryPlan | None, InjectedToolArg] = None) -> tuple:
     """检索店铺常见问题知识库(FAQ),返回与问题最相关的问答条目。
 
     用户咨询退货换货政策、发货时效、修改地址、发票、支付方式、优惠券、
@@ -200,7 +204,15 @@ def query_faq(keyword: str) -> str:
     完整问句效果更好(例如「邮费怎么算」);返回「问题→答案」多行文本,
     检索不到时返回明确的「无匹配」提示,此时应考虑安抚用户或转人工。
     """
-    return retrieve(keyword)
+    if get_settings().kb_corpus_version != "ch04":
+        return retrieve(keyword), None
+    effective_query = query_plan.raw_query if query_plan is not None else keyword
+    result = retrieve_result(effective_query, plan=query_plan)
+    content = "\n\n".join(f"{index}. {hit.questions}\n→ {hit.answer}"
+                          for index, hit in enumerate(result.hits, 1))
+    if not result.hits:
+        content = f"FAQ 库中没有找到与「{effective_query}」相关的条目"
+    return content, result
 
 
 # ---------------------------------------------------------------------------
