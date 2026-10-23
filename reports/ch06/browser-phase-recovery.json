@@ -1,0 +1,118 @@
+{
+  "session_id": "ch06-e2e-1792740477321-recovery-1792741713455",
+  "provider": "real",
+  "browser": "Chrome headless",
+  "streams": [
+    {
+      "path": "/chat",
+      "status": 200,
+      "frames": [
+        {
+          "type": "workflow",
+          "stage": "question_understood",
+          "question": "我要退款"
+        },
+        {
+          "type": "order_selection",
+          "selection_id": "59980667a952479d82d08b2eb6629ec9",
+          "items": [
+            {
+              "order_id": "1001",
+              "product": "复古水洗牛仔夹克",
+              "sku": "MH-DJ101",
+              "status": "已签收",
+              "amount": 199,
+              "placed_at": "2026-10-18 10:00:00",
+              "signed_at": "2026-10-21 14:00:00",
+              "condition": null,
+              "is_demo": true
+            },
+            {
+              "order_id": "1002",
+              "product": "美式印花夏威夷衬衫",
+              "sku": "MH-SH201",
+              "status": "已发货",
+              "amount": 129,
+              "placed_at": "2026-10-22 10:00:00",
+              "signed_at": null,
+              "condition": null,
+              "is_demo": true
+            },
+            {
+              "order_id": "1003",
+              "product": "灯芯绒高腰阔腿裤",
+              "sku": "MH-PT301",
+              "status": "退款中",
+              "amount": 159,
+              "placed_at": "2026-10-10 10:00:00",
+              "signed_at": "2026-10-15 14:00:00",
+              "condition": null,
+              "is_demo": true
+            }
+          ],
+          "is_demo": true
+        },
+        {
+          "type": "done"
+        }
+      ]
+    },
+    {
+      "path": "/api/chat/actions/order-selection",
+      "status": 409,
+      "frames": [
+        {
+          "detail": "此订单选择已处理或失效"
+        }
+      ]
+    }
+  ],
+  "page_errors": [],
+  "before": {
+    "intent": "退款退货",
+    "confidence": 0.95,
+    "route": "refund",
+    "status": "awaiting_order",
+    "raw_question": "我要退款",
+    "resolved_question": "我要退款",
+    "selected_order_id": null,
+    "node_trace": [
+      "resolve_reference",
+      "classify_intent",
+      "order_context"
+    ],
+    "gate_reason": "",
+    "expansion_queries": [],
+    "expansion_fallback": false,
+    "pending_interrupts": 1,
+    "user_messages": [
+      "我要退款"
+    ],
+    "usage_segments": []
+  },
+  "injected_409_requests": 1,
+  "after": {
+    "intent": "退款退货",
+    "confidence": 0.95,
+    "route": "refund",
+    "status": "awaiting_order",
+    "raw_question": "我要退款",
+    "resolved_question": "我要退款",
+    "selected_order_id": null,
+    "node_trace": [
+      "resolve_reference",
+      "classify_intent",
+      "order_context"
+    ],
+    "gate_reason": "",
+    "expansion_queries": [],
+    "expansion_fallback": false,
+    "pending_interrupts": 1,
+    "user_messages": [
+      "我要退款"
+    ],
+    "usage_segments": []
+  },
+  "tickets": 0,
+  "passed": true
+}

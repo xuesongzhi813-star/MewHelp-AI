@@ -1,0 +1,1198 @@
+{
+  "session_id": "ch06-e2e-1792740477321",
+  "phases": {
+    "pause": {
+      "session_id": "ch06-e2e-1792740477321",
+      "provider": "real",
+      "browser": "Chrome headless",
+      "streams": [
+        {
+          "path": "/chat",
+          "status": 200,
+          "frames": [
+            {
+              "type": "workflow",
+              "stage": "question_understood",
+              "question": "这个能退吗"
+            },
+            {
+              "type": "order_selection",
+              "selection_id": "84bb2d21985946c8862852885cb41ef6",
+              "items": [
+                {
+                  "order_id": "1001",
+                  "product": "复古水洗牛仔夹克",
+                  "sku": "MH-DJ101",
+                  "status": "已签收",
+                  "amount": 199,
+                  "placed_at": "2026-10-18 10:00:00",
+                  "signed_at": "2026-10-21 14:00:00",
+                  "condition": null,
+                  "is_demo": true
+                },
+                {
+                  "order_id": "1002",
+                  "product": "美式印花夏威夷衬衫",
+                  "sku": "MH-SH201",
+                  "status": "已发货",
+                  "amount": 129,
+                  "placed_at": "2026-10-22 10:00:00",
+                  "signed_at": null,
+                  "condition": null,
+                  "is_demo": true
+                },
+                {
+                  "order_id": "1003",
+                  "product": "灯芯绒高腰阔腿裤",
+                  "sku": "MH-PT301",
+                  "status": "退款中",
+                  "amount": 159,
+                  "placed_at": "2026-10-10 10:00:00",
+                  "signed_at": "2026-10-15 14:00:00",
+                  "condition": null,
+                  "is_demo": true
+                }
+              ],
+              "is_demo": true
+            },
+            {
+              "type": "done"
+            }
+          ]
+        }
+      ],
+      "page_errors": [],
+      "tickets_before": 0,
+      "state_before_restart": {
+        "intent": "退款退货",
+        "confidence": 0.9,
+        "route": "refund",
+        "status": "awaiting_order",
+        "raw_question": "这个能退吗",
+        "resolved_question": "这个能退吗",
+        "selected_order_id": null,
+        "node_trace": [
+          "resolve_reference",
+          "classify_intent",
+          "order_context"
+        ],
+        "gate_reason": "",
+        "expansion_queries": [],
+        "expansion_fallback": false,
+        "pending_interrupts": 1,
+        "user_messages": [
+          "这个能退吗"
+        ],
+        "usage_segments": []
+      },
+      "public_state": {
+        "status": "awaiting_order",
+        "selection": {
+          "type": "order_selection",
+          "selection_id": "84bb2d21985946c8862852885cb41ef6",
+          "items": [
+            {
+              "order_id": "1001",
+              "product": "复古水洗牛仔夹克",
+              "sku": "MH-DJ101",
+              "status": "已签收",
+              "amount": 199,
+              "placed_at": "2026-10-18 10:00:00",
+              "signed_at": "2026-10-21 14:00:00",
+              "condition": null,
+              "is_demo": true
+            },
+            {
+              "order_id": "1002",
+              "product": "美式印花夏威夷衬衫",
+              "sku": "MH-SH201",
+              "status": "已发货",
+              "amount": 129,
+              "placed_at": "2026-10-22 10:00:00",
+              "signed_at": null,
+              "condition": null,
+              "is_demo": true
+            },
+            {
+              "order_id": "1003",
+              "product": "灯芯绒高腰阔腿裤",
+              "sku": "MH-PT301",
+              "status": "退款中",
+              "amount": 159,
+              "placed_at": "2026-10-10 10:00:00",
+              "signed_at": "2026-10-15 14:00:00",
+              "condition": null,
+              "is_demo": true
+            }
+          ],
+          "is_demo": true
+        },
+        "actions": []
+      },
+      "mobile_layout": {
+        "width": 390,
+        "scrollWidth": 390
+      },
+      "tickets_after_pause": 0,
+      "passed": true
+    },
+    "continue": {
+      "session_id": "ch06-e2e-1792740477321",
+      "provider": "real",
+      "browser": "Chrome headless",
+      "streams": [
+        {
+          "path": "/api/chat/actions/order-selection",
+          "status": 200,
+          "frames": [
+            {
+              "type": "workflow",
+              "stage": "read_order"
+            },
+            {
+              "type": "tool",
+              "name": "query_order",
+              "phase": "start"
+            },
+            {
+              "type": "tool",
+              "name": "query_order",
+              "phase": "end"
+            },
+            {
+              "type": "workflow",
+              "stage": "expand_queries"
+            },
+            {
+              "type": "workflow",
+              "stage": "retrieve_policy"
+            },
+            {
+              "type": "citations",
+              "items": [
+                {
+                  "number": 1,
+                  "chunk_id": 24845,
+                  "section_path": "MewHelp 古着退货政策 > 已穿洗或改装后申请售后",
+                  "text": "收到后穿着使用、洗涤或自行改装会影响无理由退货的完好条件。若用户认为存在质量或描述问题，仍可提供订单、收到时与当前状态照片及处理经过，由人工核实；不能简单把任何争议都当作可无条件退货，也不把无理由条件解释成完全没有售后渠道。",
+                  "original_url": "/kb?chunk_id=24845"
+                },
+                {
+                  "number": 2,
+                  "chunk_id": 22708,
+                  "section_path": "MewHelp 古着退货政策 > 七天无理由的起点",
+                  "text": "自收到商品之日起7天内，商品保持收到时状态、不影响再次销售，可在订单中申请无理由退货。7天从签收起算，不从下单或发货起算。申请需经审核；客服不能直接承诺审批结果。",
+                  "original_url": "/kb?chunk_id=22708"
+                },
+                {
+                  "number": 3,
+                  "chunk_id": 24844,
+                  "section_path": "MewHelp 古着退货政策 > 部分商品退货",
+                  "text": "同一订单只退部分商品时，在售后申请中准确选择商品和数量，保留要退商品的照片与寄件凭证。退款按实际支付、相关优惠和运费规则及审核结果处理，具体金额以订单页面核算为准；不按商品划线原价直接相加，也不擅自保证仍满足原包邮或满减条件。",
+                  "original_url": "/kb?chunk_id=24844"
+                },
+                {
+                  "number": 4,
+                  "chunk_id": 24839,
+                  "section_path": "MewHelp 古着退货政策 > 退货完整流程",
+                  "text": "退货分为申请、审核、寄回、入库验收和退款处理几个环节。先在「我的订单」选择商品，点击「申请售后」并填写原因、商品照片及联系方式；审核通过后，按订单售后页面确认的收件地址寄回，填写退回物流单号。仓库验收后按审核结果办理退款。申请成功、审核通过和退款到账是不同状态，不把其中某一步当作最终到账。",
+                  "original_url": "/kb?chunk_id=24839"
+                },
+                {
+                  "number": 5,
+                  "chunk_id": 24840,
+                  "section_path": "MewHelp 古着退货政策 > 申请入口找不到",
+                  "text": "先确认登录的是下单账户、订单号是否正确，以及该商品当前是否已进入可申请的售后状态。可以保留订单详情与页面提示截图，通过客服入口申请人工核实；不要重复下单或把账号密码发给客服。入口显示异常不代表已经批准或拒绝退货。",
+                  "original_url": "/kb?chunk_id=24840"
+                },
+                {
+                  "number": 6,
+                  "chunk_id": 22710,
+                  "section_path": "MewHelp 古着退货政策 > 退货申请步骤",
+                  "text": "打开「我的订单」，选择对应订单，点击「申请售后」，填写原因并提供商品状态照片。审核通过后按订单页面确认的地址寄回并填写物流单号。不要自行寄往未确认地址。",
+                  "original_url": "/kb?chunk_id=22710"
+                },
+                {
+                  "number": 7,
+                  "chunk_id": 22718,
+                  "section_path": "MewHelp 古着退货政策 > 审核异议",
+                  "text": "如对审核结果有异议，可在结果通知后7日内通过客服提交申诉，附订单号、问题照片及原沟通记录。平台一般在3个工作日内介入核实，不能将一般处理安排说成保证结果或保证到账。",
+                  "original_url": "/kb?chunk_id=22718"
+                },
+                {
+                  "number": 8,
+                  "chunk_id": 22712,
+                  "section_path": "MewHelp 古着退货政策 > 质量问题与描述不符",
+                  "text": "签收后7天内联系客服，提供订单号及问题照片。核实后可协商换货、维修或退款；质量问题或发错货产生的相关运费由商家承担。是否成立由证据及售后审核决定，客服不能预先保证赔付。",
+                  "original_url": "/kb?chunk_id=22712"
+                },
+                {
+                  "number": 9,
+                  "chunk_id": 22717,
+                  "section_path": "MewHelp 古着退货政策 > 退款金额与虚拟权益",
+                  "text": "退款金额以实际支付金额和审核结果为准，优惠券、积分等虚拟权益不退还现金。部分退货按订单页面处理，不能保证优惠券返还或积分即时恢复。",
+                  "original_url": "/kb?chunk_id=22717"
+                },
+                {
+                  "number": 10,
+                  "chunk_id": 24841,
+                  "section_path": "MewHelp 古着退货政策 > 寄回前要准备什么",
+                  "text": "寄回前拍摄商品正反面、问题部位、吊牌配件及包装情况，保留订单和审核记录。按原订单核对件数，商品与配件一并整理。收件信息以本次已确认的售后页面为准，不直接照抄快递外箱上的原发件地址。",
+                  "original_url": "/kb?chunk_id=24841"
+                }
+              ]
+            },
+            {
+              "type": "token",
+              "content": "订单"
+            },
+            {
+              "type": "token",
+              "content": "100"
+            },
+            {
+              "type": "token",
+              "content": "1"
+            },
+            {
+              "type": "token",
+              "content": "「"
+            },
+            {
+              "type": "token",
+              "content": "复古"
+            },
+            {
+              "type": "token",
+              "content": "水"
+            },
+            {
+              "type": "token",
+              "content": "洗"
+            },
+            {
+              "type": "token",
+              "content": "牛仔"
+            },
+            {
+              "type": "token",
+              "content": "夹"
+            },
+            {
+              "type": "token",
+              "content": "克"
+            },
+            {
+              "type": "token",
+              "content": "」（"
+            },
+            {
+              "type": "token",
+              "content": "199"
+            },
+            {
+              "type": "token",
+              "content": "元"
+            },
+            {
+              "type": "token",
+              "content": "）"
+            },
+            {
+              "type": "token",
+              "content": "已"
+            },
+            {
+              "type": "token",
+              "content": "签"
+            },
+            {
+              "type": "token",
+              "content": "收"
+            },
+            {
+              "type": "token",
+              "content": "，"
+            },
+            {
+              "type": "token",
+              "content": "签"
+            },
+            {
+              "type": "token",
+              "content": "收"
+            },
+            {
+              "type": "token",
+              "content": "时间为"
+            },
+            {
+              "type": "token",
+              "content": "202"
+            },
+            {
+              "type": "token",
+              "content": "6"
+            },
+            {
+              "type": "token",
+              "content": "-"
+            },
+            {
+              "type": "token",
+              "content": "10"
+            },
+            {
+              "type": "token",
+              "content": "-"
+            },
+            {
+              "type": "token",
+              "content": "21"
+            },
+            {
+              "type": "token",
+              "content": " "
+            },
+            {
+              "type": "token",
+              "content": "14"
+            },
+            {
+              "type": "token",
+              "content": ":"
+            },
+            {
+              "type": "token",
+              "content": "00"
+            },
+            {
+              "type": "token",
+              "content": "。"
+            },
+            {
+              "type": "token",
+              "content": "订单"
+            },
+            {
+              "type": "token",
+              "content": "里"
+            },
+            {
+              "type": "token",
+              "content": "没有"
+            },
+            {
+              "type": "token",
+              "content": "商品"
+            },
+            {
+              "type": "token",
+              "content": "状态"
+            },
+            {
+              "type": "token",
+              "content": "信息"
+            },
+            {
+              "type": "token",
+              "content": "，"
+            },
+            {
+              "type": "token",
+              "content": "因此"
+            },
+            {
+              "type": "token",
+              "content": "无法"
+            },
+            {
+              "type": "token",
+              "content": "判断"
+            },
+            {
+              "type": "token",
+              "content": "是否"
+            },
+            {
+              "type": "token",
+              "content": "仍"
+            },
+            {
+              "type": "token",
+              "content": "满足"
+            },
+            {
+              "type": "token",
+              "content": "“"
+            },
+            {
+              "type": "token",
+              "content": "收到"
+            },
+            {
+              "type": "token",
+              "content": "时"
+            },
+            {
+              "type": "token",
+              "content": "状态"
+            },
+            {
+              "type": "token",
+              "content": "、"
+            },
+            {
+              "type": "token",
+              "content": "不影响"
+            },
+            {
+              "type": "token",
+              "content": "再次"
+            },
+            {
+              "type": "token",
+              "content": "销售"
+            },
+            {
+              "type": "token",
+              "content": "”"
+            },
+            {
+              "type": "token",
+              "content": "的无"
+            },
+            {
+              "type": "token",
+              "content": "理由"
+            },
+            {
+              "type": "token",
+              "content": "退货"
+            },
+            {
+              "type": "token",
+              "content": "条件"
+            },
+            {
+              "type": "token",
+              "content": "["
+            },
+            {
+              "type": "token",
+              "content": "2"
+            },
+            {
+              "type": "token",
+              "content": "]。\n\n"
+            },
+            {
+              "type": "token",
+              "content": "另外"
+            },
+            {
+              "type": "token",
+              "content": "，"
+            },
+            {
+              "type": "token",
+              "content": "无"
+            },
+            {
+              "type": "token",
+              "content": "理由"
+            },
+            {
+              "type": "token",
+              "content": "退货"
+            },
+            {
+              "type": "token",
+              "content": "的"
+            },
+            {
+              "type": "token",
+              "content": "7"
+            },
+            {
+              "type": "token",
+              "content": "天"
+            },
+            {
+              "type": "token",
+              "content": "从"
+            },
+            {
+              "type": "token",
+              "content": "签"
+            },
+            {
+              "type": "token",
+              "content": "收"
+            },
+            {
+              "type": "token",
+              "content": "日起"
+            },
+            {
+              "type": "token",
+              "content": "算"
+            },
+            {
+              "type": "token",
+              "content": "["
+            },
+            {
+              "type": "token",
+              "content": "2"
+            },
+            {
+              "type": "token",
+              "content": "]，"
+            },
+            {
+              "type": "token",
+              "content": "按"
+            },
+            {
+              "type": "token",
+              "content": "签"
+            },
+            {
+              "type": "token",
+              "content": "收"
+            },
+            {
+              "type": "token",
+              "content": "日期"
+            },
+            {
+              "type": "token",
+              "content": "看"
+            },
+            {
+              "type": "token",
+              "content": "时限"
+            },
+            {
+              "type": "token",
+              "content": "已"
+            },
+            {
+              "type": "token",
+              "content": "过"
+            },
+            {
+              "type": "token",
+              "content": "。"
+            },
+            {
+              "type": "token",
+              "content": "不过"
+            },
+            {
+              "type": "token",
+              "content": "，"
+            },
+            {
+              "type": "token",
+              "content": "如果您"
+            },
+            {
+              "type": "token",
+              "content": "认为"
+            },
+            {
+              "type": "token",
+              "content": "存在"
+            },
+            {
+              "type": "token",
+              "content": "质量问题"
+            },
+            {
+              "type": "token",
+              "content": "或"
+            },
+            {
+              "type": "token",
+              "content": "描述"
+            },
+            {
+              "type": "token",
+              "content": "不符"
+            },
+            {
+              "type": "token",
+              "content": "，"
+            },
+            {
+              "type": "token",
+              "content": "仍"
+            },
+            {
+              "type": "token",
+              "content": "可"
+            },
+            {
+              "type": "token",
+              "content": "提供"
+            },
+            {
+              "type": "token",
+              "content": "订单"
+            },
+            {
+              "type": "token",
+              "content": "号"
+            },
+            {
+              "type": "token",
+              "content": "、"
+            },
+            {
+              "type": "token",
+              "content": "收到"
+            },
+            {
+              "type": "token",
+              "content": "时"
+            },
+            {
+              "type": "token",
+              "content": "和"
+            },
+            {
+              "type": "token",
+              "content": "当前"
+            },
+            {
+              "type": "token",
+              "content": "状态"
+            },
+            {
+              "type": "token",
+              "content": "照片"
+            },
+            {
+              "type": "token",
+              "content": "及"
+            },
+            {
+              "type": "token",
+              "content": "处理"
+            },
+            {
+              "type": "token",
+              "content": "经过"
+            },
+            {
+              "type": "token",
+              "content": "，"
+            },
+            {
+              "type": "token",
+              "content": "由"
+            },
+            {
+              "type": "token",
+              "content": "人工"
+            },
+            {
+              "type": "token",
+              "content": "核实"
+            },
+            {
+              "type": "token",
+              "content": "["
+            },
+            {
+              "type": "token",
+              "content": "1"
+            },
+            {
+              "type": "token",
+              "content": "]["
+            },
+            {
+              "type": "token",
+              "content": "8"
+            },
+            {
+              "type": "token",
+              "content": "]。"
+            },
+            {
+              "type": "token",
+              "content": "最终"
+            },
+            {
+              "type": "token",
+              "content": "能否"
+            },
+            {
+              "type": "token",
+              "content": "退"
+            },
+            {
+              "type": "token",
+              "content": "还需"
+            },
+            {
+              "type": "token",
+              "content": "以"
+            },
+            {
+              "type": "token",
+              "content": "审核"
+            },
+            {
+              "type": "token",
+              "content": "结果"
+            },
+            {
+              "type": "token",
+              "content": "为准"
+            },
+            {
+              "type": "token",
+              "content": "，"
+            },
+            {
+              "type": "token",
+              "content": "客服"
+            },
+            {
+              "type": "token",
+              "content": "不能"
+            },
+            {
+              "type": "token",
+              "content": "预先"
+            },
+            {
+              "type": "token",
+              "content": "承诺"
+            },
+            {
+              "type": "token",
+              "content": "审批"
+            },
+            {
+              "type": "token",
+              "content": "结果"
+            },
+            {
+              "type": "token",
+              "content": "。\n\n"
+            },
+            {
+              "type": "token",
+              "content": "如需"
+            },
+            {
+              "type": "token",
+              "content": "申请"
+            },
+            {
+              "type": "token",
+              "content": "："
+            },
+            {
+              "type": "token",
+              "content": "打开"
+            },
+            {
+              "type": "token",
+              "content": "「"
+            },
+            {
+              "type": "token",
+              "content": "我的"
+            },
+            {
+              "type": "token",
+              "content": "订单"
+            },
+            {
+              "type": "token",
+              "content": "」"
+            },
+            {
+              "type": "token",
+              "content": "→"
+            },
+            {
+              "type": "token",
+              "content": " "
+            },
+            {
+              "type": "token",
+              "content": "选择"
+            },
+            {
+              "type": "token",
+              "content": "该"
+            },
+            {
+              "type": "token",
+              "content": "订单"
+            },
+            {
+              "type": "token",
+              "content": " →"
+            },
+            {
+              "type": "token",
+              "content": " "
+            },
+            {
+              "type": "token",
+              "content": "点击"
+            },
+            {
+              "type": "token",
+              "content": "「"
+            },
+            {
+              "type": "token",
+              "content": "申请"
+            },
+            {
+              "type": "token",
+              "content": "售后"
+            },
+            {
+              "type": "token",
+              "content": "」，"
+            },
+            {
+              "type": "token",
+              "content": "填写"
+            },
+            {
+              "type": "token",
+              "content": "原因"
+            },
+            {
+              "type": "token",
+              "content": "并"
+            },
+            {
+              "type": "token",
+              "content": "上传"
+            },
+            {
+              "type": "token",
+              "content": "商品"
+            },
+            {
+              "type": "token",
+              "content": "状态"
+            },
+            {
+              "type": "token",
+              "content": "照片"
+            },
+            {
+              "type": "token",
+              "content": "["
+            },
+            {
+              "type": "token",
+              "content": "6"
+            },
+            {
+              "type": "token",
+              "content": "]"
+            },
+            {
+              "type": "token",
+              "content": "；"
+            },
+            {
+              "type": "token",
+              "content": "寄"
+            },
+            {
+              "type": "token",
+              "content": "回"
+            },
+            {
+              "type": "token",
+              "content": "前"
+            },
+            {
+              "type": "token",
+              "content": "请"
+            },
+            {
+              "type": "token",
+              "content": "拍"
+            },
+            {
+              "type": "token",
+              "content": "好"
+            },
+            {
+              "type": "token",
+              "content": "正"
+            },
+            {
+              "type": "token",
+              "content": "反面"
+            },
+            {
+              "type": "token",
+              "content": "、"
+            },
+            {
+              "type": "token",
+              "content": "问题"
+            },
+            {
+              "type": "token",
+              "content": "部位"
+            },
+            {
+              "type": "token",
+              "content": "、"
+            },
+            {
+              "type": "token",
+              "content": "吊"
+            },
+            {
+              "type": "token",
+              "content": "牌"
+            },
+            {
+              "type": "token",
+              "content": "配件"
+            },
+            {
+              "type": "token",
+              "content": "及"
+            },
+            {
+              "type": "token",
+              "content": "包装"
+            },
+            {
+              "type": "token",
+              "content": "["
+            },
+            {
+              "type": "token",
+              "content": "10"
+            },
+            {
+              "type": "token",
+              "content": "]。"
+            },
+            {
+              "type": "token",
+              "content": "是否"
+            },
+            {
+              "type": "token",
+              "content": "提交"
+            },
+            {
+              "type": "token",
+              "content": "申请表"
+            },
+            {
+              "type": "token",
+              "content": "由"
+            },
+            {
+              "type": "token",
+              "content": "您"
+            },
+            {
+              "type": "token",
+              "content": "自行"
+            },
+            {
+              "type": "token",
+              "content": "决定"
+            },
+            {
+              "type": "token",
+              "content": "。"
+            },
+            {
+              "type": "actions",
+              "items": [
+                {
+                  "kind": "create_ticket",
+                  "description": "订单1001（复古水洗牛仔夹克，199元）状态为已签收，签收时间2026-10-21 14:00，商品状态字段为空，因此无法判断是否仍满足无理由退货的\"收到时状态、不影响再次销售\"条件[2]。另外，7天无理由自签收起算[2]，按签收日期看时限已过，但若属于质量问题或描述不符，仍可提供订单号、收到时与当前状态照片及处理经过，由人工核实[1][8]。是否可退需以审核结果为准，客服不能预先承诺审批结果[2]。\n\n如需申请：打开「我的订单」→ 选择该订单 → 点击「申请售后」，填写原因并上传商品状态照片[6]；寄回前请拍好正反面、问题部位、吊牌配件及包装[10]。申请表是否提交由您自行决定。",
+                  "ticket_type": "咨询",
+                  "action_id": "304ce9e3e3be48a986ea35e29d898de8",
+                  "status": "available",
+                  "label": "建工单"
+                },
+                {
+                  "kind": "handoff",
+                  "description": "订单1001（复古水洗牛仔夹克，199元）状态为已签收，签收时间2026-10-21 14:00，商品状态字段为空，因此无法判断是否仍满足无理由退货的\"收到时状态、不影响再次销售\"条件[2]。另外，7天无理由自签收起算[2]，按签收日期看时限已过，但若属于质量问题或描述不符，仍可提供订单号、收到时与当前状态照片及处理经过，由人工核实[1][8]。是否可退需以审核结果为准，客服不能预先承诺审批结果[2]。\n\n如需申请：打开「我的订单」→ 选择该订单 → 点击「申请售后」，填写原因并上传商品状态照片[6]；寄回前请拍好正反面、问题部位、吊牌配件及包装[10]。申请表是否提交由您自行决定。",
+                  "ticket_type": "咨询",
+                  "action_id": "de783f01b9074173a19addc4960de3eb",
+                  "status": "available",
+                  "label": "转人工"
+                },
+                {
+                  "kind": "refund_application",
+                  "ticket_type": "售后",
+                  "order_id": "1001",
+                  "product": "复古水洗牛仔夹克",
+                  "reasons": [
+                    "不喜欢/不合适",
+                    "尺码问题",
+                    "商品质量问题",
+                    "与描述不符",
+                    "其他"
+                  ],
+                  "description": "关于订单1001的复古水洗牛仔夹克：这个能退吗",
+                  "action_id": "203b3ca0ff1a453d8d1b548383cc68d7",
+                  "status": "available",
+                  "label": "提交演示退款申请"
+                }
+              ]
+            },
+            {
+              "type": "done"
+            }
+          ]
+        }
+      ],
+      "page_errors": [],
+      "state_after_restart": {
+        "intent": "退款退货",
+        "confidence": 0.9,
+        "route": "refund",
+        "status": "awaiting_order",
+        "raw_question": "这个能退吗",
+        "resolved_question": "这个能退吗",
+        "selected_order_id": null,
+        "node_trace": [
+          "resolve_reference",
+          "classify_intent",
+          "order_context"
+        ],
+        "gate_reason": "",
+        "expansion_queries": [],
+        "expansion_fallback": false,
+        "pending_interrupts": 1,
+        "user_messages": [
+          "这个能退吗"
+        ],
+        "usage_segments": []
+      },
+      "state_after_selection": {
+        "intent": "退款退货",
+        "confidence": 0.9,
+        "route": "refund",
+        "status": "completed",
+        "raw_question": "这个能退吗",
+        "resolved_question": "关于订单1001的复古水洗牛仔夹克：这个能退吗",
+        "selected_order_id": "1001",
+        "node_trace": [
+          "resolve_reference",
+          "classify_intent",
+          "order_context",
+          "await_order",
+          "read_order",
+          "expand_queries",
+          "retrieve_policy",
+          "evidence_gate",
+          "agent_decide",
+          "agent_tools",
+          "agent_answer",
+          "log_result"
+        ],
+        "gate_reason": "",
+        "expansion_queries": [
+          "关于订单1001的复古水洗牛仔夹克：这个能退吗",
+          "订单1001复古水洗牛仔夹克退货退款申请条件",
+          "订单1001复古水洗牛仔夹克退货限制及不支持退货的情形",
+          "订单1001复古水洗牛仔夹克退货退款办理流程及到账时效"
+        ],
+        "expansion_fallback": false,
+        "pending_interrupts": 0,
+        "user_messages": [
+          "这个能退吗"
+        ],
+        "usage_segments": [
+          {
+            "request_id": "a390d6a8c6f44d11ac727adf05ea05d9",
+            "budget": {
+              "token_limit": 12000,
+              "charged_tokens": 1163,
+              "tool_calls": 0,
+              "decision_calls": 0,
+              "max_tool_calls": 6,
+              "max_decisions": 10,
+              "deadline": 1792740571.9187326,
+              "actual_calls": 2,
+              "estimated_calls": 0
+            }
+          }
+        ]
+      },
+      "tickets_after_cancel": 0,
+      "tickets_after_confirm": 1,
+      "public_state": {
+        "status": "completed",
+        "selection": null,
+        "actions": [
+          {
+            "kind": "create_ticket",
+            "description": "订单1001（复古水洗牛仔夹克，199元）状态为已签收，签收时间2026-10-21 14:00，商品状态字段为空，因此无法判断是否仍满足无理由退货的\"收到时状态、不影响再次销售\"条件[2]。另外，7天无理由自签收起算[2]，按签收日期看时限已过，但若属于质量问题或描述不符，仍可提供订单号、收到时与当前状态照片及处理经过，由人工核实[1][8]。是否可退需以审核结果为准，客服不能预先承诺审批结果[2]。\n\n如需申请：打开「我的订单」→ 选择该订单 → 点击「申请售后」，填写原因并上传商品状态照片[6]；寄回前请拍好正反面、问题部位、吊牌配件及包装[10]。申请表是否提交由您自行决定。",
+            "ticket_type": "咨询",
+            "action_id": "304ce9e3e3be48a986ea35e29d898de8",
+            "status": "available",
+            "label": "建工单"
+          },
+          {
+            "kind": "handoff",
+            "description": "订单1001（复古水洗牛仔夹克，199元）状态为已签收，签收时间2026-10-21 14:00，商品状态字段为空，因此无法判断是否仍满足无理由退货的\"收到时状态、不影响再次销售\"条件[2]。另外，7天无理由自签收起算[2]，按签收日期看时限已过，但若属于质量问题或描述不符，仍可提供订单号、收到时与当前状态照片及处理经过，由人工核实[1][8]。是否可退需以审核结果为准，客服不能预先承诺审批结果[2]。\n\n如需申请：打开「我的订单」→ 选择该订单 → 点击「申请售后」，填写原因并上传商品状态照片[6]；寄回前请拍好正反面、问题部位、吊牌配件及包装[10]。申请表是否提交由您自行决定。",
+            "ticket_type": "咨询",
+            "action_id": "de783f01b9074173a19addc4960de3eb",
+            "status": "available",
+            "label": "转人工"
+          },
+          {
+            "kind": "refund_application",
+            "ticket_type": "售后",
+            "order_id": "1001",
+            "product": "复古水洗牛仔夹克",
+            "reasons": [
+              "不喜欢/不合适",
+              "尺码问题",
+              "商品质量问题",
+              "与描述不符",
+              "其他"
+            ],
+            "description": "演示退款申请（待审核，不执行真实退款）\n订单：1001\n商品：复古水洗牛仔夹克\n原因：尺码问题\n补充说明：\n原问题：关于订单1001的复古水洗牛仔夹克：这个能退吗",
+            "action_id": "203b3ca0ff1a453d8d1b548383cc68d7",
+            "status": "completed",
+            "reason": "尺码问题",
+            "note": "",
+            "result": "工单创建成功,工单号 T202610230001",
+            "label": "提交演示退款申请"
+          }
+        ]
+      },
+      "duplicate_status": 200,
+      "duplicate_result": {
+        "action_id": "203b3ca0ff1a453d8d1b548383cc68d7",
+        "status": "completed",
+        "result": "演示申请已提交，待审核；未执行真实退款。工单创建成功,工单号 T202610230001"
+      },
+      "tickets_after_duplicate": 1,
+      "passed": false,
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ '演示申请已提交，待审核；未执行真实退款。工单创建成功,工单号 T202610230001'\n- '工单创建成功,工单号 T202610230001'\n"
+    }
+  }
+}

@@ -27,12 +27,18 @@ def build_workflow(*, checkpointer, deps: WorkflowDeps):
     builder.add_edge(START, 'resolve_reference')
     builder.add_edge('resolve_reference', 'classify_intent')
     builder.add_conditional_edges('classify_intent', lambda state: state['route'], {
-        'knowledge': 'retrieve_knowledge', 'business': 'agent_decide', 'complaint': 'complaint_reply', 'chat': 'chat_reply'})
+        'knowledge': 'retrieve_knowledge', 'business': 'agent_decide', 'complaint': 'complaint_reply', 'chat': 'chat_reply', 'other': 'other_reply', 'refund':'order_context'})
+    builder.add_conditional_edges('order_context', lambda state: bool(state.get('selected_order_id')),
+                                  {True:'read_order', False:'await_order'})
+    builder.add_edge('await_order', 'read_order')
+    builder.add_edge('read_order', 'expand_queries')
+    builder.add_edge('expand_queries', 'retrieve_policy')
+    builder.add_edge('retrieve_policy', 'evidence_gate')
     builder.add_edge('retrieve_knowledge', 'evidence_gate')
     builder.add_conditional_edges('evidence_gate', lambda state: bool(state['gate_reason']), {True: 'refusal_reply', False: 'agent_decide'})
     builder.add_conditional_edges('agent_decide', lambda state: 'agent_tools' if state.get('pending_decision') and state['pending_decision'].get('tool_calls') else 'agent_answer')
     builder.add_conditional_edges('agent_tools', lambda state: 'agent_answer' if state.get('control') is not None else 'agent_decide')
-    for name in ('agent_answer', 'complaint_reply', 'chat_reply', 'refusal_reply'):
+    for name in ('agent_answer', 'complaint_reply', 'chat_reply', 'other_reply', 'refusal_reply'):
         builder.add_edge(name, 'log_result')
     builder.add_edge('log_result', END)
     return builder.compile(checkpointer=checkpointer)

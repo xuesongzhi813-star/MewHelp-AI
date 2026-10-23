@@ -26,6 +26,14 @@ def build_workflow_model(settings: Settings) -> ChatOpenAI:
     )
 
 
+def build_intent_model(settings: Settings) -> ChatOpenAI:
+    """Optional independent main classifier model, on the existing upstream only."""
+    return ChatOpenAI(model=settings.intent_model or settings.llm_model,
+        api_key=settings.llm_api_key, base_url=settings.llm_base_url,
+        temperature=0, extra_body=settings.llm_extra_body, max_retries=0,
+        timeout=settings.agent_turn_timeout)
+
+
 def build_extractor(settings: Settings) -> Runnable:
     """在 chat model 上挂结构化输出,用 function_calling 抽取售后信息。"""
     return build_chat_model(settings).with_structured_output(

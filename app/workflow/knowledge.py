@@ -5,17 +5,18 @@ from dataclasses import asdict
 
 from app.kb.answering import retrieval_rejection_reason
 from app.kb.contracts import Hit, QueryPlan, RetrievalResult
-from app.kb.query import build_query_plan
+from app.kb.query import build_understood_query_plan, build_query_plan
 from app.workflow.budget import BudgetExceeded
 
 
-async def retrieve_knowledge(question, *, gateway, budget, retrieve):
+async def retrieve_knowledge(question, *, gateway, budget, retrieve, already_understood=True):
     # Query rewriting is legacy synchronous code; its model adapter meters calls.
     remaining = budget.deadline - time.time()
     if remaining <= 0:
         raise BudgetExceeded('本轮时间预算用尽')
     async with asyncio.timeout(remaining):
-        plan = await asyncio.to_thread(build_query_plan, question, model=gateway.query_adapter(budget))
+        plan = (build_understood_query_plan(question) if already_understood else
+                await asyncio.to_thread(build_query_plan, question, model=gateway.query_adapter(budget)))
         if time.time() >= budget.deadline or budget.charged_tokens >= budget.token_limit:
             raise BudgetExceeded('本轮处理预算用尽')
         return await asyncio.to_thread(retrieve, question, plan=plan)

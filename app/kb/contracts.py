@@ -14,6 +14,7 @@ class RetrievalFilters(BaseModel):
     product_category: ProductCategory | None = None
     content_type: str | None = Field(default=None, max_length=32)
     include_general: bool = False
+    source_title: str | None = Field(default=None, max_length=255, pattern=r'^[^%_]+$')
 
 
 class QueryPlan(BaseModel):

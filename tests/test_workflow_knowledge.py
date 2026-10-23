@@ -24,7 +24,7 @@ def test_gate_nan_rejected():
     assert evidence_gate(result(float('nan')))
 
 
-async def test_query_model_usage_charged():
+async def test_understood_query_is_not_rewritten_again():
     provider = Provider()
     provider.parsed = {'normalized_query': '退货政策', 'intent': 'knowledge', 'reason': ''}
     budget = BudgetState()
@@ -32,7 +32,8 @@ async def test_query_model_usage_charged():
         assert plan.normalized_query == '退货政策'
         return result(.8)
     await retrieve_knowledge('退货政策', gateway=ModelGateway(provider), budget=budget, retrieve=retrieve)
-    assert budget.charged_tokens == 30
+    assert budget.charged_tokens == 0
+    assert provider.calls == []
 
 
 async def test_retrieval_service_failure_is_not_knowledge_gap():

@@ -16,4 +16,8 @@ def compile_filter(filters: RetrievalFilters) -> tuple[str, dict]:
     if filters.content_type is not None:
         clauses.append('content_type == {content_type}')
         values['content_type'] = filters.content_type
+    if filters.source_title is not None:
+        clauses.append('(category == {source_title} or category like {source_prefix})')
+        values['source_title'] = filters.source_title
+        values['source_prefix'] = filters.source_title + ' > %'
     return ' and '.join(clauses), values

@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict, StrictBool, field_validator
+from typing import Literal, get_args
 
 
 class ChatRequest(BaseModel):
@@ -26,6 +27,22 @@ class TicketActionResult(BaseModel):
     action_id: str
     status: str
     result: str
+
+
+class SelectOrderRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    session_id: str = Field(min_length=1, max_length=128)
+    selection_id: str = Field(min_length=1, max_length=64)
+    order_id: str = Field(min_length=1, max_length=64)
+
+
+RefundReason = Literal['不喜欢/不合适', '尺码问题', '商品质量问题', '与描述不符', '其他']
+REFUND_REASONS = get_args(RefundReason)
+
+
+class SubmitRefundRequest(ConfirmTicketRequest):
+    reason: RefundReason
+    note: str = Field(default='', max_length=500)
 
 
 class ExtractRequest(BaseModel):

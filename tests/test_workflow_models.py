@@ -1,5 +1,6 @@
 """Meter every LLM path; do not leak raw control data into final text."""
 import pytest
+import json
 from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage
 
 from app.workflow.budget import BudgetExceeded
@@ -11,7 +12,7 @@ class Provider:
     def __init__(self):
         self.calls = []
         self.schema = None
-        self.parsed = {"intent": "订单"}
+        self.parsed = {"intent": "订单", "confidence": .99}
         self.kwargs = {}
 
     def bind_tools(self, tools, **kwargs):
@@ -26,7 +27,7 @@ class Provider:
 
     def invoke(self, messages, **kwargs):
         self.calls.append(kwargs)
-        return {"raw": AIMessage(content="", usage_metadata={"input_tokens": 20, "output_tokens": 10, "total_tokens": 30}), "parsed": self.parsed, "parsing_error": None}
+        return {"raw": AIMessage(content=json.dumps(self.parsed, ensure_ascii=False), usage_metadata={"input_tokens": 20, "output_tokens": 10, "total_tokens": 30}), "parsed": self.parsed, "parsing_error": None}
 
     async def ainvoke(self, messages, **kwargs):
         return self.invoke(messages, **kwargs)
@@ -41,7 +42,7 @@ async def test_classification_and_query_usage_are_charged():
     provider = Provider()
     gateway = ModelGateway(provider)
     budget = BudgetState()
-    assert await gateway.classify([HumanMessage(content="查订单")], budget) == "订单"
+    assert (await gateway.classify([HumanMessage(content="查订单")], budget)).intent == "订单"
     provider.parsed = {"normalized_query": "退货政策", "intent": "knowledge", "reason": "保真"}
     result = gateway.query_adapter(budget).invoke([HumanMessage(content="退货政策")])
     assert result.normalized_query == "退货政策"
@@ -103,15 +104,31 @@ async def test_real_chatopenai_structured_path_passes_output_cap():
         requests.append(json.loads(request.content))
         return httpx.Response(200, json={
             "id": "test", "object": "chat.completion", "model": "test", "created": 0,
-            "choices": [{"index": 0, "finish_reason": "tool_calls", "message": {
-                "role": "assistant", "content": None,
-                "tool_calls": [{"id": "intent", "type": "function", "function": {
-                    "name": "IntentDecision", "arguments": '{"intent":"订单"}'}}]}}],
+            "choices": [{"index": 0, "finish_reason": "stop", "message": {
+                "role": "assistant", "content": '{"intent":"订单","confidence":0.99}'}}],
             "usage": {"prompt_tokens": 20, "completion_tokens": 10, "total_tokens": 30}})
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
         model = ChatOpenAI(model="test", api_key="sk-test", base_url="https://test.invalid/v1", http_async_client=client, max_retries=0)
         budget = BudgetState()
-        assert await ModelGateway(model).classify([HumanMessage(content="订单1001")], budget) == "订单"
+        assert (await ModelGateway(model).classify([HumanMessage(content="订单1001")], budget)).intent == "订单"
     assert requests[0].get("max_completion_tokens", requests[0].get("max_tokens")) == 128
     assert budget.charged_tokens == 30
+
+
+@pytest.mark.parametrize('content',[
+    '```json\n{"intent":"订单","confidence":0.9}\n```',
+    '{"intent":"订单","confidence":0.9}尾随解释',
+    '{"intent":"订单","confidence":0.9',
+    '{"intent":"订单","intent":"物流","confidence":0.9}',
+])
+async def test_json_mode_rejects_non_strict_raw_body_even_if_parser_returns_valid_object(content):
+    class LenientProvider(Provider):
+        def invoke(self,messages,**kwargs):
+            response=super().invoke(messages,**kwargs)
+            response['raw'].content=content
+            return response
+    budget=BudgetState()
+    with pytest.raises(ValueError):
+        await ModelGateway(LenientProvider()).classify([],budget)
+    assert budget.actual_calls==1

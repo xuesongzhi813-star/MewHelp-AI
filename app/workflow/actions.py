@@ -18,12 +18,13 @@ def create_ticket_once(description, ticket_type, *, conversation_id):
                                        'conversation_id': conversation_id})
 
 
-async def confirm_ticket(request, *, runtime, store, create_once=create_ticket_once):
+async def confirm_ticket(request, *, runtime, store, create_once=create_ticket_once,
+                         action_kind='create_ticket', prepare_action=None):
     async with runtime.locks.hold(request.session_id):
         state = await runtime.get_state(request.session_id)
         actions = state.get('actions', {})
         action = actions.get(request.action_id)
-        if not action or action.get('kind') != 'create_ticket':
+        if not action or action.get('kind') != action_kind:
             raise ActionError('此会话没有可确认的工单建议。', 404)
         if action['status'] == 'completed':
             return TicketActionResult(action_id=request.action_id, status='completed', result=action['result'])
@@ -32,6 +33,8 @@ async def confirm_ticket(request, *, runtime, store, create_once=create_ticket_o
         conversation_id = await asyncio.to_thread(store.get_or_create_conversation, request.session_id)
         if conversation_id != state.get('conversation_id'):
             raise ActionError('会话关联已变化，请重新提出工单诉求。')
+        if prepare_action is not None:
+            action = prepare_action(action)
         actions[request.action_id] = {**action, 'status': 'creating'}
         # A failed pre-write checkpoint must prevent invoking the business tool.
         try:

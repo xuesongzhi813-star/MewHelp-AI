@@ -17,7 +17,20 @@ class Gateway:
         self.inputs = []
 
     async def classify(self, messages, budget):
-        return self.intent
+        return {"intent": self.intent, "confidence": .99}
+
+    async def understand(self, messages, budget):
+        import json
+        question = json.loads(messages[-1].content)['question']
+        from app.workflow.understanding import order_ids
+        ids = order_ids(question)
+        return {'standalone_question': question, 'reference_status': 'unchanged',
+                'order_id': next(iter(ids)) if len(ids)==1 else None, 'source_message_id': None}
+
+    async def expand(self, messages, budget):
+        import json
+        question = json.loads(messages[-1].content)['question']
+        return {'queries':[question+'退货条件', question+'退货流程']}
 
     async def decide(self, messages, budget):
         budget.decision_calls += 1
@@ -39,9 +52,18 @@ def dependencies(gateway, *, evidence=None):
     seen, pool = [], []
     def retrieve(question, **kwargs):
         seen.append('retrieve')
-        return evidence if evidence is not None else result(.9)
+        value = evidence if evidence is not None else result(.9)
+        plan = kwargs.get('plan')
+        if plan is not None and plan.filters.source_title:
+            from dataclasses import replace
+            value = replace(value, strategy=kwargs['strategy'], hits=tuple(replace(hit, section_path=plan.filters.source_title+' > 条件') for hit in value.hits))
+        return value
     def execute(name, args, **kwargs):
         seen.append(name)
+        if name == 'query_order':
+            import json
+            from app.demo_orders import get_demo_order
+            return json.dumps(get_demo_order(args['order_id']))
         return '结果'
     def record(*args):
         pool.append(args)
@@ -53,22 +75,22 @@ async def invoke(gateway, *, evidence=None):
     deps, seen, pool = dependencies(gateway, evidence=evidence)
     graph = build_workflow(checkpointer=InMemorySaver(), deps=deps)
     state = await graph.ainvoke({'messages': [HumanMessage(content='订单1001能退吗')], 'raw_question': '订单1001能退吗',
-                                'conversation_id': 42, 'budget': new_budget().model_dump(), 'actions': {}, 'node_trace': []},
+                                'conversation_id': 42, 'request_id':'r', 'budget': new_budget().model_dump(), 'actions': {}, 'node_trace': []},
                                {'configurable': {'thread_id': 'test'}, 'recursion_limit': 64})
     return state, seen, pool
 
 
 async def test_policy_forces_retrieve_before_agent():
     state, seen, _ = await invoke(Gateway('退款退货'))
-    assert seen == ['retrieve']
+    assert seen == ['query_order'] + ['retrieve'] * 6
     trace = state['node_trace']
-    assert trace.index('retrieve_knowledge') < trace.index('evidence_gate') < trace.index('agent_decide')
+    assert trace.index('read_order') < trace.index('retrieve_policy') < trace.index('evidence_gate') < trace.index('agent_decide')
     assert trace[-1] == 'log_result'
 
 
 async def test_return_policy_can_then_query_order():
     state, seen, _ = await invoke(Gateway('退款退货', [[call('query_order', {'order_id':'1001'})], [call('respond_to_user')]]))
-    assert seen == ['retrieve', 'query_order']
+    assert seen == ['query_order'] + ['retrieve'] * 6
     assert state['budget']['tool_calls'] == 1
 
 
@@ -116,7 +138,7 @@ async def test_foreign_control_never_executes_ticket():
 async def test_preloaded_policy_evidence_is_not_retrieved_twice():
     gateway = Gateway('退款退货', [[call('query_faq', {'keyword':'退货流程'})], [call('respond_to_user')]])
     state, seen, _ = await invoke(gateway)
-    assert seen == ['retrieve']
+    assert seen == ['query_order'] + ['retrieve'] * 6
     assert state['retrieval']['hits'][0]['chunk_id'] == 1
 
 

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langchain_core.messages import HumanMessage
+from langgraph.types import Command
 
 from app.executor import execute_tool_result
 from app.kb.retriever import retrieve_result
@@ -72,7 +73,91 @@ class WorkflowRuntime:
         return (await self.graph().aget_state(self.config(session_id))).values
 
     async def save_actions(self, session_id, actions):
-        await self.graph().aupdate_state(self.config(session_id), {'actions': actions}, as_node='log_result')
+        graph = self.graph()
+        snapshot = await graph.aget_state(self.config(session_id))
+        if snapshot.interrupts:
+            # Command(update) keeps the native waiter paused; no fabricated completion.
+            await graph.ainvoke(Command(update={'actions': actions}), self.config(session_id))
+        else:
+            await graph.aupdate_state(self.config(session_id), {'actions': actions}, as_node='log_result')
+
+    async def public_session_state(self, session_id):
+        async with self.locks.hold(session_id):
+            snapshot = await self.graph().aget_state(self.config(session_id))
+            state = snapshot.values
+            selection = state.get('selection')
+            visible = None
+            if selection and snapshot.interrupts and selection['status'] == 'available':
+                visible = snapshot.interrupts[0].value
+            return {'status': state.get('status', 'empty'), 'selection': visible,
+                    'actions': self._action_items(state, all_actions=True)}
+
+    def _action_items(self, state, *, all_actions=False):
+        labels = {'handoff':'转人工', 'create_ticket':'建工单', 'refund_application':'提交演示退款申请'}
+        actions = state.get('actions', {})
+        ids = list(actions) if all_actions else state.get('turn_action_ids', [])
+        return [{**actions[key], 'label':labels[actions[key]['kind']]} for key in ids if key in actions]
+
+    def _check_selection(self, snapshot, request):
+        from app.workflow.actions import ActionError
+        state = snapshot.values
+        selection = state.get('selection')
+        if (not snapshot.interrupts or not selection or selection['status'] != 'available'
+                or selection['selection_id'] != request.selection_id):
+            raise ActionError('此订单选择已处理或失效，请查看最新消息。', 409)
+        if request.order_id not in {row['order_id'] for row in selection['candidates']}:
+            raise ActionError('该订单不在可选列表内。', 422)
+        if snapshot.interrupts[0].value.get('selection_id') != request.selection_id:
+            raise ActionError('待处理订单选择已变化。', 409)
+        return state
+
+    async def validate_order_selection(self, request):
+        async with self.locks.hold(request.session_id):
+            snapshot = await self.graph().aget_state(self.config(request.session_id))
+            self._check_selection(snapshot, request)
+
+    async def stream_order_selection(self, request, *, model):
+        from app.workflow.actions import ActionError
+        async with self.locks.hold(request.session_id):
+            graph = self.graph(model)
+            request_id = uuid.uuid4().hex
+            started = False
+            completed = False
+            try:
+                snapshot = await graph.aget_state(self.config(request.session_id))
+                state = self._check_selection(snapshot, request)
+                old_ids = {message.id for message in state.get('messages', [])}
+                budget = new_budget()
+                data = Command(resume={'selection_id':request.selection_id, 'order_id':request.order_id},
+                    update={'budget':budget.model_dump(), 'request_id':request_id, 'status':'running',
+                            'continuation_of':state['request_id'],
+                            'usage_segments':[*state.get('usage_segments', []),
+                                              {'request_id':state['request_id'], 'budget':state['budget']}]})
+                started = True
+                async with asyncio.timeout(max(.001, budget.deadline-time.time())):
+                    async with aclosing(graph.astream(data, self.config(request.session_id), stream_mode=['custom','updates'])) as stream:
+                        async for kind, event in stream:
+                            if kind == 'custom':
+                                yield event
+                final = (await graph.aget_state(self.config(request.session_id))).values
+                for message in final.get('messages', []):
+                    if message.id not in old_ids:
+                        await asyncio.to_thread(self.store.append_message, request.session_id, message)
+                completed = True
+                items = self._action_items(final)
+                if items:
+                    yield {'type':'actions', 'items':items}
+                yield {'type':'done'}
+            except asyncio.CancelledError:
+                raise
+            except ActionError as exc:
+                yield {'type':'error', 'message':str(exc)}
+            except Exception as exc:
+                logger.warning('workflow resume failed request=%s exception=%s', request_id, type(exc).__name__)
+                yield {'type':'error', 'message':'订单处理未完成，请重新发起请求或联系人工客服。'}
+            finally:
+                if started and not completed:
+                    await asyncio.shield(self._interrupt(request.session_id, request_id))
 
     async def _interrupt(self, session_id, request_id):
         state = await self.get_state(session_id)
@@ -107,18 +192,25 @@ class WorkflowRuntime:
                         'intent': '', 'route': '', 'retrieval': None, 'gate_reason': '', 'budget': budget.model_dump(),
                         'status': 'running', 'pending_decision': None, 'control': None,
                         'actions': old.get('actions', {}), 'turn_action_ids': [], 'node_trace': [], 'final_text': ''}
+                data.update(confidence=0.0, understanding={}, selected_order_id=None, order=None, selection=None,
+                            expansion_queries=[], expansion_fallback=False, continuation_of=None, usage_segments=[])
                 graph = self.graph(model)
                 async with asyncio.timeout(max(0.001, budget.deadline - time.time())):
-                    async with aclosing(graph.astream(data, self.config(session_id), stream_mode='custom')) as stream:
-                        async for event in stream:
-                            yield event
-                state = await self.get_state(session_id)
+                    async with aclosing(graph.astream(data, self.config(session_id), stream_mode=['custom','updates'])) as stream:
+                        async for kind, event in stream:
+                            if kind == 'custom':
+                                yield event
+                snapshot = await graph.aget_state(self.config(session_id))
+                state = snapshot.values
                 for message in state.get('messages', []):
                     if message.id not in old_ids and message.id != human.id:
                         await asyncio.to_thread(self.store.append_message, session_id, message)
                 completed = True
-                items = [{**state['actions'][key], 'label': {'handoff': '转人工', 'create_ticket': '建工单'}[state['actions'][key]['kind']]}
-                         for key in state.get('turn_action_ids', [])]
+                if snapshot.interrupts:
+                    yield snapshot.interrupts[0].value
+                    yield {'type':'done'}
+                    return
+                items = self._action_items(state)
                 if items:
                     yield {'type': 'actions', 'items': items}
                 yield {'type': 'done'}
