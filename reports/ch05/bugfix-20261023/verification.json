@@ -1,0 +1,59 @@
+{
+  "date": "2026-10-23",
+  "search": [
+    {
+      "strategy": "bm25",
+      "http": 200,
+      "hits": 10
+    },
+    {
+      "strategy": "dense",
+      "http": 200,
+      "hits": 10
+    },
+    {
+      "strategy": "hybrid",
+      "http": 200,
+      "hits": 10
+    },
+    {
+      "strategy": "hybrid_rerank",
+      "http": 200,
+      "hits": 10
+    }
+  ],
+  "chat": {
+    "citations": true,
+    "done": true,
+    "token_frames": 293
+  },
+  "consistency": {
+    "status": "consistent",
+    "mysql_total": 182,
+    "eligible_total": 125,
+    "legacy_excluded": 57,
+    "eligible_pending": 0,
+    "eligible_done": 125,
+    "target_count": 125,
+    "missing_in_milvus": [],
+    "orphan_in_milvus": [],
+    "stale_ids": []
+  },
+  "profile": {
+    "file": "log/ch05/calibration-20261023-final.json",
+    "identity_match": true,
+    "threshold": 0.25
+  },
+  "full_tests": {
+    "passed": 637,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 35.62
+  },
+  "vectorize_pending_endpoint": {
+    "processed": 0,
+    "failed": 0,
+    "pending_left": 0
+  },
+  "manual_ingest_verification": "isolated API regression, no extra real knowledge inserted"
+}

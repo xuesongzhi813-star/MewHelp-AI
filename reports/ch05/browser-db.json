@@ -1,0 +1,44 @@
+[
+  {
+    "session_id": "bc263f5a",
+    "phase": "complaint_unselected",
+    "ticket_count": 0,
+    "ticket_numbers": []
+  },
+  {
+    "session_id": "bc263f5a",
+    "phase": "continued_chat_handoff_cancelled_ticket",
+    "ticket_count": 0,
+    "ticket_numbers": []
+  },
+  {
+    "session_id": "bc263f5a",
+    "phase": "both_orders_confirmed",
+    "ticket_count": 2,
+    "ticket_numbers": [
+      "T202610220001",
+      "T202610220002"
+    ]
+  },
+  {
+    "session_id": "bc263f5a",
+    "phase": "after_duplicate_confirmation",
+    "ticket_count": 2,
+    "ticket_numbers": [
+      "T202610220001",
+      "T202610220002"
+    ]
+  },
+  {
+    "session_id": "36eca4d2",
+    "phase": "resume_before_buttons",
+    "ticket_count": 0,
+    "ticket_numbers": []
+  },
+  {
+    "session_id": "cddf458e",
+    "phase": "final_handoff_cancel_no_write",
+    "ticket_count": 0,
+    "ticket_numbers": []
+  }
+]

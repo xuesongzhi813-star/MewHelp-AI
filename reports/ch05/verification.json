@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-22",
+  "full_suite": {
+    "passed": 630,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 35.79
+  },
+  "acceptance_cases": 8,
+  "intents": 28,
+  "agent": 8,
+  "restart_passed": true,
+  "secret_scan_passed": true,
+  "source_bytes_preserved": true,
+  "checked_text_files": 63,
+  "policy_tokens": 5800,
+  "policy_first_token_seconds": 10.62337149999803,
+  "policy_last_token_seconds": 11.645864100006293
+}

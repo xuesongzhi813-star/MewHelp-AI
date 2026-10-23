@@ -298,6 +298,7 @@
 </footer>
 
 <script src="/static/chat-citations.js"></script>
+<script src="/static/chat-actions.js"></script>
 <script>
 (() => {
   const chatArea = document.getElementById("chatArea");
@@ -371,6 +372,11 @@
     badges.className = "tool-badges";
     const body = document.createElement("span");
     const responseView = ChatResponseView.create({bubble, body, sessionId});
+    const turnSessionId = sessionId;
+    const actionView = createActionView({container: bubble, sessionId: turnSessionId, appendMessage: text => {
+      if (sessionId !== turnSessionId) return;
+      addRow('ai', '客服小猫').bubble.textContent = text;
+    }});
     let terminal = false;
     const typing = document.createElement("span");
     typing.className = "typing";
@@ -410,6 +416,8 @@
             scrollBottom();
           } else if (payload.type === "citations") {
             responseView.setCitations(payload.items);
+          } else if (payload.type === "actions") {
+            actionView.setActions(payload.items);
           } else if (payload.type === "tool") {
             if (payload.phase === "start") {
               typing.remove();
@@ -435,7 +443,7 @@
               }
             }
           } else if (payload.type === "error") {
-            terminal = true; responseView.fail();
+            terminal = true; responseView.fail(); actionView.fail();
             typing.remove(); cursor.remove();
             /* 评审 N-1:error 帧是所有未定格徽章的终止态 */
             badges.querySelectorAll(".tool-badge.running").forEach(b => {
@@ -454,7 +462,7 @@
             body.textContent = "⚠ 生成失败:" + payload.message;
             scrollBottom();
           } else if (payload.type === "done") {
-            terminal = true; responseView.complete();
+            terminal = true; responseView.complete(); actionView.complete();
             cursor.remove();
           }
         }
@@ -467,7 +475,7 @@
         body.textContent = "(空回复)";
       }
     } catch (err) {
-      responseView.fail();
+      responseView.fail(); actionView.fail();
       typing.remove(); cursor.remove();
       badges.querySelectorAll(".tool-badge.running").forEach(b => {
         b.classList.remove("running");

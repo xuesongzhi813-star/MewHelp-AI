@@ -1,0 +1,2498 @@
+[
+  {
+    "case": "policy",
+    "session_id": "ch05-accept-20261022-r3-policy",
+    "question": "你们家的退货流程是什么？",
+    "events": [
+      {
+        "type": "citations",
+        "items": [
+          {
+            "number": 1,
+            "chunk_id": 24839,
+            "section_path": "MewHelp 古着退货政策 > 退货完整流程",
+            "text": "退货分为申请、审核、寄回、入库验收和退款处理几个环节。先在「我的订单」选择商品，点击「申请售后」并填写原因、商品照片及联系方式；审核通过后，按订单售后页面确认的收件地址寄回，填写退回物流单号。仓库验收后按审核结果办理退款。申请成功、审核通过和退款到账是不同状态，不把其中某一步当作最终到账。",
+            "original_url": "/kb?chunk_id=24839"
+          },
+          {
+            "number": 2,
+            "chunk_id": 22710,
+            "section_path": "MewHelp 古着退货政策 > 退货申请步骤",
+            "text": "打开「我的订单」，选择对应订单，点击「申请售后」，填写原因并提供商品状态照片。审核通过后按订单页面确认的地址寄回并填写物流单号。不要自行寄往未确认地址。",
+            "original_url": "/kb?chunk_id=22710"
+          },
+          {
+            "number": 3,
+            "chunk_id": 22715,
+            "section_path": "MewHelp 古着退货政策 > 退款路径与到账",
+            "text": "核验通过后的退款按原支付路径办理。**禁止承诺：不保证具体到账日期、天数或几个工作日到账。** 实际到账取决于支付机构处理进度；发起退款、审核、仓库验收和到账不是同一个时间点。",
+            "original_url": "/kb?chunk_id=22715"
+          },
+          {
+            "number": 4,
+            "chunk_id": 24844,
+            "section_path": "MewHelp 古着退货政策 > 部分商品退货",
+            "text": "同一订单只退部分商品时，在售后申请中准确选择商品和数量，保留要退商品的照片与寄件凭证。退款按实际支付、相关优惠和运费规则及审核结果处理，具体金额以订单页面核算为准；不按商品划线原价直接相加，也不擅自保证仍满足原包邮或满减条件。",
+            "original_url": "/kb?chunk_id=24844"
+          },
+          {
+            "number": 5,
+            "chunk_id": 24841,
+            "section_path": "MewHelp 古着退货政策 > 寄回前要准备什么",
+            "text": "寄回前拍摄商品正反面、问题部位、吊牌配件及包装情况，保留订单和审核记录。按原订单核对件数，商品与配件一并整理。收件信息以本次已确认的售后页面为准，不直接照抄快递外箱上的原发件地址。",
+            "original_url": "/kb?chunk_id=24841"
+          },
+          {
+            "number": 6,
+            "chunk_id": 22712,
+            "section_path": "MewHelp 古着退货政策 > 质量问题与描述不符",
+            "text": "签收后7天内联系客服，提供订单号及问题照片。核实后可协商换货、维修或退款；质量问题或发错货产生的相关运费由商家承担。是否成立由证据及售后审核决定，客服不能预先保证赔付。",
+            "original_url": "/kb?chunk_id=22712"
+          },
+          {
+            "number": 7,
+            "chunk_id": 22708,
+            "section_path": "MewHelp 古着退货政策 > 七天无理由的起点",
+            "text": "自收到商品之日起7天内，商品保持收到时状态、不影响再次销售，可在订单中申请无理由退货。7天从签收起算，不从下单或发货起算。申请需经审核；客服不能直接承诺审批结果。",
+            "original_url": "/kb?chunk_id=22708"
+          },
+          {
+            "number": 8,
+            "chunk_id": 24840,
+            "section_path": "MewHelp 古着退货政策 > 申请入口找不到",
+            "text": "先确认登录的是下单账户、订单号是否正确，以及该商品当前是否已进入可申请的售后状态。可以保留订单详情与页面提示截图，通过客服入口申请人工核实；不要重复下单或把账号密码发给客服。入口显示异常不代表已经批准或拒绝退货。",
+            "original_url": "/kb?chunk_id=24840"
+          },
+          {
+            "number": 9,
+            "chunk_id": 24845,
+            "section_path": "MewHelp 古着退货政策 > 已穿洗或改装后申请售后",
+            "text": "收到后穿着使用、洗涤或自行改装会影响无理由退货的完好条件。若用户认为存在质量或描述问题，仍可提供订单、收到时与当前状态照片及处理经过，由人工核实；不能简单把任何争议都当作可无条件退货，也不把无理由条件解释成完全没有售后渠道。",
+            "original_url": "/kb?chunk_id=24845"
+          },
+          {
+            "number": 10,
+            "chunk_id": 22709,
+            "section_path": "MewHelp 古着退货政策 > 古着商品完好条件",
+            "text": "保留收到时的吊牌、标识、包装及随附配件；不得在收到后穿着使用、洗涤、损坏或改装。下单前已披露的古着磨白、褪色、起球等应结合商品详情核对，不能把二手商品描述成全新无瑕。",
+            "original_url": "/kb?chunk_id=22709"
+          }
+        ]
+      },
+      {
+        "type": "token",
+        "content": "退货"
+      },
+      {
+        "type": "token",
+        "content": "流程"
+      },
+      {
+        "type": "token",
+        "content": "分为"
+      },
+      {
+        "type": "token",
+        "content": "申请"
+      },
+      {
+        "type": "token",
+        "content": "、"
+      },
+      {
+        "type": "token",
+        "content": "审核"
+      },
+      {
+        "type": "token",
+        "content": "、"
+      },
+      {
+        "type": "token",
+        "content": "寄"
+      },
+      {
+        "type": "token",
+        "content": "回"
+      },
+      {
+        "type": "token",
+        "content": "、"
+      },
+      {
+        "type": "token",
+        "content": "入库"
+      },
+      {
+        "type": "token",
+        "content": "验收"
+      },
+      {
+        "type": "token",
+        "content": "和"
+      },
+      {
+        "type": "token",
+        "content": "退款"
+      },
+      {
+        "type": "token",
+        "content": "处理"
+      },
+      {
+        "type": "token",
+        "content": "几个"
+      },
+      {
+        "type": "token",
+        "content": "环节"
+      },
+      {
+        "type": "token",
+        "content": "：\n\n"
+      },
+      {
+        "type": "token",
+        "content": "1"
+      },
+      {
+        "type": "token",
+        "content": "."
+      },
+      {
+        "type": "token",
+        "content": " **"
+      },
+      {
+        "type": "token",
+        "content": "申请"
+      },
+      {
+        "type": "token",
+        "content": "**"
+      },
+      {
+        "type": "token",
+        "content": "："
+      },
+      {
+        "type": "token",
+        "content": "打开"
+      },
+      {
+        "type": "token",
+        "content": "「"
+      },
+      {
+        "type": "token",
+        "content": "我的"
+      },
+      {
+        "type": "token",
+        "content": "订单"
+      },
+      {
+        "type": "token",
+        "content": "」，"
+      },
+      {
+        "type": "token",
+        "content": "选择"
+      },
+      {
+        "type": "token",
+        "content": "对应"
+      },
+      {
+        "type": "token",
+        "content": "订单"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "点击"
+      },
+      {
+        "type": "token",
+        "content": "「"
+      },
+      {
+        "type": "token",
+        "content": "申请"
+      },
+      {
+        "type": "token",
+        "content": "售后"
+      },
+      {
+        "type": "token",
+        "content": "」，"
+      },
+      {
+        "type": "token",
+        "content": "填写"
+      },
+      {
+        "type": "token",
+        "content": "退货"
+      },
+      {
+        "type": "token",
+        "content": "原因"
+      },
+      {
+        "type": "token",
+        "content": "、"
+      },
+      {
+        "type": "token",
+        "content": "商品"
+      },
+      {
+        "type": "token",
+        "content": "照片"
+      },
+      {
+        "type": "token",
+        "content": "及"
+      },
+      {
+        "type": "token",
+        "content": "联系方式"
+      },
+      {
+        "type": "token",
+        "content": "["
+      },
+      {
+        "type": "token",
+        "content": "1"
+      },
+      {
+        "type": "token",
+        "content": "]["
+      },
+      {
+        "type": "token",
+        "content": "2"
+      },
+      {
+        "type": "token",
+        "content": "]"
+      },
+      {
+        "type": "token",
+        "content": "。\n"
+      },
+      {
+        "type": "token",
+        "content": "2"
+      },
+      {
+        "type": "token",
+        "content": "."
+      },
+      {
+        "type": "token",
+        "content": " **"
+      },
+      {
+        "type": "token",
+        "content": "审核"
+      },
+      {
+        "type": "token",
+        "content": "**"
+      },
+      {
+        "type": "token",
+        "content": "："
+      },
+      {
+        "type": "token",
+        "content": "提交"
+      },
+      {
+        "type": "token",
+        "content": "后"
+      },
+      {
+        "type": "token",
+        "content": "等待"
+      },
+      {
+        "type": "token",
+        "content": "审核"
+      },
+      {
+        "type": "token",
+        "content": "；"
+      },
+      {
+        "type": "token",
+        "content": "客服"
+      },
+      {
+        "type": "token",
+        "content": "不能"
+      },
+      {
+        "type": "token",
+        "content": "预先"
+      },
+      {
+        "type": "token",
+        "content": "承诺"
+      },
+      {
+        "type": "token",
+        "content": "审批"
+      },
+      {
+        "type": "token",
+        "content": "结果"
+      },
+      {
+        "type": "token",
+        "content": "["
+      },
+      {
+        "type": "token",
+        "content": "7"
+      },
+      {
+        "type": "token",
+        "content": "]"
+      },
+      {
+        "type": "token",
+        "content": "。\n"
+      },
+      {
+        "type": "token",
+        "content": "3"
+      },
+      {
+        "type": "token",
+        "content": "."
+      },
+      {
+        "type": "token",
+        "content": " **"
+      },
+      {
+        "type": "token",
+        "content": "寄"
+      },
+      {
+        "type": "token",
+        "content": "回"
+      },
+      {
+        "type": "token",
+        "content": "**"
+      },
+      {
+        "type": "token",
+        "content": "："
+      },
+      {
+        "type": "token",
+        "content": "审核"
+      },
+      {
+        "type": "token",
+        "content": "通过"
+      },
+      {
+        "type": "token",
+        "content": "后"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "按"
+      },
+      {
+        "type": "token",
+        "content": "订单"
+      },
+      {
+        "type": "token",
+        "content": "售后"
+      },
+      {
+        "type": "token",
+        "content": "页面"
+      },
+      {
+        "type": "token",
+        "content": "确认"
+      },
+      {
+        "type": "token",
+        "content": "的"
+      },
+      {
+        "type": "token",
+        "content": "收"
+      },
+      {
+        "type": "token",
+        "content": "件"
+      },
+      {
+        "type": "token",
+        "content": "地址"
+      },
+      {
+        "type": "token",
+        "content": "寄"
+      },
+      {
+        "type": "token",
+        "content": "回"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "并"
+      },
+      {
+        "type": "token",
+        "content": "填写"
+      },
+      {
+        "type": "token",
+        "content": "退回"
+      },
+      {
+        "type": "token",
+        "content": "物流"
+      },
+      {
+        "type": "token",
+        "content": "单"
+      },
+      {
+        "type": "token",
+        "content": "号"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "不要"
+      },
+      {
+        "type": "token",
+        "content": "自行"
+      },
+      {
+        "type": "token",
+        "content": "寄"
+      },
+      {
+        "type": "token",
+        "content": "往"
+      },
+      {
+        "type": "token",
+        "content": "未"
+      },
+      {
+        "type": "token",
+        "content": "确认"
+      },
+      {
+        "type": "token",
+        "content": "地址"
+      },
+      {
+        "type": "token",
+        "content": "["
+      },
+      {
+        "type": "token",
+        "content": "1"
+      },
+      {
+        "type": "token",
+        "content": "]["
+      },
+      {
+        "type": "token",
+        "content": "2"
+      },
+      {
+        "type": "token",
+        "content": "]"
+      },
+      {
+        "type": "token",
+        "content": "。\n"
+      },
+      {
+        "type": "token",
+        "content": "4"
+      },
+      {
+        "type": "token",
+        "content": "."
+      },
+      {
+        "type": "token",
+        "content": " **"
+      },
+      {
+        "type": "token",
+        "content": "验收"
+      },
+      {
+        "type": "token",
+        "content": "与"
+      },
+      {
+        "type": "token",
+        "content": "退款"
+      },
+      {
+        "type": "token",
+        "content": "**"
+      },
+      {
+        "type": "token",
+        "content": "："
+      },
+      {
+        "type": "token",
+        "content": "仓库"
+      },
+      {
+        "type": "token",
+        "content": "验收"
+      },
+      {
+        "type": "token",
+        "content": "后"
+      },
+      {
+        "type": "token",
+        "content": "按"
+      },
+      {
+        "type": "token",
+        "content": "审核"
+      },
+      {
+        "type": "token",
+        "content": "结果"
+      },
+      {
+        "type": "token",
+        "content": "办理"
+      },
+      {
+        "type": "token",
+        "content": "退款"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "退款"
+      },
+      {
+        "type": "token",
+        "content": "按"
+      },
+      {
+        "type": "token",
+        "content": "原"
+      },
+      {
+        "type": "token",
+        "content": "支付"
+      },
+      {
+        "type": "token",
+        "content": "路径"
+      },
+      {
+        "type": "token",
+        "content": "办理"
+      },
+      {
+        "type": "token",
+        "content": "["
+      },
+      {
+        "type": "token",
+        "content": "1"
+      },
+      {
+        "type": "token",
+        "content": "]["
+      },
+      {
+        "type": "token",
+        "content": "3"
+      },
+      {
+        "type": "token",
+        "content": "]。\n\n"
+      },
+      {
+        "type": "token",
+        "content": "几点"
+      },
+      {
+        "type": "token",
+        "content": "提醒"
+      },
+      {
+        "type": "token",
+        "content": "：\n"
+      },
+      {
+        "type": "token",
+        "content": "-"
+      },
+      {
+        "type": "token",
+        "content": " "
+      },
+      {
+        "type": "token",
+        "content": "申请"
+      },
+      {
+        "type": "token",
+        "content": "成功"
+      },
+      {
+        "type": "token",
+        "content": "、"
+      },
+      {
+        "type": "token",
+        "content": "审核"
+      },
+      {
+        "type": "token",
+        "content": "通过"
+      },
+      {
+        "type": "token",
+        "content": "和"
+      },
+      {
+        "type": "token",
+        "content": "退款"
+      },
+      {
+        "type": "token",
+        "content": "到"
+      },
+      {
+        "type": "token",
+        "content": "账"
+      },
+      {
+        "type": "token",
+        "content": "是"
+      },
+      {
+        "type": "token",
+        "content": "不同"
+      },
+      {
+        "type": "token",
+        "content": "状态"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "实际"
+      },
+      {
+        "type": "token",
+        "content": "到"
+      },
+      {
+        "type": "token",
+        "content": "账"
+      },
+      {
+        "type": "token",
+        "content": "时间"
+      },
+      {
+        "type": "token",
+        "content": "取决于"
+      },
+      {
+        "type": "token",
+        "content": "支付"
+      },
+      {
+        "type": "token",
+        "content": "机构"
+      },
+      {
+        "type": "token",
+        "content": "处理"
+      },
+      {
+        "type": "token",
+        "content": "进度"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "不能"
+      },
+      {
+        "type": "token",
+        "content": "保证"
+      },
+      {
+        "type": "token",
+        "content": "具体"
+      },
+      {
+        "type": "token",
+        "content": "天数"
+      },
+      {
+        "type": "token",
+        "content": "["
+      },
+      {
+        "type": "token",
+        "content": "1"
+      },
+      {
+        "type": "token",
+        "content": "]["
+      },
+      {
+        "type": "token",
+        "content": "3"
+      },
+      {
+        "type": "token",
+        "content": "]"
+      },
+      {
+        "type": "token",
+        "content": "。\n"
+      },
+      {
+        "type": "token",
+        "content": "-"
+      },
+      {
+        "type": "token",
+        "content": " "
+      },
+      {
+        "type": "token",
+        "content": "7"
+      },
+      {
+        "type": "token",
+        "content": "天"
+      },
+      {
+        "type": "token",
+        "content": "无"
+      },
+      {
+        "type": "token",
+        "content": "理由"
+      },
+      {
+        "type": "token",
+        "content": "从"
+      },
+      {
+        "type": "token",
+        "content": "签"
+      },
+      {
+        "type": "token",
+        "content": "收"
+      },
+      {
+        "type": "token",
+        "content": "之日起"
+      },
+      {
+        "type": "token",
+        "content": "算"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "商品"
+      },
+      {
+        "type": "token",
+        "content": "需"
+      },
+      {
+        "type": "token",
+        "content": "保持"
+      },
+      {
+        "type": "token",
+        "content": "收到"
+      },
+      {
+        "type": "token",
+        "content": "时"
+      },
+      {
+        "type": "token",
+        "content": "状态"
+      },
+      {
+        "type": "token",
+        "content": "、"
+      },
+      {
+        "type": "token",
+        "content": "不影响"
+      },
+      {
+        "type": "token",
+        "content": "再次"
+      },
+      {
+        "type": "token",
+        "content": "销售"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "且"
+      },
+      {
+        "type": "token",
+        "content": "需"
+      },
+      {
+        "type": "token",
+        "content": "经"
+      },
+      {
+        "type": "token",
+        "content": "审核"
+      },
+      {
+        "type": "token",
+        "content": "["
+      },
+      {
+        "type": "token",
+        "content": "7"
+      },
+      {
+        "type": "token",
+        "content": "]"
+      },
+      {
+        "type": "token",
+        "content": "。\n"
+      },
+      {
+        "type": "token",
+        "content": "-"
+      },
+      {
+        "type": "token",
+        "content": " "
+      },
+      {
+        "type": "token",
+        "content": "寄"
+      },
+      {
+        "type": "token",
+        "content": "回"
+      },
+      {
+        "type": "token",
+        "content": "前"
+      },
+      {
+        "type": "token",
+        "content": "建议"
+      },
+      {
+        "type": "token",
+        "content": "拍摄"
+      },
+      {
+        "type": "token",
+        "content": "商品"
+      },
+      {
+        "type": "token",
+        "content": "正"
+      },
+      {
+        "type": "token",
+        "content": "反面"
+      },
+      {
+        "type": "token",
+        "content": "、"
+      },
+      {
+        "type": "token",
+        "content": "问题"
+      },
+      {
+        "type": "token",
+        "content": "部位"
+      },
+      {
+        "type": "token",
+        "content": "、"
+      },
+      {
+        "type": "token",
+        "content": "吊"
+      },
+      {
+        "type": "token",
+        "content": "牌"
+      },
+      {
+        "type": "token",
+        "content": "配件"
+      },
+      {
+        "type": "token",
+        "content": "及"
+      },
+      {
+        "type": "token",
+        "content": "包装"
+      },
+      {
+        "type": "token",
+        "content": "情况"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "并按"
+      },
+      {
+        "type": "token",
+        "content": "原"
+      },
+      {
+        "type": "token",
+        "content": "订单"
+      },
+      {
+        "type": "token",
+        "content": "核对"
+      },
+      {
+        "type": "token",
+        "content": "件"
+      },
+      {
+        "type": "token",
+        "content": "数"
+      },
+      {
+        "type": "token",
+        "content": "["
+      },
+      {
+        "type": "token",
+        "content": "5"
+      },
+      {
+        "type": "token",
+        "content": "]"
+      },
+      {
+        "type": "token",
+        "content": "。\n"
+      },
+      {
+        "type": "token",
+        "content": "-"
+      },
+      {
+        "type": "token",
+        "content": " "
+      },
+      {
+        "type": "token",
+        "content": "部分"
+      },
+      {
+        "type": "token",
+        "content": "商品"
+      },
+      {
+        "type": "token",
+        "content": "退货"
+      },
+      {
+        "type": "token",
+        "content": "时"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "请在"
+      },
+      {
+        "type": "token",
+        "content": "申请"
+      },
+      {
+        "type": "token",
+        "content": "中"
+      },
+      {
+        "type": "token",
+        "content": "准确"
+      },
+      {
+        "type": "token",
+        "content": "选择"
+      },
+      {
+        "type": "token",
+        "content": "商品"
+      },
+      {
+        "type": "token",
+        "content": "和"
+      },
+      {
+        "type": "token",
+        "content": "数量"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "退款"
+      },
+      {
+        "type": "token",
+        "content": "金额"
+      },
+      {
+        "type": "token",
+        "content": "以"
+      },
+      {
+        "type": "token",
+        "content": "订单"
+      },
+      {
+        "type": "token",
+        "content": "页面"
+      },
+      {
+        "type": "token",
+        "content": "核算"
+      },
+      {
+        "type": "token",
+        "content": "为准"
+      },
+      {
+        "type": "token",
+        "content": "["
+      },
+      {
+        "type": "token",
+        "content": "4"
+      },
+      {
+        "type": "token",
+        "content": "]。\n\n"
+      },
+      {
+        "type": "token",
+        "content": "如需"
+      },
+      {
+        "type": "token",
+        "content": "查询"
+      },
+      {
+        "type": "token",
+        "content": "订单"
+      },
+      {
+        "type": "token",
+        "content": "状态"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "可以"
+      },
+      {
+        "type": "token",
+        "content": "告诉我"
+      },
+      {
+        "type": "token",
+        "content": "订单"
+      },
+      {
+        "type": "token",
+        "content": "号"
+      },
+      {
+        "type": "token",
+        "content": "。"
+      },
+      {
+        "type": "done"
+      }
+    ],
+    "first_token_seconds": 10.62337149999803,
+    "last_token_seconds": 11.645864100006293,
+    "total_seconds": 11.744412900006864,
+    "node_trace": [
+      "resolve_reference",
+      "classify_intent",
+      "retrieve_knowledge",
+      "evidence_gate",
+      "agent_decide",
+      "agent_tools",
+      "agent_answer",
+      "log_result"
+    ],
+    "intent": "退款退货",
+    "budget": {
+      "token_limit": 12000,
+      "charged_tokens": 5800,
+      "tool_calls": 0,
+      "decision_calls": 1,
+      "max_tool_calls": 6,
+      "max_decisions": 10,
+      "deadline": 1792656442.147409,
+      "actual_calls": 4,
+      "estimated_calls": 0
+    },
+    "gate_reason": ""
+  },
+  {
+    "case": "logistics",
+    "session_id": "ch05-accept-20261022-r3-logistics",
+    "question": "订单1001的物流到哪了？",
+    "events": [
+      {
+        "type": "tool",
+        "name": "query_logistics",
+        "phase": "start"
+      },
+      {
+        "type": "tool",
+        "name": "query_logistics",
+        "phase": "end"
+      },
+      {
+        "type": "token",
+        "content": "订单"
+      },
+      {
+        "type": "token",
+        "content": "100"
+      },
+      {
+        "type": "token",
+        "content": "1"
+      },
+      {
+        "type": "token",
+        "content": "目前"
+      },
+      {
+        "type": "token",
+        "content": "走"
+      },
+      {
+        "type": "token",
+        "content": "的是"
+      },
+      {
+        "type": "token",
+        "content": "中"
+      },
+      {
+        "type": "token",
+        "content": "通"
+      },
+      {
+        "type": "token",
+        "content": "快递"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "物流"
+      },
+      {
+        "type": "token",
+        "content": "状态"
+      },
+      {
+        "type": "token",
+        "content": "为"
+      },
+      {
+        "type": "token",
+        "content": "“"
+      },
+      {
+        "type": "token",
+        "content": "运输"
+      },
+      {
+        "type": "token",
+        "content": "中"
+      },
+      {
+        "type": "token",
+        "content": "”，"
+      },
+      {
+        "type": "token",
+        "content": "系统"
+      },
+      {
+        "type": "token",
+        "content": "显示的"
+      },
+      {
+        "type": "token",
+        "content": "预计"
+      },
+      {
+        "type": "token",
+        "content": "送达"
+      },
+      {
+        "type": "token",
+        "content": "日期"
+      },
+      {
+        "type": "token",
+        "content": "是"
+      },
+      {
+        "type": "token",
+        "content": "202"
+      },
+      {
+        "type": "token",
+        "content": "6"
+      },
+      {
+        "type": "token",
+        "content": "年"
+      },
+      {
+        "type": "token",
+        "content": "10"
+      },
+      {
+        "type": "token",
+        "content": "月"
+      },
+      {
+        "type": "token",
+        "content": "26"
+      },
+      {
+        "type": "token",
+        "content": "日"
+      },
+      {
+        "type": "token",
+        "content": "。"
+      },
+      {
+        "type": "token",
+        "content": "这个"
+      },
+      {
+        "type": "token",
+        "content": "日期"
+      },
+      {
+        "type": "token",
+        "content": "只是"
+      },
+      {
+        "type": "token",
+        "content": "当前"
+      },
+      {
+        "type": "token",
+        "content": "预计"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "不能"
+      },
+      {
+        "type": "token",
+        "content": "保证"
+      },
+      {
+        "type": "token",
+        "content": "一定"
+      },
+      {
+        "type": "token",
+        "content": "当天"
+      },
+      {
+        "type": "token",
+        "content": "送达"
+      },
+      {
+        "type": "token",
+        "content": "。"
+      },
+      {
+        "type": "done"
+      }
+    ],
+    "first_token_seconds": 3.477504199996474,
+    "last_token_seconds": 3.751480699997046,
+    "total_seconds": 3.926433899992844,
+    "node_trace": [
+      "resolve_reference",
+      "classify_intent",
+      "agent_decide",
+      "agent_tools",
+      "agent_decide",
+      "agent_tools",
+      "agent_answer",
+      "log_result"
+    ],
+    "intent": "物流",
+    "budget": {
+      "token_limit": 12000,
+      "charged_tokens": 4417,
+      "tool_calls": 1,
+      "decision_calls": 2,
+      "max_tool_calls": 6,
+      "max_decisions": 10,
+      "deadline": 1792656453.807407,
+      "actual_calls": 4,
+      "estimated_calls": 0
+    },
+    "gate_reason": ""
+  },
+  {
+    "case": "complex",
+    "session_id": "ch05-accept-20261022-r3-complex",
+    "question": "请先查询订单1001的当前状态，再查询它的物流轨迹，并分别告诉我结果。",
+    "events": [
+      {
+        "type": "tool",
+        "name": "query_order",
+        "phase": "start"
+      },
+      {
+        "type": "tool",
+        "name": "query_order",
+        "phase": "end"
+      },
+      {
+        "type": "tool",
+        "name": "query_logistics",
+        "phase": "start"
+      },
+      {
+        "type": "tool",
+        "name": "query_logistics",
+        "phase": "end"
+      },
+      {
+        "type": "token",
+        "content": "订单"
+      },
+      {
+        "type": "token",
+        "content": " "
+      },
+      {
+        "type": "token",
+        "content": "100"
+      },
+      {
+        "type": "token",
+        "content": "1"
+      },
+      {
+        "type": "token",
+        "content": " "
+      },
+      {
+        "type": "token",
+        "content": "查询"
+      },
+      {
+        "type": "token",
+        "content": "结果"
+      },
+      {
+        "type": "token",
+        "content": "如下"
+      },
+      {
+        "type": "token",
+        "content": "：\n\n"
+      },
+      {
+        "type": "token",
+        "content": "【"
+      },
+      {
+        "type": "token",
+        "content": "订单"
+      },
+      {
+        "type": "token",
+        "content": "状态"
+      },
+      {
+        "type": "token",
+        "content": "】"
+      },
+      {
+        "type": "token",
+        "content": "商品"
+      },
+      {
+        "type": "token",
+        "content": "为"
+      },
+      {
+        "type": "token",
+        "content": "「"
+      },
+      {
+        "type": "token",
+        "content": "灯"
+      },
+      {
+        "type": "token",
+        "content": "芯"
+      },
+      {
+        "type": "token",
+        "content": "绒"
+      },
+      {
+        "type": "token",
+        "content": "高"
+      },
+      {
+        "type": "token",
+        "content": "腰"
+      },
+      {
+        "type": "token",
+        "content": "阔"
+      },
+      {
+        "type": "token",
+        "content": "腿"
+      },
+      {
+        "type": "token",
+        "content": "裤"
+      },
+      {
+        "type": "token",
+        "content": "」，"
+      },
+      {
+        "type": "token",
+        "content": "实"
+      },
+      {
+        "type": "token",
+        "content": "付"
+      },
+      {
+        "type": "token",
+        "content": "金额"
+      },
+      {
+        "type": "token",
+        "content": " "
+      },
+      {
+        "type": "token",
+        "content": "717"
+      },
+      {
+        "type": "token",
+        "content": "."
+      },
+      {
+        "type": "token",
+        "content": "62"
+      },
+      {
+        "type": "token",
+        "content": " "
+      },
+      {
+        "type": "token",
+        "content": "元"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "下单"
+      },
+      {
+        "type": "token",
+        "content": "时间"
+      },
+      {
+        "type": "token",
+        "content": " "
+      },
+      {
+        "type": "token",
+        "content": "202"
+      },
+      {
+        "type": "token",
+        "content": "6"
+      },
+      {
+        "type": "token",
+        "content": "-"
+      },
+      {
+        "type": "token",
+        "content": "10"
+      },
+      {
+        "type": "token",
+        "content": "-"
+      },
+      {
+        "type": "token",
+        "content": "17"
+      },
+      {
+        "type": "token",
+        "content": " "
+      },
+      {
+        "type": "token",
+        "content": "06"
+      },
+      {
+        "type": "token",
+        "content": ":"
+      },
+      {
+        "type": "token",
+        "content": "16"
+      },
+      {
+        "type": "token",
+        "content": ":"
+      },
+      {
+        "type": "token",
+        "content": "09"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "当前"
+      },
+      {
+        "type": "token",
+        "content": "状态"
+      },
+      {
+        "type": "token",
+        "content": "为"
+      },
+      {
+        "type": "token",
+        "content": "「"
+      },
+      {
+        "type": "token",
+        "content": "退款"
+      },
+      {
+        "type": "token",
+        "content": "中"
+      },
+      {
+        "type": "token",
+        "content": "」。\n\n"
+      },
+      {
+        "type": "token",
+        "content": "【"
+      },
+      {
+        "type": "token",
+        "content": "物流"
+      },
+      {
+        "type": "token",
+        "content": "轨迹"
+      },
+      {
+        "type": "token",
+        "content": "】"
+      },
+      {
+        "type": "token",
+        "content": "承运"
+      },
+      {
+        "type": "token",
+        "content": "快递"
+      },
+      {
+        "type": "token",
+        "content": "为中"
+      },
+      {
+        "type": "token",
+        "content": "通"
+      },
+      {
+        "type": "token",
+        "content": "快递"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "当前"
+      },
+      {
+        "type": "token",
+        "content": "节点"
+      },
+      {
+        "type": "token",
+        "content": "为"
+      },
+      {
+        "type": "token",
+        "content": "「"
+      },
+      {
+        "type": "token",
+        "content": "运输"
+      },
+      {
+        "type": "token",
+        "content": "中"
+      },
+      {
+        "type": "token",
+        "content": "」，"
+      },
+      {
+        "type": "token",
+        "content": "系统"
+      },
+      {
+        "type": "token",
+        "content": "显示"
+      },
+      {
+        "type": "token",
+        "content": "预计"
+      },
+      {
+        "type": "token",
+        "content": "送达"
+      },
+      {
+        "type": "token",
+        "content": "日期"
+      },
+      {
+        "type": "token",
+        "content": "为"
+      },
+      {
+        "type": "token",
+        "content": " "
+      },
+      {
+        "type": "token",
+        "content": "202"
+      },
+      {
+        "type": "token",
+        "content": "6"
+      },
+      {
+        "type": "token",
+        "content": "-"
+      },
+      {
+        "type": "token",
+        "content": "10"
+      },
+      {
+        "type": "token",
+        "content": "-"
+      },
+      {
+        "type": "token",
+        "content": "26"
+      },
+      {
+        "type": "token",
+        "content": "。\n\n"
+      },
+      {
+        "type": "token",
+        "content": "需要"
+      },
+      {
+        "type": "token",
+        "content": "说明"
+      },
+      {
+        "type": "token",
+        "content": "："
+      },
+      {
+        "type": "token",
+        "content": "订单"
+      },
+      {
+        "type": "token",
+        "content": "当前"
+      },
+      {
+        "type": "token",
+        "content": "处于"
+      },
+      {
+        "type": "token",
+        "content": "退款"
+      },
+      {
+        "type": "token",
+        "content": "中"
+      },
+      {
+        "type": "token",
+        "content": "状态"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "而"
+      },
+      {
+        "type": "token",
+        "content": "物流"
+      },
+      {
+        "type": "token",
+        "content": "仍"
+      },
+      {
+        "type": "token",
+        "content": "显示"
+      },
+      {
+        "type": "token",
+        "content": "运输"
+      },
+      {
+        "type": "token",
+        "content": "中"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "两者"
+      },
+      {
+        "type": "token",
+        "content": "可能存在"
+      },
+      {
+        "type": "token",
+        "content": "不同"
+      },
+      {
+        "type": "token",
+        "content": "步"
+      },
+      {
+        "type": "token",
+        "content": "；"
+      },
+      {
+        "type": "token",
+        "content": "预计"
+      },
+      {
+        "type": "token",
+        "content": "送达"
+      },
+      {
+        "type": "token",
+        "content": "日期"
+      },
+      {
+        "type": "token",
+        "content": "只是"
+      },
+      {
+        "type": "token",
+        "content": "系统"
+      },
+      {
+        "type": "token",
+        "content": "当前"
+      },
+      {
+        "type": "token",
+        "content": "显示"
+      },
+      {
+        "type": "token",
+        "content": "值"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "不能"
+      },
+      {
+        "type": "token",
+        "content": "保证"
+      },
+      {
+        "type": "token",
+        "content": "一定"
+      },
+      {
+        "type": "token",
+        "content": "在该"
+      },
+      {
+        "type": "token",
+        "content": "日"
+      },
+      {
+        "type": "token",
+        "content": "送达"
+      },
+      {
+        "type": "token",
+        "content": "。"
+      },
+      {
+        "type": "token",
+        "content": "如需"
+      },
+      {
+        "type": "token",
+        "content": "核实"
+      },
+      {
+        "type": "token",
+        "content": "退款"
+      },
+      {
+        "type": "token",
+        "content": "与"
+      },
+      {
+        "type": "token",
+        "content": "包裹"
+      },
+      {
+        "type": "token",
+        "content": "的"
+      },
+      {
+        "type": "token",
+        "content": "实际情况"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "可以"
+      },
+      {
+        "type": "token",
+        "content": "点击"
+      },
+      {
+        "type": "token",
+        "content": "下方"
+      },
+      {
+        "type": "token",
+        "content": "转"
+      },
+      {
+        "type": "token",
+        "content": "人工"
+      },
+      {
+        "type": "token",
+        "content": "按钮"
+      },
+      {
+        "type": "token",
+        "content": "。"
+      },
+      {
+        "type": "actions",
+        "items": [
+          {
+            "kind": "handoff",
+            "description": "订单 1001 查询结果如下：\n\n【订单状态】订单号 1001，商品为「灯芯绒高腰阔腿裤」，实付金额 717.62 元，下单时间 2026-10-17 06:16:09，当前状态为「退款中」。\n\n【物流轨迹】承运快递为中通快递，当前节点为「运输中」，系统显示预计送达日期为 2026-10-26。\n\n需要说明：订单当前处于退款中状态，物流仍显示运输中，两者可能存在不同步；预计送达日期为系统当前显示值，无法保证一定在该日送达。如需我帮您转人工核实退款与包裹的实际情况，可以点击下方按钮。",
+            "ticket_type": "咨询",
+            "action_id": "667ab276907b440595513867ac1cd31f",
+            "status": "available",
+            "label": "转人工"
+          }
+        ]
+      },
+      {
+        "type": "done"
+      }
+    ],
+    "first_token_seconds": 5.241494000001694,
+    "last_token_seconds": 5.844752699995297,
+    "total_seconds": 5.999218800003291,
+    "node_trace": [
+      "resolve_reference",
+      "classify_intent",
+      "agent_decide",
+      "agent_tools",
+      "agent_decide",
+      "agent_tools",
+      "agent_decide",
+      "agent_tools",
+      "agent_answer",
+      "log_result"
+    ],
+    "intent": "订单",
+    "budget": {
+      "token_limit": 12000,
+      "charged_tokens": 6649,
+      "tool_calls": 2,
+      "decision_calls": 3,
+      "max_tool_calls": 6,
+      "max_decisions": 10,
+      "deadline": 1792656457.7313106,
+      "actual_calls": 5,
+      "estimated_calls": 0
+    },
+    "gate_reason": ""
+  },
+  {
+    "case": "chat",
+    "session_id": "ch05-accept-20261022-r3-chat",
+    "question": "你好！",
+    "events": [
+      {
+        "type": "token",
+        "content": "您好，我可以帮您解答古着商品、退换货政策，以及订单、物流和售后问题。"
+      },
+      {
+        "type": "done"
+      }
+    ],
+    "first_token_seconds": 0.9162848999985727,
+    "last_token_seconds": 0.9162848999985727,
+    "total_seconds": 0.9737227000005078,
+    "node_trace": [
+      "resolve_reference",
+      "classify_intent",
+      "chat_reply",
+      "log_result"
+    ],
+    "intent": "闲聊",
+    "budget": {
+      "token_limit": 12000,
+      "charged_tokens": 624,
+      "tool_calls": 0,
+      "decision_calls": 0,
+      "max_tool_calls": 6,
+      "max_decisions": 10,
+      "deadline": 1792656463.7327657,
+      "actual_calls": 1,
+      "estimated_calls": 0
+    },
+    "gate_reason": ""
+  },
+  {
+    "case": "complaint",
+    "session_id": "ch05-accept-20261022-r3-complaint",
+    "question": "验收测试：我要投诉。",
+    "events": [
+      {
+        "type": "token",
+        "content": "很抱歉给您带来不好的体验。您可以选择转人工，或确认创建工单记录这次问题。"
+      },
+      {
+        "type": "actions",
+        "items": [
+          {
+            "kind": "handoff",
+            "action_id": "ebe94eafcfeb42af99d25162c7333244",
+            "status": "available",
+            "description": "验收测试：我要投诉。",
+            "ticket_type": "咨询",
+            "label": "转人工"
+          },
+          {
+            "kind": "create_ticket",
+            "ticket_type": "投诉",
+            "action_id": "14d26621400b4a66a71d71f256b12926",
+            "status": "available",
+            "description": "验收测试：我要投诉。",
+            "label": "建工单"
+          }
+        ]
+      },
+      {
+        "type": "done"
+      }
+    ],
+    "first_token_seconds": 0.7699910999945132,
+    "last_token_seconds": 0.7699910999945132,
+    "total_seconds": 0.936696300006588,
+    "node_trace": [
+      "resolve_reference",
+      "classify_intent",
+      "complaint_reply",
+      "log_result"
+    ],
+    "intent": "投诉",
+    "budget": {
+      "token_limit": 12000,
+      "charged_tokens": 628,
+      "tool_calls": 0,
+      "decision_calls": 0,
+      "max_tool_calls": 6,
+      "max_decisions": 10,
+      "deadline": 1792656464.7156022,
+      "actual_calls": 1,
+      "estimated_calls": 0
+    },
+    "gate_reason": ""
+  },
+  {
+    "case": "weak",
+    "session_id": "ch05-accept-20261022-r3-weak",
+    "question": "月球采矿许可需要什么条件？",
+    "events": [
+      {
+        "type": "token",
+        "content": "抱歉，现有知识不足以可靠回答这个问题，我无法给出确定答案。建议联系人工客服核实。"
+      },
+      {
+        "type": "done"
+      }
+    ],
+    "first_token_seconds": 4.478639599998132,
+    "last_token_seconds": 4.478639599998132,
+    "total_seconds": 4.554293499997584,
+    "node_trace": [
+      "resolve_reference",
+      "classify_intent",
+      "retrieve_knowledge",
+      "evidence_gate",
+      "refusal_reply",
+      "log_result"
+    ],
+    "intent": "商品咨询",
+    "budget": {
+      "token_limit": 12000,
+      "charged_tokens": 1291,
+      "tool_calls": 0,
+      "decision_calls": 0,
+      "max_tool_calls": 6,
+      "max_decisions": 10,
+      "deadline": 1792656465.6695404,
+      "actual_calls": 2,
+      "estimated_calls": 0
+    },
+    "gate_reason": "重排最高分低于部署阈值或无有效重排分数"
+  },
+  {
+    "case": "missing",
+    "session_id": "ch05-accept-20261022-r3-missing",
+    "question": "帮我查物流，我还没有提供订单号。",
+    "events": [
+      {
+        "type": "token",
+        "content": "请"
+      },
+      {
+        "type": "token",
+        "content": "提供"
+      },
+      {
+        "type": "token",
+        "content": "需要"
+      },
+      {
+        "type": "token",
+        "content": "查询"
+      },
+      {
+        "type": "token",
+        "content": "物流"
+      },
+      {
+        "type": "token",
+        "content": "的"
+      },
+      {
+        "type": "token",
+        "content": "订单"
+      },
+      {
+        "type": "token",
+        "content": "号"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "例如"
+      },
+      {
+        "type": "token",
+        "content": " OR"
+      },
+      {
+        "type": "token",
+        "content": "D"
+      },
+      {
+        "type": "token",
+        "content": "202"
+      },
+      {
+        "type": "token",
+        "content": "610"
+      },
+      {
+        "type": "token",
+        "content": "150"
+      },
+      {
+        "type": "token",
+        "content": "012"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "我"
+      },
+      {
+        "type": "token",
+        "content": "马上"
+      },
+      {
+        "type": "token",
+        "content": "帮"
+      },
+      {
+        "type": "token",
+        "content": "您"
+      },
+      {
+        "type": "token",
+        "content": "查"
+      },
+      {
+        "type": "token",
+        "content": "配送"
+      },
+      {
+        "type": "token",
+        "content": "进度"
+      },
+      {
+        "type": "token",
+        "content": "。"
+      },
+      {
+        "type": "done"
+      }
+    ],
+    "first_token_seconds": 4.6788514999934705,
+    "last_token_seconds": 7.347795699999551,
+    "total_seconds": 7.441193399994518,
+    "node_trace": [
+      "resolve_reference",
+      "classify_intent",
+      "agent_decide",
+      "agent_tools",
+      "agent_answer",
+      "log_result"
+    ],
+    "intent": "物流",
+    "budget": {
+      "token_limit": 12000,
+      "charged_tokens": 2757,
+      "tool_calls": 0,
+      "decision_calls": 1,
+      "max_tool_calls": 6,
+      "max_decisions": 10,
+      "deadline": 1792656470.234745,
+      "actual_calls": 3,
+      "estimated_calls": 0
+    },
+    "gate_reason": ""
+  },
+  {
+    "case": "handoff",
+    "session_id": "ch05-accept-20261022-r3-handoff",
+    "question": "我需要转人工，先不要建工单。",
+    "events": [
+      {
+        "type": "token",
+        "content": "已"
+      },
+      {
+        "type": "token",
+        "content": "为你"
+      },
+      {
+        "type": "token",
+        "content": "准备"
+      },
+      {
+        "type": "token",
+        "content": "转"
+      },
+      {
+        "type": "token",
+        "content": "接"
+      },
+      {
+        "type": "token",
+        "content": "人工"
+      },
+      {
+        "type": "token",
+        "content": "客服"
+      },
+      {
+        "type": "token",
+        "content": "的"
+      },
+      {
+        "type": "token",
+        "content": "入口"
+      },
+      {
+        "type": "token",
+        "content": "，"
+      },
+      {
+        "type": "token",
+        "content": "不"
+      },
+      {
+        "type": "token",
+        "content": "创建"
+      },
+      {
+        "type": "token",
+        "content": "工"
+      },
+      {
+        "type": "token",
+        "content": "单"
+      },
+      {
+        "type": "token",
+        "content": "；"
+      },
+      {
+        "type": "token",
+        "content": "需要"
+      },
+      {
+        "type": "token",
+        "content": "你"
+      },
+      {
+        "type": "token",
+        "content": "点击"
+      },
+      {
+        "type": "token",
+        "content": "确认"
+      },
+      {
+        "type": "token",
+        "content": "后"
+      },
+      {
+        "type": "token",
+        "content": "才会"
+      },
+      {
+        "type": "token",
+        "content": "转"
+      },
+      {
+        "type": "token",
+        "content": "接"
+      },
+      {
+        "type": "token",
+        "content": "。"
+      },
+      {
+        "type": "actions",
+        "items": [
+          {
+            "kind": "handoff",
+            "description": "已为你准备转接人工客服的入口（不创建工单），点击确认后即可转接。",
+            "ticket_type": "咨询",
+            "action_id": "6a6460cb00ce47788305d01a8fba70b5",
+            "status": "available",
+            "label": "转人工"
+          }
+        ]
+      },
+      {
+        "type": "done"
+      }
+    ],
+    "first_token_seconds": 2.976332000005641,
+    "last_token_seconds": 3.1855347999953665,
+    "total_seconds": 3.2842019999952754,
+    "node_trace": [
+      "resolve_reference",
+      "classify_intent",
+      "agent_decide",
+      "agent_tools",
+      "agent_answer",
+      "log_result"
+    ],
+    "intent": "售后",
+    "budget": {
+      "token_limit": 12000,
+      "charged_tokens": 2754,
+      "tool_calls": 0,
+      "decision_calls": 1,
+      "max_tool_calls": 6,
+      "max_decisions": 10,
+      "deadline": 1792656477.6584814,
+      "actual_calls": 3,
+      "estimated_calls": 0
+    },
+    "gate_reason": ""
+  }
+]

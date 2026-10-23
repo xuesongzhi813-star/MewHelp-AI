@@ -97,6 +97,7 @@ async def stream_chat(
     model,
     planner=None,
     answer_model=None,
+    workflow_runtime=None,
 ) -> AsyncIterator[str]:
     """编排一次完整对话轮:可能含一轮工具调用,产出 SSE 帧字符串流。
 
@@ -106,6 +107,15 @@ async def stream_chat(
     """
     try:
         settings = get_settings()
+
+        if workflow_runtime is not None:
+            async with aclosing(workflow_runtime.stream_turn(session_id, message, model=model)) as stream:
+                async for event in stream:
+                    yield _sse(event)
+            return
+        if getattr(settings, 'chat_workflow_enabled', False):
+            yield _sse({'type': 'error', 'message': '工作流尚未初始化，请重启服务。'})
+            return
 
         if getattr(settings, "kb_corpus_version", "ch03") == "ch04":
             async with aclosing(_stream_grounded(session_id, message, store=store, model=model,

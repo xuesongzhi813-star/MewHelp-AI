@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict, StrictBool, field_validator
 
 
 class ChatRequest(BaseModel):
@@ -6,6 +6,26 @@ class ChatRequest(BaseModel):
 
     session_id: str = Field(min_length=1, description="会话 ID,用于区分不同用户的对话")
     message: str = Field(min_length=1, description="用户发送的消息内容")
+
+
+class ConfirmTicketRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    session_id: str = Field(min_length=1, max_length=128)
+    action_id: str = Field(min_length=1, max_length=64)
+    confirmed: StrictBool
+
+    @field_validator('confirmed')
+    @classmethod
+    def explicit_confirmation(cls, value):
+        if value is not True:
+            raise ValueError('必须明确确认后才能创建工单')
+        return value
+
+
+class TicketActionResult(BaseModel):
+    action_id: str
+    status: str
+    result: str
 
 
 class ExtractRequest(BaseModel):

@@ -572,7 +572,7 @@ async def test_ingest_vectorize_failure_returns_502_with_inserted(
     body = response.json()
     assert body["inserted"] == 2
     assert "pending" in body["detail"]
-    assert "补跑一次即可" in body["detail"]
+    assert "补跑pending" in body["detail"]
     # 失败不回滚:写入函数已被调用。
     assert persisted == [1, 2]
 

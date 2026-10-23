@@ -1,0 +1,234 @@
+[
+  {
+    "id": "simple-1",
+    "question": "查询订单1001目前的状态。",
+    "expected_tools": [
+      "query_order"
+    ],
+    "expected_mode": "answer",
+    "result": {
+      "answer": "订单 1001 目前状态是「已签收」。\n\n- 商品：美式印花夏威夷衬衫\n- 实付金额：584.88 元\n- 下单时间：2026-10-21 20:36:39\n\n如需查看物流轨迹，可以告诉我，我再帮您查询。",
+      "actions": [],
+      "stop_reason": "answer",
+      "tool_names": [
+        "query_order"
+      ],
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 3745,
+        "tool_calls": 1,
+        "decision_calls": 2,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792631228.463495,
+        "actual_calls": 3,
+        "estimated_calls": 0
+      }
+    },
+    "passed": true
+  },
+  {
+    "id": "simple-2",
+    "question": "订单1001的物流到哪了？",
+    "expected_tools": [
+      "query_logistics"
+    ],
+    "expected_mode": "answer",
+    "result": {
+      "answer": "订单1001目前由顺丰速运配送，物流状态为「运输中」，预计送达日期是2026-10-28。这个日期仅供参考，不能保证一定按时送达。",
+      "actions": [],
+      "stop_reason": "answer",
+      "tool_names": [
+        "query_logistics"
+      ],
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 3647,
+        "tool_calls": 1,
+        "decision_calls": 2,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792631231.6825507,
+        "actual_calls": 3,
+        "estimated_calls": 0
+      }
+    },
+    "passed": true
+  },
+  {
+    "id": "complex-1",
+    "question": "请先查询订单1001的当前状态，再查询它的物流轨迹，并分别告诉我结果。",
+    "expected_tools": [
+      "query_order",
+      "query_logistics"
+    ],
+    "expected_mode": "answer",
+    "result": {
+      "answer": "订单1001查询结果如下：\n\n**1）订单状态**\n- 状态：已签收\n- 商品：美式印花夏威夷衬衫\n- 实付金额：584.88元\n- 下单时间：2026-10-21 20:36:39\n\n**2）物流轨迹**\n- 承运商：顺丰速运\n- 当前节点：运输中\n- 预计送达：2026-10-28\n\n需要说明的是，订单状态显示“已签收”，但物流节点仍为“运输中”，两者不一致，可能是物流信息尚未同步。如需进一步核实，可以转人工客服处理。",
+      "actions": [],
+      "stop_reason": "answer",
+      "tool_names": [
+        "query_order",
+        "query_logistics"
+      ],
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 5719,
+        "tool_calls": 2,
+        "decision_calls": 3,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792631234.5151582,
+        "actual_calls": 4,
+        "estimated_calls": 0
+      }
+    },
+    "passed": true
+  },
+  {
+    "id": "complex-2",
+    "question": "先查订单1002的实付金额，然后查这张订单的物流节点，分别汇总。",
+    "expected_tools": [
+      "query_order",
+      "query_logistics"
+    ],
+    "expected_mode": "answer",
+    "result": {
+      "answer": "订单 1002 查询结果如下：\n\n【订单信息】订单号 1002，商品为复古水洗牛仔夹克，实付金额 664.59 元，下单时间 2026-10-02 21:37:50，当前订单状态为「退款中」。\n\n【物流信息】承运快递为顺丰速运，当前节点为「派送中」，系统显示的预计送达日期为 2026-10-23。\n\n提醒：订单处于退款中，但物流仍在派送，建议收货时留意，可与快递员沟通拒收。预计送达日期仅为系统当前显示值，不能保证一定按时送达。如需处理退款或拦截包裹，可点击转人工。",
+      "actions": [
+        {
+          "kind": "handoff",
+          "description": "订单 1002 查询结果汇总：\n\n【订单信息】订单号 1002，商品：复古水洗牛仔夹克，实付金额 664.59 元，下单时间 2026-10-02 21:37:50，当前订单状态为「退款中」。\n\n【物流信息】承运快递：顺丰速运，当前节点：派送中，预计送达日期 2026-10-23。\n\n提示：订单目前处于退款中状态，但物流显示仍在派送，建议留意收货时拒收或与快递员沟通。预计送达日期为系统当前显示值，不能保证一定按时送达。如需进一步处理退款或拦截包裹，可点击转人工。",
+          "ticket_type": "咨询"
+        }
+      ],
+      "stop_reason": "answer",
+      "tool_names": [
+        "query_order",
+        "query_logistics"
+      ],
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 5785,
+        "tool_calls": 2,
+        "decision_calls": 3,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792631239.0984786,
+        "actual_calls": 4,
+        "estimated_calls": 0
+      }
+    },
+    "passed": true
+  },
+  {
+    "id": "missing-1",
+    "question": "帮我查一下订单状态。",
+    "expected_tools": [],
+    "expected_mode": "clarify",
+    "result": {
+      "answer": "请提供订单号（例如 ORD202610150012），我才能帮你查询订单状态。如果还想查物流轨迹，也请一并说明。",
+      "actions": [],
+      "stop_reason": "clarify",
+      "tool_names": [],
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 2040,
+        "tool_calls": 0,
+        "decision_calls": 1,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792631244.4624755,
+        "actual_calls": 2,
+        "estimated_calls": 0
+      }
+    },
+    "passed": true
+  },
+  {
+    "id": "missing-2",
+    "question": "我的物流到哪了？",
+    "expected_tools": [],
+    "expected_mode": "clarify",
+    "result": {
+      "answer": "请提供您的订单号，我来帮您查询物流进度。",
+      "actions": [],
+      "stop_reason": "clarify",
+      "tool_names": [],
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 1978,
+        "tool_calls": 0,
+        "decision_calls": 1,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792631246.3762455,
+        "actual_calls": 2,
+        "estimated_calls": 0
+      }
+    },
+    "passed": true
+  },
+  {
+    "id": "actions-1",
+    "question": "请给我一个创建投诉工单的选项，记录商品破损问题，先别执行。",
+    "expected_tools": [],
+    "expected_action": "create_ticket",
+    "expected_mode": "answer",
+    "result": {
+      "answer": "已准备好“创建投诉工单”选项，类型为投诉，事由记录商品破损问题。需要你点击确认后才会创建，目前尚未执行任何操作。如需同时核实订单或物流，请提供订单号。",
+      "actions": [
+        {
+          "kind": "create_ticket",
+          "description": "已为你准备“创建投诉工单”的选项，工单类型为投诉，事由记录商品破损问题；需你点击确认后才会创建，当前未执行任何操作。若需要我协助核实订单或物流情况，请提供订单号。",
+          "ticket_type": "投诉"
+        }
+      ],
+      "stop_reason": "answer",
+      "tool_names": [],
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 2180,
+        "tool_calls": 0,
+        "decision_calls": 1,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792631247.8846407,
+        "actual_calls": 2,
+        "estimated_calls": 0
+      }
+    },
+    "passed": true
+  },
+  {
+    "id": "actions-2",
+    "question": "我要转人工客服，给我转人工选项，不要建工单。",
+    "expected_tools": [],
+    "expected_action": "handoff",
+    "expected_mode": "answer",
+    "result": {
+      "answer": "你可以点击下方的“转人工”选项，确认后即可转接人工客服；本次不会创建工单。",
+      "actions": [
+        {
+          "kind": "handoff",
+          "description": "已为你提供转人工选项，点击确认后即可转接人工客服（不会创建工单）。",
+          "ticket_type": "咨询"
+        }
+      ],
+      "stop_reason": "answer",
+      "tool_names": [],
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 2046,
+        "tool_calls": 0,
+        "decision_calls": 1,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792631249.574793,
+        "actual_calls": 2,
+        "estimated_calls": 0
+      }
+    },
+    "passed": true
+  }
+]
