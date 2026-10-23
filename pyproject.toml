@@ -17,6 +17,8 @@ dependencies = [
     "pymysql>=1.2.3",
     "sqlalchemy>=2.1.4",
     "uvicorn[standard]>=0.54.0",
+    "langgraph==1.2.15",
+    "langgraph-checkpoint-sqlite>=3.1.2",
 ]
 
 [build-system]

@@ -30,6 +30,8 @@ from app.kb.documents import Source, build_chunks, chunk_fingerprint
 from app.kb.dualwrite import consistency_snapshot, vectorize_pending
 from app.kb.retriever import search_hits
 from app.kb.retriever import retrieve_result
+from app.kb.embedding import EmbeddingError
+from app.kb.reranker import RerankError
 from app.kb.contracts import RetrievalFilters, RetrievalStrategy
 from app.kb.sources import get_sources
 
@@ -407,7 +409,7 @@ def post_ingest(payload: IngestRequest):
         return JSONResponse(
             status_code=502,
             content={
-                "detail": f"已入库 {inserted} 块(pending),补跑一次即可",
+                "detail": f"已入库 {inserted} 块(pending),先排查嵌入服务与集合配置，恢复后补跑pending，不要重复提交录入",
                 "inserted": inserted,
             },
         )
@@ -421,7 +423,7 @@ def post_ingest(payload: IngestRequest):
         return JSONResponse(
             status_code=502,
             content={
-                "detail": f"已入库 {inserted} 块(pending),补跑一次即可",
+                "detail": f"已入库 {inserted} 块(pending),先排查嵌入服务与集合配置，恢复后补跑pending，不要重复提交录入",
                 "inserted": inserted,
             },
         )
@@ -446,7 +448,7 @@ def post_vectorize(payload: VectorizeRequest | None = None):
             content={
                 "detail": (
                     f"向量化失败:{result.failed} 块仍为 pending,"
-                    "补跑一次即可"
+                    "先排查嵌入服务与集合配置，恢复后补跑pending，不要重复提交录入"
                 ),
                 **body,
             },
@@ -481,6 +483,10 @@ def post_search(payload: SearchRequest) -> dict:
     if getattr(settings, "kb_corpus_version", "ch03") == "ch04":
         try:
             result = retrieve_result(payload.query, strategy=payload.route, filters=payload.filters)
+        except EmbeddingError as exc:
+            raise HTTPException(status_code=502, detail=exc.public_message) from None
+        except RerankError as exc:
+            raise HTTPException(status_code=502, detail='重排服务暂时不可用（' + exc.kind + '），请核对重排配置与供应商状态') from None
         except Exception:
             raise HTTPException(status_code=502, detail="检索暂时不可用，请检查迁移验证状态与检索服务") from None
         limit = payload.top_k or 10

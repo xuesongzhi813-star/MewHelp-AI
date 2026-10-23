@@ -16,6 +16,16 @@ def build_chat_model(settings: Settings) -> ChatOpenAI:
     )
 
 
+def build_workflow_model(settings: Settings) -> ChatOpenAI:
+    """Budgeted workflow owns retries and the whole-turn deadline."""
+    return ChatOpenAI(
+        model=settings.llm_model, api_key=settings.llm_api_key,
+        base_url=settings.llm_base_url, temperature=settings.llm_temperature,
+        extra_body=settings.llm_extra_body, max_retries=0,
+        timeout=settings.agent_turn_timeout,
+    )
+
+
 def build_extractor(settings: Settings) -> Runnable:
     """在 chat model 上挂结构化输出,用 function_calling 抽取售后信息。"""
     return build_chat_model(settings).with_structured_output(

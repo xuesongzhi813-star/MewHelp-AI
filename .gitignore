@@ -19,3 +19,6 @@ deploy/milvus/volumes/
 .vscode/
 Thumbs.db
 .DS_Store
+
+# 本地隔离开发工作树
+.worktrees/

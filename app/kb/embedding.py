@@ -13,7 +13,7 @@ import time
 from collections.abc import Sequence
 from typing import Any
 
-from openai import OpenAI
+from openai import OpenAI, APITimeoutError, APIConnectionError
 
 from app.config import get_settings
 
@@ -26,6 +26,21 @@ BACKOFF_SECONDS = (0.5, 1.0)
 
 class EmbeddingError(RuntimeError):
     """嵌入调用失败(未配置密钥、请求失败或维度不符)。"""
+
+    def __init__(self, message: str, *, kind: str = 'unavailable'):
+        self.kind = kind
+        super().__init__(message)
+
+    @property
+    def public_message(self):
+        hints = {'authentication':'鉴权失败，请核对嵌入密钥后重启应用',
+                 'payment':'额度或账户余额不足，请核对供应商账户',
+                 'rate_limit':'请求限流，请稍后重试',
+                 'timeout':'请求超时，请检查网络和供应商状态',
+                 'transport':'连接失败，请检查网络、代理和供应商状态',
+                 'configuration':'未配置密钥，请检查根目录配置后重启应用',
+                 'request':'请求配置不被供应商接受，请核对模型和接口'}
+        return '嵌入服务' + hints.get(self.kind, '暂时不可用，请检查网络、密钥、额度与模型配置')
 
 
 # 模块级懒加载客户端;测试可 monkeypatch 成假对象。
@@ -50,7 +65,7 @@ def embed_texts(texts: Sequence[str]) -> list[list[float]]:
 
     settings = get_settings()
     if not settings.embedding_api_key:
-        raise EmbeddingError("未配置 EMBEDDING_API_KEY,请写入 .env")
+        raise EmbeddingError("未配置 EMBEDDING_API_KEY,请写入 .env", kind='configuration')
 
     client = _get_client(settings)
     batch_size = settings.embedding_batch_size
@@ -85,13 +100,20 @@ def _embed_batch(client: Any, settings: Any, batch: list[str]) -> list[list[floa
             )
         except Exception as exc:  # noqa: BLE001 - 统一包装成 EmbeddingError
             last_error = exc
+            status = getattr(exc, 'status_code', None)
+            kind = ('timeout' if isinstance(exc, APITimeoutError) else
+                    'transport' if isinstance(exc, APIConnectionError) else
+                    {401:'authentication',403:'authentication',402:'payment',429:'rate_limit'}.get(status,
+                    'request' if isinstance(status, int) and 400 <= status < 500 else 'unavailable'))
+            if kind in {'authentication','payment','request'}:
+                raise EmbeddingError('嵌入请求失败：' + kind, kind=kind) from None
             if attempt < MAX_ATTEMPTS - 1:
                 delay = BACKOFF_SECONDS[attempt]
                 logger.warning(
                     "嵌入批次失败(第 %d/%d 次): %s;%.1f 秒后重试",
                     attempt + 1,
                     MAX_ATTEMPTS,
-                    exc,
+                    kind,
                     delay,
                 )
                 time.sleep(delay)
@@ -99,8 +121,8 @@ def _embed_batch(client: Any, settings: Any, batch: list[str]) -> list[list[floa
         return _validate_embeddings(response, settings.embedding_dim)
 
     raise EmbeddingError(
-        f"嵌入请求失败(已尝试 {MAX_ATTEMPTS} 次): {last_error}"
-    ) from last_error
+        f"嵌入请求失败(已尝试 {MAX_ATTEMPTS} 次): {kind}", kind=kind
+    ) from None
 
 
 def _validate_embeddings(response: Any, expected_dim: int) -> list[list[float]]:

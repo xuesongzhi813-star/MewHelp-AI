@@ -1,0 +1,36 @@
+"""Reuse the chapter-four retriever, never its historical routing decision."""
+import asyncio
+import time
+from dataclasses import asdict
+
+from app.kb.answering import retrieval_rejection_reason
+from app.kb.contracts import Hit, QueryPlan, RetrievalResult
+from app.kb.query import build_query_plan
+from app.workflow.budget import BudgetExceeded
+
+
+async def retrieve_knowledge(question, *, gateway, budget, retrieve):
+    # Query rewriting is legacy synchronous code; its model adapter meters calls.
+    remaining = budget.deadline - time.time()
+    if remaining <= 0:
+        raise BudgetExceeded('本轮时间预算用尽')
+    async with asyncio.timeout(remaining):
+        plan = await asyncio.to_thread(build_query_plan, question, model=gateway.query_adapter(budget))
+        if time.time() >= budget.deadline or budget.charged_tokens >= budget.token_limit:
+            raise BudgetExceeded('本轮处理预算用尽')
+        return await asyncio.to_thread(retrieve, question, plan=plan)
+
+
+def evidence_gate(result):
+    return retrieval_rejection_reason(result)
+
+
+def dump_retrieval(result: RetrievalResult) -> dict:
+    return {'plan': result.plan.model_dump(), 'strategy': result.strategy,
+            'hits': [asdict(hit) for hit in result.hits],
+            'candidate_ids': list(result.candidate_ids), 'reason': result.reason}
+
+
+def load_retrieval(data: dict) -> RetrievalResult:
+    return RetrievalResult(QueryPlan.model_validate(data['plan']), data['strategy'],
+                           tuple(Hit(**hit) for hit in data['hits']), tuple(data['candidate_ids']), data['reason'])
