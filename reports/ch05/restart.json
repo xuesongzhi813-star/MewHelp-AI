@@ -1,0 +1,38 @@
+{
+  "session_id": "ch05-accept-20261022-r2-chat",
+  "different_server_pids": [
+    7520,
+    25560
+  ],
+  "before_user_count": 1,
+  "after_user_count": 2,
+  "unique_user_ids": 2,
+  "status": "completed",
+  "node_trace": [
+    "resolve_reference",
+    "classify_intent",
+    "chat_reply",
+    "log_result"
+  ],
+  "no_stale_evidence": true,
+  "budget": {
+    "token_limit": 12000,
+    "charged_tokens": 628,
+    "tool_calls": 0,
+    "decision_calls": 0,
+    "max_tool_calls": 6,
+    "max_decisions": 10,
+    "deadline": 1792656342.8785398,
+    "actual_calls": 1,
+    "estimated_calls": 0
+  },
+  "events": [
+    {
+      "type": "token",
+      "content": "您好，我可以帮您解答古着商品、退换货政策，以及订单、物流和售后问题。"
+    },
+    {
+      "type": "done"
+    }
+  ]
+}

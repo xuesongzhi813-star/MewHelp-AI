@@ -1,0 +1,228 @@
+[
+  {
+    "id": "simple-1",
+    "question": "查询订单1001目前的状态。",
+    "expected_tools": [
+      "query_order"
+    ],
+    "expected_mode": "answer",
+    "result": {
+      "answer": "订单 1001 目前的状态是「退款中」。\n\n- 商品：做旧款连帽卫衣\n- 实付金额：529.82 元\n- 下单时间：2026-10-07 02:49:23\n\n退款具体到账时间无法保证，请以实际到账为准。如需查询物流轨迹，请告诉我。",
+      "actions": [],
+      "stop_reason": "answer",
+      "tool_names": [
+        "query_order"
+      ],
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 3674,
+        "tool_calls": 1,
+        "decision_calls": 2,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792631152.0495586,
+        "actual_calls": 3,
+        "estimated_calls": 0
+      }
+    },
+    "passed": true
+  },
+  {
+    "id": "simple-2",
+    "question": "订单1001的物流到哪了？",
+    "expected_tools": [
+      "query_logistics"
+    ],
+    "expected_mode": "answer",
+    "result": {
+      "answer": "订单 1001 的物流信息：\n\n- 承运快递：中通快递\n- 当前节点：已到达转运中心\n- 预计送达日期：2026-10-25\n\n预计送达日期仅供参考，不能保证一定按时到达。",
+      "actions": [],
+      "stop_reason": "answer",
+      "tool_names": [
+        "query_logistics"
+      ],
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 3481,
+        "tool_calls": 1,
+        "decision_calls": 2,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792631155.4677932,
+        "actual_calls": 3,
+        "estimated_calls": 0
+      }
+    },
+    "passed": true
+  },
+  {
+    "id": "complex-1",
+    "question": "请先查询订单1001的当前状态，再查询它的物流轨迹，并分别告诉我结果。",
+    "expected_tools": [
+      "query_order",
+      "query_logistics"
+    ],
+    "expected_mode": "answer",
+    "result": {
+      "answer": "订单1001当前状态为“退款中”，商品是做旧款连帽卫衣，实付529.82元，下单时间2026-10-07 02:49:23。\n\n物流方面，承运方为中通快递，最新节点是“到达转运中心”，系统显示预计送达2026-10-25，但不能保证一定在该日送达。\n\n订单已处于退款中，物流却仍显示在途，两者可能不同步。如需核实退款进度或包裹拦截，可以告诉我。",
+      "actions": [],
+      "stop_reason": "answer",
+      "tool_names": [
+        "query_order",
+        "query_logistics"
+      ],
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 5526,
+        "tool_calls": 2,
+        "decision_calls": 3,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792631158.3786204,
+        "actual_calls": 4,
+        "estimated_calls": 0
+      }
+    },
+    "passed": true
+  },
+  {
+    "id": "complex-2",
+    "question": "先查订单1002的实付金额，然后查这张订单的物流节点，分别汇总。",
+    "expected_tools": [
+      "query_order",
+      "query_logistics"
+    ],
+    "expected_mode": "answer",
+    "result": {
+      "answer": "订单 1002 查到的信息如下：\n\n**订单信息**\n- 商品：美式印花夏威夷衬衫\n- 实付金额：273.18 元\n- 下单时间：2026-10-09 21:03:33\n- 订单状态：已签收\n\n**物流信息**\n- 承运方：圆通速递\n- 当前节点：到达转运中心\n- 预计送达：2026-10-25\n\n这两处信息不一致：订单状态是“已签收”，物流却仍停在“到达转运中心”。建议您先确认是否已收到货；如需进一步核查，我可以帮您转人工。",
+      "actions": [],
+      "stop_reason": "answer",
+      "tool_names": [
+        "query_order",
+        "query_logistics"
+      ],
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 5508,
+        "tool_calls": 2,
+        "decision_calls": 3,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792631162.533007,
+        "actual_calls": 4,
+        "estimated_calls": 0
+      }
+    },
+    "passed": true
+  },
+  {
+    "id": "missing-1",
+    "question": "帮我查一下订单状态。",
+    "expected_tools": [],
+    "expected_mode": "clarify",
+    "result": {
+      "answer": "您好，请提供需要查询的订单号，我帮您查订单状态。",
+      "actions": [],
+      "stop_reason": "clarify",
+      "tool_names": [],
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 1945,
+        "tool_calls": 0,
+        "decision_calls": 1,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792631166.0672855,
+        "actual_calls": 2,
+        "estimated_calls": 0
+      }
+    },
+    "passed": true
+  },
+  {
+    "id": "missing-2",
+    "question": "我的物流到哪了？",
+    "expected_tools": [],
+    "expected_mode": "clarify",
+    "result": {
+      "answer": "请提供您的订单号，我才能帮您查询物流轨迹。",
+      "actions": [],
+      "stop_reason": "answer",
+      "tool_names": [],
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 1799,
+        "tool_calls": 0,
+        "decision_calls": 1,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792631167.8832362,
+        "actual_calls": 2,
+        "estimated_calls": 0
+      }
+    },
+    "passed": false
+  },
+  {
+    "id": "actions-1",
+    "question": "请给我一个创建投诉工单的选项，记录商品破损问题，先别执行。",
+    "expected_tools": [],
+    "expected_action": "create_ticket",
+    "expected_mode": "answer",
+    "result": {
+      "answer": "已为您准备好「创建工单」选项：类型为投诉，事由为商品破损。**尚未执行**，需您点击确认后才会创建。\n\n如方便，请补充订单号或商品名称，便于工单记录更准确。",
+      "actions": [
+        {
+          "kind": "create_ticket",
+          "description": "已为您准备好「创建工单」选项（类型：投诉，事由：商品破损）。我不会自动执行，需您点击确认后才会创建。若方便，请补充订单号或商品名称，便于工单记录更准确。",
+          "ticket_type": "投诉"
+        }
+      ],
+      "stop_reason": "answer",
+      "tool_names": [],
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 2129,
+        "tool_calls": 0,
+        "decision_calls": 1,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792631169.588264,
+        "actual_calls": 2,
+        "estimated_calls": 0
+      }
+    },
+    "passed": true
+  },
+  {
+    "id": "actions-2",
+    "question": "我要转人工客服，给我转人工选项，不要建工单。",
+    "expected_tools": [],
+    "expected_action": "handoff",
+    "expected_mode": "answer",
+    "result": {
+      "answer": "好的，请点击下方的「转人工」按钮确认转接人工客服。我不会为你创建工单。",
+      "actions": [
+        {
+          "kind": "handoff",
+          "description": "好的，已为你提供转人工客服选项，请点击下方的「转人工」按钮确认。我不会为你创建工单。",
+          "ticket_type": "咨询"
+        }
+      ],
+      "stop_reason": "answer",
+      "tool_names": [],
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 2006,
+        "tool_calls": 0,
+        "decision_calls": 1,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792631171.8703668,
+        "actual_calls": 2,
+        "estimated_calls": 0
+      }
+    },
+    "passed": true
+  }
+]

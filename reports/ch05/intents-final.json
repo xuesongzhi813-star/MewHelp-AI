@@ -1,0 +1,618 @@
+[
+  {
+    "id": "logistics-1",
+    "question": "订单1001的物流到哪了？",
+    "intent": "物流",
+    "route": "business",
+    "passed": true,
+    "result": {
+      "intent": "物流",
+      "route": "business",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 631,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655929.0077517,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "logistics-2",
+    "question": "查一下1002的快递轨迹。",
+    "intent": "物流",
+    "route": "business",
+    "passed": true,
+    "result": {
+      "intent": "物流",
+      "route": "business",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 630,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655930.4738688,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "logistics-3",
+    "question": "包裹现在在哪个转运站？",
+    "intent": "物流",
+    "route": "business",
+    "passed": true,
+    "result": {
+      "intent": "物流",
+      "route": "business",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 629,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655931.2786357,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "logistics-4",
+    "question": "我的物流到哪了？",
+    "intent": "物流",
+    "route": "business",
+    "passed": true,
+    "result": {
+      "intent": "物流",
+      "route": "business",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 628,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655932.008776,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "order-1",
+    "question": "帮我查询订单1001的状态。",
+    "intent": "订单",
+    "route": "business",
+    "passed": true,
+    "result": {
+      "intent": "订单",
+      "route": "business",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 629,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655933.0167675,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "order-2",
+    "question": "订单1002实付多少钱？",
+    "intent": "订单",
+    "route": "business",
+    "passed": true,
+    "result": {
+      "intent": "订单",
+      "route": "business",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 629,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655933.9494061,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "order-3",
+    "question": "我的订单是什么时候下的？",
+    "intent": "订单",
+    "route": "business",
+    "passed": true,
+    "result": {
+      "intent": "订单",
+      "route": "business",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 628,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655935.0733354,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "order-4",
+    "question": "先查1001的订单状态再查物流。",
+    "intent": "订单",
+    "route": "business",
+    "passed": true,
+    "result": {
+      "intent": "订单",
+      "route": "business",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 633,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655935.9960842,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "product-1",
+    "question": "MH-DJ101胸围多少？",
+    "intent": "商品咨询",
+    "route": "knowledge",
+    "passed": true,
+    "result": {
+      "intent": "商品咨询",
+      "route": "knowledge",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 631,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655936.8085463,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "product-2",
+    "question": "运费规则怎么计算？",
+    "intent": "商品咨询",
+    "route": "knowledge",
+    "passed": true,
+    "result": {
+      "intent": "商品咨询",
+      "route": "knowledge",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 628,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655937.8053622,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "product-3",
+    "question": "牛仔夹克怎么洗？",
+    "intent": "商品咨询",
+    "route": "knowledge",
+    "passed": true,
+    "result": {
+      "intent": "商品咨询",
+      "route": "knowledge",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 629,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655938.7542105,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "product-4",
+    "question": "积分可以怎么使用？",
+    "intent": "商品咨询",
+    "route": "knowledge",
+    "passed": true,
+    "result": {
+      "intent": "商品咨询",
+      "route": "knowledge",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 628,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655939.7781887,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "returns-1",
+    "question": "订单1001能不能退货？",
+    "intent": "退款退货",
+    "route": "knowledge",
+    "passed": true,
+    "result": {
+      "intent": "退款退货",
+      "route": "knowledge",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 629,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655940.7059157,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "returns-2",
+    "question": "洗过的衣服可以退吗？",
+    "intent": "退款退货",
+    "route": "knowledge",
+    "passed": true,
+    "result": {
+      "intent": "退款退货",
+      "route": "knowledge",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 630,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655941.483715,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "returns-3",
+    "question": "你们家的退货流程是什么？",
+    "intent": "退款退货",
+    "route": "knowledge",
+    "passed": true,
+    "result": {
+      "intent": "退款退货",
+      "route": "knowledge",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 629,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655942.5418763,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "returns-4",
+    "question": "请先查退货政策，再查我的订单1002。",
+    "intent": "退款退货",
+    "route": "knowledge",
+    "passed": true,
+    "result": {
+      "intent": "退款退货",
+      "route": "knowledge",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 636,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655943.1560922,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "service-1",
+    "question": "订单1001退款处理到哪一步了？",
+    "intent": "售后",
+    "route": "business",
+    "passed": true,
+    "result": {
+      "intent": "售后",
+      "route": "business",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 632,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655944.1440709,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "service-2",
+    "question": "帮我核实维修申请的处理状态。",
+    "intent": "售后",
+    "route": "business",
+    "passed": true,
+    "result": {
+      "intent": "售后",
+      "route": "business",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 629,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655944.8703866,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "service-3",
+    "question": "我需要转人工，先不要建工单。",
+    "intent": "售后",
+    "route": "business",
+    "passed": true,
+    "result": {
+      "intent": "售后",
+      "route": "business",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 632,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655945.7199163,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "service-4",
+    "question": "给我一个创建售后工单的选项。",
+    "intent": "售后",
+    "route": "business",
+    "passed": true,
+    "result": {
+      "intent": "售后",
+      "route": "business",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 631,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655947.0165596,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "complaint-1",
+    "question": "我要投诉！",
+    "intent": "投诉",
+    "route": "complaint",
+    "passed": true,
+    "result": {
+      "intent": "投诉",
+      "route": "complaint",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 625,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655947.7657511,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "complaint-2",
+    "question": "订单1001一直没到，我要投诉你们！",
+    "intent": "投诉",
+    "route": "complaint",
+    "passed": true,
+    "result": {
+      "intent": "投诉",
+      "route": "complaint",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 633,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655948.59091,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "complaint-3",
+    "question": "我要正式投诉商品破损问题。",
+    "intent": "投诉",
+    "route": "complaint",
+    "passed": true,
+    "result": {
+      "intent": "投诉",
+      "route": "complaint",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 629,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655950.0045793,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "complaint-4",
+    "question": "请受理我的投诉，不要自动建工单。",
+    "intent": "投诉",
+    "route": "complaint",
+    "passed": true,
+    "result": {
+      "intent": "投诉",
+      "route": "complaint",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 633,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655951.4222722,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "chat-1",
+    "question": "你好！",
+    "intent": "闲聊",
+    "route": "chat",
+    "passed": true,
+    "result": {
+      "intent": "闲聊",
+      "route": "chat",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 624,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655952.4183328,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "chat-2",
+    "question": "谢谢你。",
+    "intent": "闲聊",
+    "route": "chat",
+    "passed": true,
+    "result": {
+      "intent": "闲聊",
+      "route": "chat",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 624,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655953.766605,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "chat-3",
+    "question": "晚安。",
+    "intent": "闲聊",
+    "route": "chat",
+    "passed": true,
+    "result": {
+      "intent": "闲聊",
+      "route": "chat",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 624,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655954.5186183,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  },
+  {
+    "id": "chat-4",
+    "question": "今天天气真不错。",
+    "intent": "闲聊",
+    "route": "chat",
+    "passed": true,
+    "result": {
+      "intent": "闲聊",
+      "route": "chat",
+      "usage": {
+        "token_limit": 12000,
+        "charged_tokens": 627,
+        "tool_calls": 0,
+        "decision_calls": 0,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792655955.4949832,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  }
+]
