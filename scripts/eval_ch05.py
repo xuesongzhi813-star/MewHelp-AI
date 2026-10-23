@@ -22,7 +22,7 @@ async def evaluate(suite: str, output: str):
         try:
             if suite == 'intents':
                 budget = new_budget()
-                intent = await classify_intent(case['question'], gateway=gateway, budget=budget)
+                intent = (await classify_intent(case['question'], gateway=gateway, budget=budget)).intent
                 result = {'intent': intent, 'route': route_intent(intent), 'usage': budget.model_dump()}
                 passed = intent == case['intent'] and result['route'] == case['route']
             else:
