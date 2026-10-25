@@ -27,6 +27,7 @@ REQUIRED_ENV = {
 
 # 模型 -> 真实表名,用于列对齐断言(防字段名漂移)
 MODEL_BY_TABLE = {
+    "conversation_summaries": models.ConversationSummary,
     "conversations": models.Conversation,
     "faq": models.Faq,
     "messages": models.Message,
