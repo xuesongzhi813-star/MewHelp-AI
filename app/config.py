@@ -15,6 +15,22 @@ class Settings(BaseSettings):
     llm_extra_body: Annotated[dict, NoDecode]
     llm_temperature: float = 0.7
     history_token_budget: int = 4000
+    model_context_window: int = Field(default=128000, gt=0)
+    max_output_tokens: int = Field(default=4000, gt=0)
+    max_user_input_tokens: int = Field(default=4000, gt=0)
+    max_agent_steps: int = Field(default=8, ge=2)
+    tool_result_max_tokens: int = Field(default=2400, gt=0)
+    rerank_top_k: int = Field(default=10, ge=1, le=10)
+    context_target_turns: int = Field(default=40, gt=0)
+    context_steady_turn_tokens: int = Field(default=2000, gt=0)
+    context_system_reserve_tokens: int = Field(default=2000, gt=0)
+    context_evidence_tokens_per_hit: int = Field(default=300, gt=0)
+    context_summary_reserve_tokens: int = Field(default=1000, gt=0)
+    context_protocol_reserve_tokens: int = Field(default=400, ge=0)
+    context_safety_ratio: float = Field(default=0.025, ge=0, lt=1, allow_inf_nan=False)
+    agent_decision_max_tokens: int = Field(default=300, gt=0)
+    context_cjk_tokens_per_char: float = Field(default=1.0, gt=0, allow_inf_nan=False)
+    context_turn_token_budget: int | None = Field(default=None, gt=0)
     max_sessions: int = 1000
     chat_workflow_enabled: bool = False
     intent_model: str | None = None

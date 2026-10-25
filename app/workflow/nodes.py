@@ -50,6 +50,9 @@ def paired_history(messages):
 
 
 def model_messages(state):
+    if state.get('current_turn_from_msg_id'):
+        from app.context.assembly import build_agent_context
+        return build_agent_context(state,settings=get_settings())
     messages = paired_history(trim_history(state['messages'], get_settings().history_token_budget))
     # Leading ToolMessages may have lost their preceding call during trimming.
     while messages and messages[0].type == 'tool':
@@ -89,7 +92,7 @@ def citation_items(result):
 
 def node_bodies(deps):
     async def order_context(state):
-        key = verified_order_id(state.get('understanding'), messages=state['messages'])
+        key = state.get('verified_reference_order_id') or verified_order_id(state.get('understanding'), messages=state['messages'])
         if key:
             return {'selected_order_id': key, 'selection': None}
         return {'selected_order_id': None, 'selection': prepare_order_selection(state), 'status': 'awaiting_order'}
@@ -125,8 +128,10 @@ def node_bodies(deps):
         if not isinstance(order, dict) or order.get('order_id') != key:
             raise ValueError('订单结果无效')
         call_id = uuid.uuid4().hex
-        messages = [AIMessage(content='', tool_calls=[{'name':'query_order', 'args':{'order_id':key}, 'id':call_id}]),
-                    ToolMessage(content=content, tool_call_id=call_id)]
+        from app.context.assembly import bounded_observation
+        messages = [AIMessage(content='', additional_kwargs={'preloaded_order':True},tool_calls=[{'name':'query_order', 'args':{'order_id':key}, 'id':call_id}]),
+                    ToolMessage(content=bounded_observation(content,settings=get_settings()) if budget.contextual else content,
+                        tool_call_id=call_id,additional_kwargs={'preloaded_order':True},artifact={'raw':content})]
         question = state['resolved_question']
         if state.get('selection') and state['selection']['status'] == 'consumed':
             question = f"关于订单{key}的{order.get('product', '商品')}：{question}"
@@ -152,14 +157,26 @@ def node_bodies(deps):
 
     async def resolve(state):
         budget = BudgetState.model_validate(state['budget'])
-        history = paired_history(trim_history(state['messages'], get_settings().history_token_budget))
-        result = await understand_question(state['raw_question'], history=history, gateway=deps.gateway, budget=budget)
+        context=None
+        if state.get('current_turn_from_msg_id'):
+            from app.context.assembly import history_from_state
+            context=history_from_state(state)
+            from app.context.logging import log_history_context
+            log_history_context(state['session_id'],state['conversation_id'],state['request_id'],context=context,phase='turn')
+        history = context.messages if context else paired_history(trim_history(state['messages'], get_settings().history_token_budget))
+        async def lookup(from_id,upto_id):
+            return await asyncio.to_thread(deps.context_store.read_messages,state['conversation_id'],from_id=from_id,upto_id=upto_id)
+        result = await understand_question(state['raw_question'], history=history, gateway=deps.gateway, budget=budget,
+                                           context=context,source_lookup=lookup if deps.context_store else None)
         return {'resolved_question': result.standalone_question, 'understanding': result.model_dump(),
+                'verified_reference_order_id':result.order_id if result.source_message_id and result.source_message_id.startswith('summary:') else None,
                 'budget': budget.model_dump()}
 
     async def classify(state):
         budget = BudgetState.model_validate(state['budget'])
-        intent = await classify_intent(state['resolved_question'], gateway=deps.gateway, budget=budget)
+        from app.context.assembly import history_from_state
+        intent = await classify_intent(state['resolved_question'], gateway=deps.gateway, budget=budget,
+                                      context=history_from_state(state) if state.get('current_turn_from_msg_id') else None)
         if intent.intent in {'退款退货','售后'}:
             payload = {'type':'workflow', 'stage':'question_understood'}
             if get_settings().workflow_debug_view:
@@ -180,6 +197,8 @@ def node_bodies(deps):
         budget = BudgetState.model_validate(state['budget'])
         try:
             if budget.tool_calls >= budget.max_tool_calls or budget.decision_calls >= budget.max_decisions:
+                if budget.contextual:
+                    return {'pending_decision':None,'control':{'response_mode':'answer'},'budget':budget.model_dump()}
                 raise BudgetExceeded(BUDGET_TEXT)
             response = await decide_step(model_messages(state), gateway=deps.gateway, budget=budget)
             control = response_control(response)
@@ -226,9 +245,17 @@ def node_bodies(deps):
             final = AIMessage(content=BUDGET_TEXT)
         else:
             if state.get('retrieval') and not evidence_gate(load_retrieval(state['retrieval'])):
-                writer({'type': 'citations', 'items': citation_items(load_retrieval(state['retrieval']))})
+                if state.get('current_turn_from_msg_id'):
+                    from app.context.assembly import dynamic_data
+                    _, evidence=dynamic_data(state,settings=get_settings())
+                    writer({'type':'citations','items':[{**e,'original_url':f"/kb?chunk_id={e['chunk_id']}"} for e in evidence]})
+                else:
+                    writer({'type': 'citations', 'items': citation_items(load_retrieval(state['retrieval']))})
             try:
-                final = await answer_step([*model_messages(state), SystemMessage(content='现在仅生成自然语言回答或必要追问；不要输出控制JSON，不得声称任何可选操作已执行。')],
+                messages=model_messages(state)
+                if not state.get('current_turn_from_msg_id'):
+                    messages=[*messages,SystemMessage(content='现在仅生成自然语言回答或必要追问；不要输出控制JSON，不得声称任何可选操作已执行。')]
+                final = await answer_step(messages,
                                           gateway=deps.gateway, budget=budget, emit=writer)
             except BudgetExceeded:
                 final = AIMessage(content=BUDGET_TEXT)

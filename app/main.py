@@ -1,13 +1,14 @@
 from pathlib import Path
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.jobs import router as jobs_router
 from app.api.kb import router as kb_router
 from app.api.chat_actions import router as chat_actions_router
+from app.api.conversations import router as conversations_router
 from app.chat_service import stream_chat
 from app.dependencies import get_chat_model, get_extractor, get_answer_model
 from app.history import SessionStore
@@ -19,13 +20,28 @@ from app.config import get_settings
 def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(application):
+        from app.context.logging import configure_context_logging
+        configure_context_logging(Path('log/app.log'))
         if get_settings().chat_workflow_enabled:
             from app.workflow.runtime import open_checkpointer, WorkflowRuntime
+            from app.context.budget import validate_startup
+            from app.context.summary import SummaryManager, Summarizer
+            from app.llm import build_workflow_model
+            from app.context.assembly import fixed_agent_schemas
+            settings=get_settings()
+            budget=validate_startup(settings,schemas=fixed_agent_schemas())
+            import logging
+            from app.context.budget import cumulative_turn_limit
+            logging.getLogger(__name__).info('context startup budget=%s cumulative_turn_limit=%s',budget.to_dict(),cumulative_turn_limit(settings))
             async with open_checkpointer(get_settings().workflow_checkpoint_path) as saver:
                 application.state.workflow_runtime = WorkflowRuntime(saver, application.state.session_store)
+                manager=SummaryManager(application.state.workflow_runtime.context_store,
+                    Summarizer(build_workflow_model(settings),settings=settings),settings=settings)
+                application.state.workflow_runtime.summary_manager=manager
                 try:
                     yield
                 finally:
+                    await manager.aclose()
                     application.state.workflow_runtime = None
         else:
             yield
@@ -36,6 +52,7 @@ def create_app() -> FastAPI:
     application.include_router(kb_router)
     application.include_router(jobs_router)
     application.include_router(chat_actions_router)
+    application.include_router(conversations_router)
     # 共享后台脚本与页面资源;index.html 仍由下方 `/` 直接返回,不做改动。
     application.mount("/static", StaticFiles(directory=static_dir), name="static")
     # ch02:会话历史落 MySQL。构造期不连库(引擎惰性建连),MySQL 不可达时
@@ -70,9 +87,20 @@ def create_app() -> FastAPI:
         # 这里只做接线;帧协议、media_type、响应头全部保持不变。
         # model 仍走每请求构建的 FastAPI 依赖(与 ch01 同款注入模式,测试可 override)。
         store: SessionStore = application.state.session_store
+        from app.context.identity import parse_canonical
+        try:
+            identity=parse_canonical(request.session_id)
+            if identity and ((request.user_id is not None and request.user_id!=identity.user_id)
+                    or (request.conversation_id is not None and request.conversation_id!=identity.conversation_id)):
+                raise ValueError('identity mismatch')
+            if request.conversation_id is not None and identity is None:
+                raise ValueError('canonical session_id required')
+        except ValueError:
+            raise HTTPException(422,'会话标识与请求不一致。') from None
         return StreamingResponse(
             stream_chat(request.session_id, request.message, store=store, model=llm, answer_model=answer_llm,
-                        workflow_runtime=application.state.workflow_runtime),
+                        workflow_runtime=application.state.workflow_runtime,user_id=request.user_id,
+                        conversation_id=request.conversation_id),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )

@@ -1,6 +1,7 @@
 """Explicit deterministic skeleton around the agent's decision/tool cycle."""
 from dataclasses import dataclass
 from typing import Any, Callable
+import uuid
 
 from langgraph.graph import StateGraph, START, END
 
@@ -15,13 +16,25 @@ class WorkflowDeps:
     retrieve: Callable
     execute: Callable
     record_low_confidence: Callable
+    context_store: Any = None
 
 
 def build_workflow(*, checkpointer, deps: WorkflowDeps):
     builder = StateGraph(WorkflowState)
     for name, body in node_bodies(deps).items():
         async def wrapped(state, _body=body, _name=name):
-            result = await _body(state)
+            from app.context.logging import context_scope
+            with context_scope(state):
+                result = await _body(state)
+            if state.get('current_turn_from_msg_id'):
+                turn = state['current_turn_from_msg_id']
+                refs = dict(state.get('message_refs', {}))
+                for message in result.get('messages', []):
+                    message.id = (f'assistant:{turn}' if result.get('final_text') is not None
+                                  else message.id or f'internal:{uuid.uuid4().hex}')
+                    refs[message.id] = {'db_id':None, 'turn_from_msg_id':turn}
+                if result.get('messages'):
+                    result['message_refs'] = refs
             return {**result, 'node_trace': [*state.get('node_trace', []), _name]}
         builder.add_node(name, wrapped)
     builder.add_edge(START, 'resolve_reference')

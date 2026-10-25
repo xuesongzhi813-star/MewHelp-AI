@@ -7,6 +7,8 @@ class ChatRequest(BaseModel):
 
     session_id: str = Field(min_length=1, description="会话 ID,用于区分不同用户的对话")
     message: str = Field(min_length=1, description="用户发送的消息内容")
+    user_id: str | None = Field(default=None,pattern=r'^[0-9a-f]{32}$')
+    conversation_id: int | None = Field(default=None,gt=0)
 
 
 class ConfirmTicketRequest(BaseModel):

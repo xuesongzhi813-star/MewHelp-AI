@@ -10,15 +10,17 @@ from app.workflow.router_prompts import UNDERSTANDING_PROMPT
 
 class UnderstandingResult(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    standalone_question: str = Field(min_length=1, max_length=2000)
+    standalone_question: str = Field(min_length=1, max_length=32000)
     reference_status: Literal['unchanged', 'resolved', 'ambiguous']
     order_id: str | None = Field(default=None, max_length=64)
     source_message_id: str | None = None
 
 
-async def understand_question(question, *, history, gateway, budget):
+async def understand_question(question, *, history, gateway, budget, context=None, source_lookup=None):
+    if context is not None:
+        history=[HumanMessage(s.content,id=f'summary:{s.id}') for s in context.summaries]+context.messages
     messages = [SystemMessage(content=UNDERSTANDING_PROMPT), HumanMessage(content=json.dumps({
-        'history': [{'id': m.id, 'role': m.type, 'content': m.content} for m in history],
+        'history': context.text if context is not None else [{'id': m.id, 'role': m.type, 'content': m.content} for m in history],
         'question': question}, ensure_ascii=False))]
     result = None
     for attempt in range(2):
@@ -26,7 +28,7 @@ async def understand_question(question, *, history, gateway, budget):
             result = UnderstandingResult.model_validate(await gateway.understand(messages, budget))
             break
         except ValueError:
-            messages.append(SystemMessage(content='上次格式无效。只输出要求字段的JSON，订单与来源未知填null。'))
+            messages.append(HumanMessage(content='上次格式无效。只输出要求字段的JSON，订单与来源未知填null。'))
     fallback = UnderstandingResult(standalone_question=question, reference_status='ambiguous')
     if result is None or result.reference_status == 'ambiguous':
         return fallback
@@ -34,9 +36,16 @@ async def understand_question(question, *, history, gateway, budget):
         result = result.model_copy(update={'standalone_question': question})
     source = next((m for m in history if m.id and m.id == result.source_message_id), None)
     source_text = str(source.content) if source is not None else ''
-    if result.order_id and validated_order_reference(result.order_id, result.source_message_id,
-                                                     question=question, history=history) is None:
-        return fallback
+    if result.order_id:
+        if result.source_message_id and result.source_message_id.startswith('summary:'):
+            from app.context.assembly import validate_summary_reference
+            summary=next((s for s in context.summaries if f'summary:{s.id}'==result.source_message_id),None) if context else None
+            rows=await source_lookup(summary.from_msg_id,summary.upto_msg_id) if summary and source_lookup else []
+            if not context or not validate_summary_reference(result.order_id,result.source_message_id,
+                    question=question,context=context,source_rows=rows):
+                return fallback
+        elif validated_order_reference(result.order_id,result.source_message_id,question=question,history=history) is None:
+            return fallback
     # Rewrites may add supported entities, but never lose user-specified conditions.
     candidate = result.standalone_question
     supported_numbers = set(re.findall(r'\d+(?:\.\d+)?', question + ' ' + source_text))

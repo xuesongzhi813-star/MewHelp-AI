@@ -98,6 +98,8 @@ async def stream_chat(
     planner=None,
     answer_model=None,
     workflow_runtime=None,
+    user_id=None,
+    conversation_id=None,
 ) -> AsyncIterator[str]:
     """编排一次完整对话轮:可能含一轮工具调用,产出 SSE 帧字符串流。
 
@@ -109,7 +111,8 @@ async def stream_chat(
         settings = get_settings()
 
         if workflow_runtime is not None:
-            async with aclosing(workflow_runtime.stream_turn(session_id, message, model=model)) as stream:
+            async with aclosing(workflow_runtime.stream_turn(session_id, message, model=model,user_id=user_id,
+                                                            conversation_id=conversation_id)) as stream:
                 async for event in stream:
                     yield _sse(event)
             return
