@@ -1,6 +1,6 @@
 # MewHelp AI 开发交接文档（面向 OpenAI Codex）
 
-> **2026-10-25 ch07已finish，Task0–11完成。** 独立整章review2项Important均先RED再修复GREEN；最终全量758 passed in35.19s。真实summary18/18、旧路由意图75/75+订单9/9；默认两组21轮0降级0摘要、demo两组21轮11/10次降级各2段并正确回忆最初订单1001/未收货/签收诉求；真实/合成Chrome及日志逐条核对通过。最终独立profile已重校准，8018运行最终demo版本；原8015/8016未动。唯一产品仍在.worktrees/ch05-workflow-agent / ch06-router，HEAD c4453dc，本章未提交/推送/合并/部署，无DDL/清库/依赖升级/.env修改，未清账本。先读CH07_CURRENT_PROGRESS.md、产品reports/ch07/summary.md和demo.md、dev-notes/ch07.md阶段25；统一运维已覆盖ch07。下文所有ch07进行中/暂停仅历史快照。
+> **2026-10-25 ch07已finish，Task0–11完成。** 独立整章review2项Important均先RED再修复GREEN；最终全量758 passed in35.19s。真实summary18/18、旧路由意图75/75+订单9/9；默认两组21轮0降级0摘要、demo两组21轮11/10次降级各2段并正确回忆最初订单1001/未收货/签收诉求；真实/合成Chrome及日志逐条核对通过。最终独立profile已重校准，8018运行最终demo版本；原8015/8016未动。唯一产品仍在.worktrees/ch05-workflow-agent；交付分支 ch07-context，5 个提交已推送，PR #7（base ch06-router）待评审合并，尚未合并/部署；无DDL/清库/依赖升级/.env修改，未清账本。先读CH07_CURRENT_PROGRESS.md、产品reports/ch07/summary.md和demo.md、dev-notes/ch07.md阶段25；统一运维已覆盖ch07。下文所有ch07进行中/暂停仅历史快照。
 
 > 2026-10-25 ch07 Task0–10已完成、Task11独立整章review进行中，未finish。最新全量757 passed；summary18/18，旧路由75/75意图+9/9订单；默认两组21轮零压缩、demo两组21轮完整级联各2段且正确回忆1001/未收货/签收诉求，真实8018浏览器通过。独立校准prefix1531≤保底2000、demo5650/3954/1695。先读CH07_CURRENT_PROGRESS.md及dev-notes/ch07.md阶段22；review结论/最终修复和finish仍待完成。原8015/8016未动，8018为本章demo进程。此条覆盖下文进行中/暂停快照；仍无提交/推送/DDL/清库。
 

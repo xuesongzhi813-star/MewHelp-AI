@@ -1,11 +1,11 @@
 # ch07 当前状态与交接入口
 
-2026-10-25：**Task0–11已finish。** 设计/计划已批准，Native执行。此前暂停、进行中、旧通过数均为历史；功能见dev-notes/ch07.md阶段1–25，随后整项目运维文档统一及核验见阶段26–28。
+2026-10-25：**Task0–11已finish，并已完成 Git 交付。** 设计/计划已批准，Native执行。此前暂停、进行中、旧通过数均为历史；功能见dev-notes/ch07.md阶段1–25，随后整项目运维文档统一及核验见阶段26–28。产品已切分支 ch07-context，5 个提交推送 origin/ch07-context，PR #7（base ch06-router）待评审合并。
 
 ## 产品现场与保全
 
-- 唯一产品：E:/MewHelp AI/.worktrees/ch05-workflow-agent，分支ch06-router，HEAD/base c4453dcea2f8867e496c8e217713466ae44e5df4。本章全部未提交；根E:/MewHelp AI仅镜像文档。
-- 原6项kb/语料换行差异与基线hash一致；没有提交/推送/合并/部署、DDL/create_all/迁移/清库、依赖升级或真实.env改动。旧profile和旧checkpoint保留。
+- 唯一产品：E:/MewHelp AI/.worktrees/ch05-workflow-agent，交付分支 ch07-context，base/上一章 HEAD c4453dcea2f8867e496c8e217713466ae44e5df4。本章 5 个提交已推送，PR #7（base ch06-router）待评审合并；尚未合并/部署。根 E:/MewHelp AI 仅镜像文档。
+- 原6项kb/语料换行差异与基线hash一致且未纳入提交；本章已提交推送但未合并/部署，未执行DDL/create_all/迁移/清库、依赖升级或真实.env改动。旧profile和旧checkpoint保留。
 - Python：E:/MewHelp AI/.venv/Scripts/python.exe。沙箱执行可能需工具权限流程，不重建环境。
 - 本章独立8018运行最终demo版；本轮当时PID44000/工具session35784只是快照，后续核对实际PID。原8015/8016未停。
 
