@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "scope": "documentation only, no lifecycle/write commands executed",
+  "files": [
+    {
+      "file": "docs/OPERATIONS.md",
+      "powershell_blocks": 19,
+      "local_links": 4,
+      "sha256": "0bc0d9a311b5f6c8ca013146b6e781d8337f596e98bf8dbe920f01b2481a2caf"
+    },
+    {
+      "file": "MelHelp AI日常运行维护手册.md",
+      "powershell_blocks": 19,
+      "local_links": 4,
+      "sha256": "e24195ea834978aafb11c3400b0cc60fc3ae7e1599bf1dabec6b59954460f4f6"
+    },
+    {
+      "file": "deploy/milvus/OPERATIONS.md",
+      "powershell_blocks": 2,
+      "local_links": 1,
+      "sha256": "a08fde588ead5c09d18f854b9f8eee2ea71501fea40decffd9d92d85d5e44925"
+    }
+  ],
+  "canonical_and_friendly_consistent": true,
+  "mirrors_consistent": true
+}
