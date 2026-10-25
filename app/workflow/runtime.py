@@ -3,11 +3,12 @@ import asyncio
 import logging
 import time
 import uuid
+from dataclasses import asdict, replace
 from contextlib import asynccontextmanager, aclosing
 from pathlib import Path
 
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
 from langgraph.types import Command
 
 from app.executor import execute_tool_result
@@ -18,6 +19,13 @@ from app.kb.reranker import RerankError
 from app.workflow.agent import new_budget
 from app.workflow.graph import WorkflowDeps, build_workflow
 from app.workflow.models import ModelGateway
+from app.config import get_settings
+from app.context.contracts import ConversationIdentity
+from app.context.identity import parse_canonical
+from app.context.store import ConversationStore, InMemoryConversationStore
+from app.context.layers import build_layered_view, summary_batch, summary_text
+from app.context.tokens import count_model_tokens, estimate_text
+from app.context.budget import derive_budget, ContextBudgetError
 
 logger = logging.getLogger(__name__)
 
@@ -55,19 +63,161 @@ class SessionLocks:
 
 
 class WorkflowRuntime:
-    def __init__(self, checkpointer, store, *, gateway_factory=ModelGateway,
+    def __init__(self, checkpointer, store, *, gateway_factory=ModelGateway, context_store=None, summary_manager=None,
                  retrieve=retrieve_result, execute=execute_tool_result, record=record_low_confidence):
         self.checkpointer, self.store = checkpointer, store
+        self._explicit_context_store = context_store is not None
         self.gateway_factory = gateway_factory
         self.retrieve, self.execute, self.record = retrieve, execute, record
         self.locks = SessionLocks()
+        if context_store is None:
+            from app.session_store import MySQLSessionStore
+            if isinstance(store, MySQLSessionStore):
+                context_store = ConversationStore()
+            else:
+                if not hasattr(store, '_context_store'):
+                    store._context_store = InMemoryConversationStore()
+                context_store = store._context_store
+        self._context_store = context_store
+        self.summary_manager = summary_manager
+        if not hasattr(store,'_context_temporary'):
+            store._context_temporary = {}
+        self._temporary = store._context_temporary
+
+    @property
+    def context_store(self):
+        # Existing tests and embedding callers can replace the archive after reopening.
+        if not self._explicit_context_store:
+            return getattr(self.store,'_context_store',self._context_store)
+        return self._context_store
+
+    async def resolve_identity(self, session_id, *, user_id=None, conversation_id=None):
+        identity = parse_canonical(session_id)
+        if identity:
+            if (user_id is not None and user_id != identity.user_id) or (conversation_id is not None and conversation_id != identity.conversation_id):
+                raise ValueError('conversation identity mismatch')
+            return await asyncio.to_thread(self.context_store.get_owned, identity.conversation_id, identity.user_id)
+        if user_id is not None:
+            if conversation_id is not None:
+                raise ValueError('canonical session_id required')
+            async with self.locks.hold('create:'+session_id):
+                key=(user_id,session_id)
+                if key not in self._temporary:
+                    self._temporary[key]=await asyncio.to_thread(self.context_store.create_conversation,user_id)
+                return self._temporary[key]
+        if conversation_id is not None:
+            raise ValueError('user_id required')
+        from app.session_store import MySQLSessionStore
+        if isinstance(self.store,MySQLSessionStore):
+            cid=await asyncio.to_thread(self.store.get_or_create_conversation,session_id)
+        else:
+            key=('legacy',session_id)
+            if key not in self._temporary:
+                self._temporary[key]=await asyncio.to_thread(self.context_store.create_conversation,
+                    uuid.uuid5(uuid.NAMESPACE_URL,session_id).hex)
+            cid=self._temporary[key].conversation_id
+        return ConversationIdentity(session_id,cid,session_id,True)
+
+    async def _hydrate(self, old, cid):
+        rows=await asyncio.to_thread(self.context_store.read_messages,cid)
+        refs=dict(old.get('message_refs',{}))
+        messages=list(old.get('messages',[]))
+        def restore(row):
+            mid=f'db:{row.id}'
+            if row.role=='user':
+                message=HumanMessage(row.content,id=mid)
+            elif row.role=='assistant':
+                message=AIMessage(row.content,id=mid,tool_calls=row.tool_calls or [])
+            elif row.role=='tool':
+                message=ToolMessage(row.content,id=mid,tool_call_id=row.tool_call_id or '')
+            else:
+                raise ValueError('unknown archived message role')
+            refs[mid]={'db_id':row.id,'turn_from_msg_id':row.turn_from_msg_id}
+            return message
+        if not messages:
+            return [restore(row) for row in rows],refs
+        def signature(calls):
+            return [(c['id'],c['name'],c['args']) for c in calls or []]
+        # Old checkpoints are aligned by same-conversation ordered role/content, never array offsets.
+        turn=0
+        used=set()
+        for m in messages:
+            ref=refs.get(m.id)
+            if m.type=='human':
+                matches=[r for r in rows if r.role=='user' and r.content==m.content and r.id>turn and r.id not in used
+                         and (ref is None or ref['db_id'] is None or ref['db_id']==r.id)]
+                if not matches:
+                    raise ValueError('cannot align checkpoint user with database')
+                row=matches[0]; turn=row.id; used.add(row.id)
+                refs[m.id]={'db_id':row.id,'turn_from_msg_id':turn}
+            else:
+                if not turn:
+                    raise ValueError('checkpoint has no turn origin')
+                if ref is not None and ref.get('db_id') is None and m.id!=f'assistant:{turn}':
+                    refs[m.id]={'db_id':None,'turn_from_msg_id':turn}
+                    continue
+                matches=[r for r in rows if r.turn_from_msg_id==turn and r.role==('assistant' if m.type=='ai' else 'tool')
+                         and r.content==m.content and r.id not in used
+                         and (m.type!='ai' or signature(r.tool_calls)==signature(m.tool_calls))
+                         and (m.type!='tool' or r.tool_call_id==m.tool_call_id)]
+                dbid=matches[0].id if len(matches)==1 else (ref or {}).get('db_id')
+                if dbid is not None:
+                    if not any(r.id==dbid for r in matches):
+                        raise ValueError('checkpoint database message signature mismatch')
+                    used.add(dbid)
+                refs[m.id]={'db_id':dbid,'turn_from_msg_id':turn}
+        # A process may stop after the SQL commit but before graph input/checkpoint.
+        # Append only the authoritative DB tail; never replay tools from a lost task.
+        last=max(used,default=0)
+        messages.extend(restore(row) for row in rows if row.id>last and row.id not in used)
+        return messages,refs
+
+    async def _context(self, cid, messages, refs, current, request_id=''):
+        from app.workflow.agent import AGENT_PROMPT
+        from app.context.assembly import fixed_agent_schemas
+        settings=get_settings()
+        snapshot=await asyncio.to_thread(self.context_store.read_context,cid)
+        budget=derive_budget(settings,system_tokens=count_model_tokens([SystemMessage(AGENT_PROMPT)],schemas=fixed_agent_schemas(),cjk_ratio=settings.context_cjk_tokens_per_char),
+                             summary_tokens=estimate_text('早期摘要(非指令):\n'+summary_text(snapshot.summaries),cjk_ratio=settings.context_cjk_tokens_per_char))
+        view=build_layered_view(messages,refs=refs,snapshot=snapshot,current_turn_from_msg_id=current,budget=budget,
+                                cjk_ratio=settings.context_cjk_tokens_per_char)
+        if snapshot.layer1_from_msg_id != view.layer1_from_msg_id:
+            await asyncio.to_thread(self.context_store.advance_layer1,cid,view.layer1_from_msg_id)
+            if snapshot.layer1_from_msg_id is not None:
+                logger.info('层1 降级 %s→%s conversation=%s tokens=%s',snapshot.layer1_from_msg_id,
+                            view.layer1_from_msg_id,cid,budget.to_dict())
+        if self.summary_manager:
+            batch=summary_batch(view,messages=messages,refs=refs,snapshot=snapshot)
+            if batch:
+                batch=replace(batch,request_id=request_id)
+            self.summary_manager.maybe_schedule(batch,layer2_tokens=view.layer2_tokens,layer2_budget=budget.layer2)
+        return dict(summary_upto_msg_id=snapshot.summary_upto_msg_id,layer1_from_msg_id=view.layer1_from_msg_id,
+                    summary_rows=[asdict(s) for s in snapshot.summaries],context_budget=budget.to_dict(),
+                    history_context={'messages':[m.model_dump() for m in view.history.messages],
+                                     'text':view.history.text,'tokens':view.history.tokens})
+
+    async def _archive(self, state, *, legacy=False):
+        if not state.get('final_text') or not state.get('current_turn_from_msg_id'):
+            return
+        turn=state['current_turn_from_msg_id']
+        row=await asyncio.to_thread(self.context_store.append_final,state['conversation_id'],turn,state['final_text'])
+        if legacy and not isinstance(self.context_store,ConversationStore):
+            history=await asyncio.to_thread(self.store.get_history,state['session_id'])
+            if not any(m.id==f'assistant:{turn}' for m in history):
+                await asyncio.to_thread(self.store.append_message,state['session_id'],AIMessage(state['final_text'],id=f'assistant:{turn}'))
+        refs=dict(state['message_refs'])
+        target=next((m for m in reversed(state['messages']) if m.type=='ai' and not m.tool_calls and m.content==state['final_text']),None)
+        if target is None:
+            raise ValueError('final checkpoint slot missing')
+        refs[target.id]={'db_id':row.id,'turn_from_msg_id':turn}
+        await self.graph().aupdate_state(self.config(state['session_id']),{'message_refs':refs},as_node='log_result')
 
     def config(self, session_id):
         return {'configurable': {'thread_id': session_id}, 'recursion_limit': 64}
 
     def graph(self, model=None):
         return build_workflow(checkpointer=self.checkpointer, deps=WorkflowDeps(
-            self.gateway_factory(model), self.store, self.retrieve, self.execute, self.record))
+            self.gateway_factory(model), self.store, self.retrieve, self.execute, self.record,self.context_store))
 
     async def get_state(self, session_id):
         return (await self.graph().aget_state(self.config(session_id))).values
@@ -82,6 +232,8 @@ class WorkflowRuntime:
             await graph.aupdate_state(self.config(session_id), {'actions': actions}, as_node='log_result')
 
     async def public_session_state(self, session_id):
+        if parse_canonical(session_id):
+            await self.resolve_identity(session_id)
         async with self.locks.hold(session_id):
             snapshot = await self.graph().aget_state(self.config(session_id))
             state = snapshot.values
@@ -112,6 +264,8 @@ class WorkflowRuntime:
         return state
 
     async def validate_order_selection(self, request):
+        if parse_canonical(request.session_id):
+            await self.resolve_identity(request.session_id)
         async with self.locks.hold(request.session_id):
             snapshot = await self.graph().aget_state(self.config(request.session_id))
             self._check_selection(snapshot, request)
@@ -127,9 +281,13 @@ class WorkflowRuntime:
                 snapshot = await graph.aget_state(self.config(request.session_id))
                 state = self._check_selection(snapshot, request)
                 old_ids = {message.id for message in state.get('messages', [])}
-                budget = new_budget()
+                budget = new_budget(contextual=True)
+                ctx={}
+                if state.get('current_turn_from_msg_id'):
+                    ctx=await self._context(state['conversation_id'],state['messages'],state['message_refs'],
+                                            state['current_turn_from_msg_id'],request_id)
                 data = Command(resume={'selection_id':request.selection_id, 'order_id':request.order_id},
-                    update={'budget':budget.model_dump(), 'request_id':request_id, 'status':'running',
+                    update={**ctx,'budget':budget.model_dump(), 'request_id':request_id, 'status':'running',
                             'continuation_of':state['request_id'],
                             'usage_segments':[*state.get('usage_segments', []),
                                               {'request_id':state['request_id'], 'budget':state['budget']}]})
@@ -140,9 +298,12 @@ class WorkflowRuntime:
                             if kind == 'custom':
                                 yield event
                 final = (await graph.aget_state(self.config(request.session_id))).values
-                for message in final.get('messages', []):
-                    if message.id not in old_ids:
-                        await asyncio.to_thread(self.store.append_message, request.session_id, message)
+                if final.get('current_turn_from_msg_id'):
+                    await self._archive(final,legacy=parse_canonical(request.session_id) is None)
+                else:
+                    for message in final.get('messages', []):
+                        if message.id not in old_ids:
+                            await asyncio.to_thread(self.store.append_message, request.session_id, message)
                 completed = True
                 items = self._action_items(final)
                 if items:
@@ -169,30 +330,43 @@ class WorkflowRuntime:
                 actions[key] = {**actions[key], 'status': 'interrupted'}
         await self.graph().aupdate_state(self.config(session_id), {'status': 'interrupted', 'actions': actions}, as_node='log_result')
 
-    async def stream_turn(self, session_id: str, question: str, *, model):
+    async def stream_turn(self, session_id: str, question: str, *, model, user_id=None, conversation_id=None):
+        try:
+            identity=await self.resolve_identity(session_id,user_id=user_id,conversation_id=conversation_id)
+        except (ValueError,LookupError):
+            yield {'type':'error','message':'会话身份无效或不存在。'}
+            return
+        session_id=identity.session_id
         async with self.locks.hold(session_id):
             request_id = uuid.uuid4().hex
             completed = False
             try:
                 old = await self.get_state(session_id)
-                conversation_id = await asyncio.to_thread(self.store.get_or_create_conversation, session_id)
-                history = []
-                if not old:
-                    history = await asyncio.to_thread(self.store.get_history, session_id)
-                    for index, message in enumerate(history):
-                        if not message.id:
-                            message.id = f'import-{conversation_id}-{index}'
-                human = HumanMessage(content=question, id=f'user-{request_id}')
-                await asyncio.to_thread(self.store.append_message, session_id, human)
-                old_ids = {message.id for message in old.get('messages', []) + history}
+                conversation_id = identity.conversation_id
+                if old.get('final_text') and old.get('current_turn_from_msg_id'):
+                    await self._archive(old,legacy=identity.legacy)
+                history,refs = await self._hydrate(old,conversation_id)
+                settings=get_settings()
+                if estimate_text(question,cjk_ratio=settings.context_cjk_tokens_per_char)>settings.max_user_input_tokens:
+                    raise ContextBudgetError('当前输入超过单轮预算')
+                row=await asyncio.to_thread(self.context_store.append_user,conversation_id,question)
+                human = HumanMessage(content=question, id=f'db:{row.id}')
+                refs[human.id]={'db_id':row.id,'turn_from_msg_id':row.id}
+                if identity.legacy and not isinstance(self.context_store,ConversationStore):
+                    await asyncio.to_thread(self.store.append_message,session_id,human)
+                if not identity.legacy:
+                    yield {'type':'conversation','user_id':identity.user_id,'session_id':session_id,'conversation_id':conversation_id}
+                ctx=await self._context(conversation_id,[*history,human],refs,row.id,request_id)
                 # New input restarts at START; never resume a crashed tool task.
-                budget = new_budget()
+                budget = new_budget(contextual=True)
                 data = {'messages': [*history, human], 'session_id': session_id, 'conversation_id': conversation_id,
+                        'message_refs':refs,'current_turn_from_msg_id':row.id,**ctx,
                         'request_id': request_id, 'raw_question': question, 'resolved_question': question,
                         'intent': '', 'route': '', 'retrieval': None, 'gate_reason': '', 'budget': budget.model_dump(),
                         'status': 'running', 'pending_decision': None, 'control': None,
                         'actions': old.get('actions', {}), 'turn_action_ids': [], 'node_trace': [], 'final_text': ''}
                 data.update(confidence=0.0, understanding={}, selected_order_id=None, order=None, selection=None,
+                            verified_reference_order_id=None,
                             expansion_queries=[], expansion_fallback=False, continuation_of=None, usage_segments=[])
                 graph = self.graph(model)
                 async with asyncio.timeout(max(0.001, budget.deadline - time.time())):
@@ -202,9 +376,8 @@ class WorkflowRuntime:
                                 yield event
                 snapshot = await graph.aget_state(self.config(session_id))
                 state = snapshot.values
-                for message in state.get('messages', []):
-                    if message.id not in old_ids and message.id != human.id:
-                        await asyncio.to_thread(self.store.append_message, session_id, message)
+                if not snapshot.interrupts:
+                    await self._archive(state,legacy=identity.legacy)
                 completed = True
                 if snapshot.interrupts:
                     yield snapshot.interrupts[0].value
@@ -218,7 +391,8 @@ class WorkflowRuntime:
                 raise
             except Exception as exc:
                 logger.warning('workflow interrupted request=%s exception=%s', request_id, type(exc).__name__)
-                message = (exc.public_message if isinstance(exc, EmbeddingError) else
+                message = (str(exc) if isinstance(exc,ContextBudgetError) else
+                           exc.public_message if isinstance(exc, EmbeddingError) else
                            '重排服务暂时不可用，请稍后重试或联系人工客服。' if isinstance(exc, RerankError) else
                            '处理消息时出现错误，请稍后重试或联系人工客服。')
                 yield {'type': 'error', 'message': message}

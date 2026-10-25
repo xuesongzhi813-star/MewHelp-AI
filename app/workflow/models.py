@@ -51,6 +51,8 @@ class ModelGateway:
     async def _json(self, schema, messages, budget, *, output_cap, model=None):
         reservation = reserve_call(budget, messages, schema_text=json.dumps(schema.model_json_schema(), ensure_ascii=False), output_cap=output_cap)
         kwargs = self._kwargs(budget, reservation)
+        from app.context.logging import log_gateway_call
+        log_gateway_call(messages,[schema.model_json_schema()],schema.__name__,reservation.output_cap)
         async with asyncio.timeout(kwargs['timeout']):
             response = await (model or self.model).with_structured_output(schema, method='json_mode', include_raw=True, **kwargs).ainvoke(messages, **kwargs)
         try:
@@ -111,14 +113,21 @@ class ModelGateway:
         if refund:
             tools = []
         schemas = [tool.tool_call_schema.model_json_schema() for tool in tools] + [RESPOND_SCHEMA]
+        if budget.contextual:
+            from app.context.assembly import fixed_agent_schemas
+            schemas=fixed_agent_schemas()
+        from app.config import get_settings
+        output_cap=get_settings().agent_decision_max_tokens if budget.contextual else 512
         with budget._lock:
             if budget.decision_calls >= budget.max_decisions:
                 raise BudgetExceeded("本轮决策次数已达上限")
-            reservation = reserve_call(budget, messages, schema_text=json.dumps(schemas, ensure_ascii=False), output_cap=512)
+            reservation = reserve_call(budget, messages, schema_text=json.dumps(schemas, ensure_ascii=False), output_cap=output_cap)
             budget.decision_calls += 1
         kwargs = self._kwargs(budget, reservation)
+        from app.context.logging import log_gateway_call
+        log_gateway_call(messages,schemas,'decide',reservation.output_cap)
         async with asyncio.timeout(kwargs["timeout"]):
-            response = await self.model.bind_tools([*tools, RESPOND_SCHEMA], parallel_tool_calls=False).ainvoke(messages, **kwargs)
+            response = await self.model.bind_tools(schemas if budget.contextual else [*tools, RESPOND_SCHEMA], parallel_tool_calls=False).ainvoke(messages, **kwargs)
         if not isinstance(response, AIMessage):
             raise ValueError("模型决策消息非法")
         settle_call(budget, reservation, usage=response.usage_metadata, output_text=json.dumps(response.model_dump(), ensure_ascii=False, default=str))
@@ -128,11 +137,17 @@ class ModelGateway:
         # Keep tool schemas visible but provider-side disabled (ch02 DSML finding).
         tools = [tool for tool in get_tools() if tool.name != "create_ticket"]
         schemas = [tool.tool_call_schema.model_json_schema() for tool in tools]
-        reservation = reserve_call(budget, messages, schema_text=json.dumps(schemas, ensure_ascii=False), output_cap=2048)
+        if budget.contextual:
+            from app.context.assembly import fixed_agent_schemas
+            schemas=fixed_agent_schemas()
+        from app.config import get_settings
+        reservation = reserve_call(budget, messages, schema_text=json.dumps(schemas, ensure_ascii=False), output_cap=get_settings().max_output_tokens if budget.contextual else 2048)
         kwargs = self._kwargs(budget, reservation)
+        from app.context.logging import log_gateway_call
+        log_gateway_call(messages,schemas,'answer',reservation.output_cap)
         gathered = None
         async with asyncio.timeout(kwargs["timeout"]):
-            async for chunk in self.model.bind_tools(tools, tool_choice="none", parallel_tool_calls=False).astream(messages, **kwargs):
+            async for chunk in self.model.bind_tools(schemas if budget.contextual else tools, tool_choice="none", parallel_tool_calls=False).astream(messages, **kwargs):
                 if getattr(chunk, "tool_call_chunks", None) or getattr(chunk, "tool_calls", None):
                     raise ValueError("回答阶段不允许调用工具")
                 gathered = chunk if gathered is None else gathered + chunk

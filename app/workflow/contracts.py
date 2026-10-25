@@ -28,6 +28,7 @@ class ControlDecision(BaseModel):
 
 
 class BudgetState(BaseModel):
+    contextual: bool = False
     token_limit: int = Field(default=12000, gt=0)
     charged_tokens: int = Field(default=0, ge=0)
     tool_calls: int = Field(default=0, ge=0)
@@ -43,6 +44,14 @@ class BudgetState(BaseModel):
 
 class WorkflowState(TypedDict, total=False):
     messages: Annotated[list[BaseMessage], add_messages]
+    message_refs: dict
+    summary_upto_msg_id: int | None
+    layer1_from_msg_id: int | None
+    summary_rows: list[dict]
+    current_turn_from_msg_id: int
+    history_context: dict
+    context_budget: dict
+    verified_reference_order_id: str | None
     session_id: str
     conversation_id: int
     request_id: str

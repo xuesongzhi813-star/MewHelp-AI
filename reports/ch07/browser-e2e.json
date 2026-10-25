@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "provider": "real",
+  "base": "http://localhost:8018",
+  "user_id": "cce57f7c113b430cab0df22dd9b39f27",
+  "conversation_id": 5915,
+  "raw_messages": 46,
+  "recall": "最开始那笔订单号是 1001，商品为复古水洗牛仔夹克（SKU：MH-DJ101），金额199元。\n\n您当时的诉求是：反馈未收到货，要求核实签收人及包裹去向。记录中系统显示2026-10-21 14:00已签收、顺丰承运，但没有具体签收人信息，包裹去向未查清；该问题没有后续处理结果，不能视为已解决。👍👎",
+  "checks": [
+    "raw history equality",
+    "continue summarized conversation",
+    "multiple conversations",
+    "new keeps old",
+    "switch and refresh",
+    "same browser grouping",
+    "summary mark",
+    "sidebar outage chat works",
+    "mobile no overflow"
+  ],
+  "errors": []
+}

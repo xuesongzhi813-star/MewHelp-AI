@@ -7,7 +7,7 @@ created_at/updated_at 全部交给数据库默认值(CURRENT_TIMESTAMP / ON UPDA
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import BigInteger, Boolean, Enum, ForeignKey, JSON, String, Text, func
+from sqlalchemy import BigInteger, Boolean, Enum, ForeignKey, Integer, JSON, String, Text, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -23,6 +23,9 @@ class Conversation(Base):
     # BIGINT UNSIGNED AUTO_INCREMENT 主键(UNSIGNED 由数据库 DDL 维护,此处仅映射)
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    summary_upto_msg_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    layer1_from_msg_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     status: Mapped[str] = mapped_column(
         Enum("进行中", "已转人工", "已结束", name="conversation_status"),
         nullable=False,
@@ -37,6 +40,18 @@ class Conversation(Base):
         server_default=func.current_timestamp(),
         server_onupdate=func.current_timestamp(),  # ON UPDATE CURRENT_TIMESTAMP 由数据库执行
     )
+
+
+class ConversationSummary(Base):
+    """Append-only summary segments; schema is maintained outside this project."""
+    __tablename__ = 'conversation_summaries'
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    conversation_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('conversations.id'))
+    seq: Mapped[int] = mapped_column(Integer, nullable=False)
+    from_msg_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    upto_msg_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.current_timestamp())
 
 
 class Faq(Base):

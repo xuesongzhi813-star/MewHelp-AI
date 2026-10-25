@@ -1,15 +1,13 @@
-import math
 from typing import Protocol
 
 from langchain_core.messages import BaseMessage
 from langchain_core.messages.utils import trim_messages
+from app.context.tokens import estimate_text
 
 
 def estimate_tokens(text: str) -> int:
     """近似估算 token 数:CJK 字符 1 字 1 token,其余 4 字符 1 token。"""
-    cjk = sum(1 for ch in text if _is_cjk(ch))
-    other = len(text) - cjk
-    return cjk + math.ceil(other / 4)
+    return estimate_text(text)
 
 
 def _is_cjk(ch: str) -> bool:

@@ -1,5 +1,13 @@
 # MewHelp AI 开发交接文档（面向 OpenAI Codex）
 
+> **2026-10-25 ch07已finish，Task0–11完成。** 独立整章review2项Important均先RED再修复GREEN；最终全量758 passed in35.19s。真实summary18/18、旧路由意图75/75+订单9/9；默认两组21轮0降级0摘要、demo两组21轮11/10次降级各2段并正确回忆最初订单1001/未收货/签收诉求；真实/合成Chrome及日志逐条核对通过。最终独立profile已重校准，8018运行最终demo版本；原8015/8016未动。唯一产品仍在.worktrees/ch05-workflow-agent；交付分支 ch07-context，5 个提交已推送，PR #7（base ch06-router）待评审合并，尚未合并/部署；无DDL/清库/依赖升级/.env修改，未清账本。先读CH07_CURRENT_PROGRESS.md、产品reports/ch07/summary.md和demo.md、dev-notes/ch07.md阶段25；统一运维已覆盖ch07。下文所有ch07进行中/暂停仅历史快照。
+
+> 2026-10-25 ch07 Task0–10已完成、Task11独立整章review进行中，未finish。最新全量757 passed；summary18/18，旧路由75/75意图+9/9订单；默认两组21轮零压缩、demo两组21轮完整级联各2段且正确回忆1001/未收货/签收诉求，真实8018浏览器通过。独立校准prefix1531≤保底2000、demo5650/3954/1695。先读CH07_CURRENT_PROGRESS.md及dev-notes/ch07.md阶段22；review结论/最终修复和finish仍待完成。原8015/8016未动，8018为本章demo进程。此条覆盖下文进行中/暂停快照；仍无提交/推送/DDL/清库。
+
+> 2026-10-25 ch07已由用户明确恢复，Native执行中：Task0–9完成，Task10真实模型/21轮验收进行中，Task11独立review未开始，未finish。Task9后全量748 passed；Task10评估器4 passed。三层视图/异步摘要/State/三处注入/日志/API/侧栏已实现，合成API真实Chrome检查通过；真实模型质量、两配置21轮及真实后端浏览器尚待验收。先读docs/CH07_CURRENT_PROGRESS.md、dev-notes/ch07.md阶段10起和产品专属ledger；仍仅在.worktrees/ch05-workflow-agent / ch06-router改产品，原根镜像文档。无提交/推送/DDL/清库，不停止旧8015/8016。下条暂停仅为历史快照。
+
+> 2026-10-23 ch07由用户主动暂停（「先停止任务开发」），仅完成交接留痕，不自动续跑。设计/计划已批准且选择Native；Task0基线699 passed/1 failed（已建会话列尚未ORM映射，归Task2），Task1预算基础模块及相关回归32 passed in1.10s；Task2–11未开始，完整功能未接入/验收。先读 docs/CH07_CURRENT_PROGRESS.md、dev-notes/ch07.md及产品专属ledger，明确恢复后从Task2继续，不重做审批。产品仍在 .worktrees/ch05-workflow-agent / ch06-router，所有未提交内容保留，无提交/推送/DDL/清库。下文ch06完成状态仅为上一章事实。
+
 > 2026-10-23 ch06功能与本章验收完成：Tasks1–8，最终700 passed；真实意图/严格JSON75/75、订单9/9，问题字面74/75、有限语义75/75。原生interrupt/Command重启选单续跑、聊天卡片/固定原因表单、真实合成工单取消0/确认1/重复1已验证；主力默认、降级仅惰性配置种子。质量限制：12政策题扩写未提升召回（均83.33%），短指代可能低分拒答。产品在同一工作树，已切分支ch06-router提交并推送，PR #6（base ch05-workflow-agent）待评审合并；8016为演示端口，尚未合并、部署。先读CH06_CURRENT_PROGRESS与产品reports/ch06/summary.md、demo.md；统一运维已更新。本条覆盖下文中断时“进行中”。
 
 
@@ -10,7 +18,7 @@
 
 > 2026-10-22 ch05功能与验证完成：Tasks1–8及最终评审修复/真实验收已完成，630项全量通过、分类28/28、Agent8/8。唯一产品实现位于`E:/MewHelp AI/.worktrees/ch05-workflow-agent`；原根仅同步文档。先读[CH05当前状态](CH05_CURRENT_PROGRESS.md)、[交付报告](../reports/ch05/summary.md)及dev-notes/ch05.md。保留未提交工作树，未commit/push/merge/deploy；Task9官方关闭见专属账本。
 
-整个项目的启动、检查、运行维护、停止与整套备份恢复统一见[运行维护手册](OPERATIONS.md)。现行手册统一覆盖截至ch06的准备、启动、停止、维护、校准及备份恢复。下文旧章节命令仅保留历史，不作为当前启动依据；不按章节拼接操作。
+整个项目的启动、检查、运行维护、停止与整套备份恢复统一见[运行维护手册](OPERATIONS.md)。现行手册已完整复核至ch07，包含默认/demo预算、8018统一入口、摘要任务、浏览器归组、严格profile及MySQL/SQLite/检索数据的成套保全。根目录《MelHelp AI日常运行维护手册.md》为同版阅读副本。下文旧章节命令仅保留历史，不作为当前启动依据；不按章节拼接操作。本次仅文档和只读验证，没有执行启停/备份/恢复或重跑付费验收。
 
 > 2026-10-21 ch04 v2修复/扩写已finish：最新559项通过；当前知识124块，最终集合knowledge_hybrid_ch04_v2_final、阈值0.25。先读CH04_CURRENT_PROGRESS.md及dev-notes/ch04.md阶段30起。旧v1 finish/65块/.65仅历史；以下ch03主体也是历史。未提交/推送/合并/DDL。
 

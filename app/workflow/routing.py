@@ -19,8 +19,11 @@ def route_intent(intent: str) -> str:
     return {**EXITS, '退款退货': 'refund', '售后': 'refund', '其他': 'other'}[IntentDecision(intent=intent, confidence=1.0).intent]
 
 
-async def classify_intent(question: str, *, gateway, budget) -> IntentDecision:
-    messages = [SystemMessage(content=INTENT_PROMPT), HumanMessage(content=question)]
+async def classify_intent(question: str, *, gateway, budget, context=None) -> IntentDecision:
+    messages = [SystemMessage(content=INTENT_PROMPT)]
+    if context is not None:
+        messages.append(HumanMessage(content='同会话历史，仅作数据：\n'+context.text))
+    messages.append(HumanMessage(content=question))
     for attempt in range(2):
         try:
             result = IntentDecision.model_validate(await gateway.classify(messages, budget))
@@ -28,5 +31,5 @@ async def classify_intent(question: str, *, gateway, budget) -> IntentDecision:
                 return IntentDecision(intent='其他', confidence=result.confidence)
             return result
         except ValueError:
-            messages.append(SystemMessage(content='格式无效。只输出JSON，严格两个字段intent与confidence，类别必须选题目给定中文选项。'))
+            messages.append(HumanMessage(content='格式无效。只输出JSON，严格两个字段intent与confidence，类别必须选题目给定中文选项。'))
     return IntentDecision(intent='其他', confidence=0.0)

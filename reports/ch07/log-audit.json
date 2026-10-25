@@ -1,0 +1,60 @@
+{
+  "passed": true,
+  "checks": [
+    "history_ctx every turn",
+    "summaries in coref/intent/agent",
+    "one fixed system first",
+    "fixed tools digest",
+    "every actual Agent payload fits guard"
+  ],
+  "cases": {
+    "5916": {
+      "profile": "default",
+      "history_requests": 21,
+      "history_summary_phases": [],
+      "model_calls": 12,
+      "model_summary_calls": 0,
+      "schema_hashes": [
+        "04905ad826720fa6982ab6fb00ff558f937d4ff05198204a66f042610b3692c0"
+      ]
+    },
+    "5918": {
+      "profile": "default",
+      "history_requests": 21,
+      "history_summary_phases": [],
+      "model_calls": 14,
+      "model_summary_calls": 0,
+      "schema_hashes": [
+        "04905ad826720fa6982ab6fb00ff558f937d4ff05198204a66f042610b3692c0"
+      ]
+    },
+    "5915": {
+      "profile": "demo",
+      "history_requests": 25,
+      "history_summary_phases": [
+        "IntentDecision",
+        "UnderstandingResult",
+        "turn"
+      ],
+      "model_calls": 21,
+      "model_summary_calls": 10,
+      "schema_hashes": [
+        "04905ad826720fa6982ab6fb00ff558f937d4ff05198204a66f042610b3692c0"
+      ]
+    },
+    "5917": {
+      "profile": "demo",
+      "history_requests": 21,
+      "history_summary_phases": [
+        "IntentDecision",
+        "UnderstandingResult",
+        "turn"
+      ],
+      "model_calls": 10,
+      "model_summary_calls": 2,
+      "schema_hashes": [
+        "04905ad826720fa6982ab6fb00ff558f937d4ff05198204a66f042610b3692c0"
+      ]
+    }
+  }
+}

@@ -53,7 +53,7 @@
         if (item.state !== 'available' || failed) return;
         close(); item.state = 'submitting'; status.textContent = '正在创建工单…'; paint();
         try {
-          const result = await submit({session_id: sessionId, action_id: item.action_id, confirmed: true});
+          const result = await submit({session_id: typeof sessionId === 'function' ? sessionId() : sessionId, action_id: item.action_id, confirmed: true});
           item.state = 'completed'; status.textContent = result.result;
         } catch (_) {
           item.state = 'uncertain'; status.textContent = '工单结果待核实，请联系客服核实，请勿重复提交。';
@@ -67,7 +67,7 @@
       setActions(items) {
         for (const item of items || []) {
           if (typeof item.action_id !== 'string' || !['handoff', 'create_ticket'].includes(item.kind)) continue;
-          if (!states.has(item.action_id)) states.set(item.action_id, {...item, state: 'available', label: item.kind === 'handoff' ? '转人工' : '建工单'});
+          if (!states.has(item.action_id)) states.set(item.action_id, {...item, state: item.status || 'available', label: item.kind === 'handoff' ? '转人工' : '建工单'});
         }
         paint();
       },

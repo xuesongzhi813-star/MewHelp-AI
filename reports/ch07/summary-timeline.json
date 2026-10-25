@@ -1,0 +1,823 @@
+{
+  "controlled_event_test": "tests/test_context_runtime.py::test_background_cannot_block_foreground_or_overwrite_checkpoint",
+  "real_runs": [
+    {
+      "conversation_id": 5915,
+      "segments": [
+        {
+          "trigger": 1792898050.783515,
+          "summary_done": 1792898053.232226,
+          "user_done": 1792898052.3861609,
+          "user_first_token": 1792898052.3430462,
+          "done_before_summary": true,
+          "trigger_log": "summary trigger conversation=5915 from=13223 upto=13230 expected=None layer1=13231 request=e6d687483db44252b80c3acf985d111b tokens=1960 budget=1695 elapsed_ms=0 {'reason': '层2 约 1960 token > 预算 1695'}",
+          "done_log": "summary done conversation=5915 from=13223 upto=13230 expected=None layer1=13231 request=e6d687483db44252b80c3acf985d111b tokens=1960 budget=1695 elapsed_ms=2453 {'segment': '第1段', 'reason': 'committed'}"
+        },
+        {
+          "trigger": 1792898059.694306,
+          "summary_done": 1792898061.374454,
+          "user_done": 1792898061.349292,
+          "user_first_token": 1792898061.243846,
+          "done_before_summary": true,
+          "trigger_log": "summary trigger conversation=5915 from=13231 upto=13251 expected=13230 layer1=13252 request=283deae2c479482d91832aacd6f25557 tokens=2037 budget=1695 elapsed_ms=0 {'reason': '层2 约 2037 token > 预算 1695'}",
+          "done_log": "summary done conversation=5915 from=13231 upto=13251 expected=13230 layer1=13252 request=283deae2c479482d91832aacd6f25557 tokens=2037 budget=1695 elapsed_ms=1672 {'segment': '第2段', 'reason': 'committed'}"
+        }
+      ],
+      "history_logged_turns": 21,
+      "turns": 21
+    },
+    {
+      "conversation_id": 5917,
+      "segments": [
+        {
+          "trigger": 1792898102.792806,
+          "summary_done": 1792898104.7854161,
+          "user_done": 1792898104.9981005,
+          "user_first_token": 1792898104.9666033,
+          "done_before_summary": false,
+          "trigger_log": "summary trigger conversation=5917 from=13294 upto=13316 expected=None layer1=13317 request=a0724bbf2f854a53b2ee82d60917787b tokens=2317 budget=1695 elapsed_ms=0 {'reason': '层2 约 2317 token > 预算 1695'}",
+          "done_log": "summary done conversation=5917 from=13294 upto=13316 expected=None layer1=13317 request=a0724bbf2f854a53b2ee82d60917787b tokens=2317 budget=1695 elapsed_ms=1984 {'segment': '第1段', 'reason': 'committed'}"
+        },
+        {
+          "trigger": 1792898111.8955634,
+          "summary_done": 1792898113.7891693,
+          "user_done": 1792898113.8215916,
+          "user_first_token": 1792898113.7817264,
+          "done_before_summary": false,
+          "trigger_log": "summary trigger conversation=5917 from=13317 upto=13329 expected=13316 layer1=13330 request=d7a87d7992bb45e6b6f705c524315698 tokens=1851 budget=1695 elapsed_ms=0 {'reason': '层2 约 1851 token > 预算 1695'}",
+          "done_log": "summary done conversation=5917 from=13317 upto=13329 expected=13316 layer1=13330 request=d7a87d7992bb45e6b6f705c524315698 tokens=1851 budget=1695 elapsed_ms=1875 {'segment': '第2段', 'reason': 'committed'}"
+        }
+      ],
+      "history_logged_turns": 21,
+      "turns": 21
+    }
+  ],
+  "timeline": [
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 1,
+      "time": 1792898017.1285548
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 1,
+      "time": 1792898018.023294
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 2,
+      "time": 1792898021.7988188
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 2,
+      "time": 1792898022.1231306
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 3,
+      "time": 1792898023.6475892
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 3,
+      "time": 1792898023.680474
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 4,
+      "time": 1792898025.0718377
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 4,
+      "time": 1792898025.1130607
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 5,
+      "time": 1792898026.6978717
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 5,
+      "time": 1792898026.7308698
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 6,
+      "time": 1792898028.019256
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 6,
+      "time": 1792898028.047769
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 7,
+      "time": 1792898035.5138137
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 7,
+      "time": 1792898035.8714774
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 8,
+      "time": 1792898038.7716422
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 8,
+      "time": 1792898038.8139563
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 9,
+      "time": 1792898040.4385788
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 9,
+      "time": 1792898040.4760878
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 10,
+      "time": 1792898042.018739
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 10,
+      "time": 1792898042.0528727
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 11,
+      "time": 1792898043.950173
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 11,
+      "time": 1792898044.0062702
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 12,
+      "time": 1792898046.488949
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 12,
+      "time": 1792898046.527826
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 13,
+      "time": 1792898050.4428265
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 13,
+      "time": 1792898050.7349162
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 14,
+      "time": 1792898052.3430462
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 14,
+      "time": 1792898052.3861609
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 15,
+      "time": 1792898054.22704
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 15,
+      "time": 1792898054.266302
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 16,
+      "time": 1792898056.5365455
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 16,
+      "time": 1792898056.5717847
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 17,
+      "time": 1792898058.0240839
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 17,
+      "time": 1792898058.0606253
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 18,
+      "time": 1792898059.5924819
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 18,
+      "time": 1792898059.6305213
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 19,
+      "time": 1792898061.243846
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 19,
+      "time": 1792898061.349292
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 20,
+      "time": 1792898063.2930186
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 20,
+      "time": 1792898063.3360224
+    },
+    {
+      "event": "background_wait_before_recall",
+      "case": "accept-chat-a",
+      "seconds": 0.0
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-a",
+      "turn": 21,
+      "time": 1792898066.8201554
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-a",
+      "turn": 21,
+      "time": 1792898067.665817
+    },
+    {
+      "time": 1792898038.8861816,
+      "message": "层1 降级 13223→13225 conversation=5915 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898038.8867898,
+      "message": "summary skip conversation=5915 from=13223 upto=13224 expected=None layer1=13225 request=ef911b96321b42c38e3bfe66c415a415 tokens=610 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898040.524242,
+      "message": "summary skip conversation=5915 from=13223 upto=13224 expected=None layer1=13225 request=e9f16c36b5554b87ac5b2097723b2c87 tokens=610 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898042.1054688,
+      "message": "summary skip conversation=5915 from=13223 upto=13224 expected=None layer1=13225 request=b85e5bc54b3841c9bef86cacde93f115 tokens=610 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898044.0694218,
+      "message": "层1 降级 13225→13227 conversation=5915 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898044.0704215,
+      "message": "summary skip conversation=5915 from=13223 upto=13226 expected=None layer1=13227 request=5e409482e129435798b49ce0e00b1b89 tokens=1221 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898046.5742404,
+      "message": "层1 降级 13227→13229 conversation=5915 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898046.5742404,
+      "message": "summary skip conversation=5915 from=13223 upto=13228 expected=None layer1=13229 request=016f6f7d7bd844fea9044b6d7fa85c74 tokens=1590 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898050.7825074,
+      "message": "层1 降级 13229→13231 conversation=5915 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898050.783515,
+      "message": "summary trigger conversation=5915 from=13223 upto=13230 expected=None layer1=13231 request=e6d687483db44252b80c3acf985d111b tokens=1960 budget=1695 elapsed_ms=0 {'reason': '层2 约 1960 token > 预算 1695'}"
+    },
+    {
+      "time": 1792898050.7895155,
+      "message": "summary start conversation=5915 from=13223 upto=13230 expected=None layer1=13231 request=e6d687483db44252b80c3acf985d111b tokens=1960 budget=1695 elapsed_ms=0 {}"
+    },
+    {
+      "time": 1792898052.1185756,
+      "message": "summary usage conversation=5915 schema=SummaryCandidate estimate=2554 usage={'input_tokens': 2012, 'output_tokens': 94, 'total_tokens': 2106, 'input_token_details': {'cache_read': 256}, 'output_token_details': {}}"
+    },
+    {
+      "time": 1792898052.440167,
+      "message": "层1 降级 13231→13234 conversation=5915 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898052.440167,
+      "message": "summary skip conversation=5915 from=13223 upto=13233 expected=None layer1=13234 request=b8e20e962f434217874e45fb397e96d6 tokens=2329 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898053.2122078,
+      "message": "summary usage conversation=5915 schema=CoverageCheck estimate=2636 usage={'input_tokens': 2098, 'output_tokens': 14, 'total_tokens': 2112, 'input_token_details': {'cache_read': 256}, 'output_token_details': {}}"
+    },
+    {
+      "time": 1792898053.232226,
+      "message": "summary done conversation=5915 from=13223 upto=13230 expected=None layer1=13231 request=e6d687483db44252b80c3acf985d111b tokens=1960 budget=1695 elapsed_ms=2453 {'segment': '第1段', 'reason': 'committed'}"
+    },
+    {
+      "time": 1792898054.3293319,
+      "message": "层1 降级 13234→13236 conversation=5915 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898054.3293319,
+      "message": "summary skip conversation=5915 from=13231 upto=13235 expected=13230 layer1=13236 request=27257ad295074ce4a3ccc3f4f6327ba5 tokens=739 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898056.6270945,
+      "message": "层1 降级 13236→13242 conversation=5915 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898056.6280916,
+      "message": "summary skip conversation=5915 from=13231 upto=13241 expected=13230 layer1=13242 request=f6d0badb3f81472eb74f8cbeec22ce0e tokens=1292 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898058.1089215,
+      "message": "层1 降级 13242→13248 conversation=5915 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898058.1089215,
+      "message": "summary skip conversation=5915 from=13231 upto=13247 expected=13230 layer1=13248 request=575bd0b17eea4cbb9c5bbec4fc82de82 tokens=1668 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898059.694306,
+      "message": "层1 降级 13248→13252 conversation=5915 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898059.694306,
+      "message": "summary trigger conversation=5915 from=13231 upto=13251 expected=13230 layer1=13252 request=283deae2c479482d91832aacd6f25557 tokens=2037 budget=1695 elapsed_ms=0 {'reason': '层2 约 2037 token > 预算 1695'}"
+    },
+    {
+      "time": 1792898059.7023027,
+      "message": "summary start conversation=5915 from=13231 upto=13251 expected=13230 layer1=13252 request=283deae2c479482d91832aacd6f25557 tokens=2037 budget=1695 elapsed_ms=0 {}"
+    },
+    {
+      "time": 1792898060.420983,
+      "message": "summary usage conversation=5915 schema=SummaryCandidate estimate=2569 usage={'input_tokens': 1916, 'output_tokens': 62, 'total_tokens': 1978, 'input_token_details': {'cache_read': 128}, 'output_token_details': {}}"
+    },
+    {
+      "time": 1792898061.311023,
+      "message": "summary usage conversation=5915 schema=CoverageCheck estimate=2630 usage={'input_tokens': 1970, 'output_tokens': 14, 'total_tokens': 1984, 'input_token_details': {'cache_read': 0}, 'output_token_details': {}}"
+    },
+    {
+      "time": 1792898061.374454,
+      "message": "summary done conversation=5915 from=13231 upto=13251 expected=13230 layer1=13252 request=283deae2c479482d91832aacd6f25557 tokens=2037 budget=1695 elapsed_ms=1672 {'segment': '第2段', 'reason': 'committed'}"
+    },
+    {
+      "time": 1792898061.4126682,
+      "message": "层1 降级 13252→13256 conversation=5915 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898061.4126682,
+      "message": "summary skip conversation=5915 from=13252 upto=13255 expected=13251 layer1=13256 request=e5c21a03d3ee4d7a8884e0c7cfa0adfc tokens=370 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898063.3931704,
+      "message": "层1 降级 13256→13258 conversation=5915 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898063.3941712,
+      "message": "summary skip conversation=5915 from=13252 upto=13257 expected=13251 layer1=13258 request=37368cb2602d4c9f858e8a5cc656a9fd tokens=739 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 1,
+      "time": 1792898075.1221
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 1,
+      "time": 1792898076.0556004
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 2,
+      "time": null
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 2,
+      "time": 1792898077.6029334
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 3,
+      "time": 1792898079.3555412
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 3,
+      "time": 1792898079.4022825
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 4,
+      "time": 1792898080.7094164
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 4,
+      "time": 1792898080.7454135
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 5,
+      "time": 1792898082.235748
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 5,
+      "time": 1792898082.2679915
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 6,
+      "time": 1792898083.7073843
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 6,
+      "time": 1792898083.766392
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 7,
+      "time": 1792898089.7187614
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 7,
+      "time": 1792898090.3111498
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 8,
+      "time": 1792898091.71454
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 8,
+      "time": 1792898091.7761343
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 9,
+      "time": 1792898093.260958
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 9,
+      "time": 1792898093.3070898
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 10,
+      "time": 1792898094.83623
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 10,
+      "time": 1792898094.8922653
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 11,
+      "time": 1792898096.4361587
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 11,
+      "time": 1792898096.477935
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 12,
+      "time": 1792898097.9365878
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 12,
+      "time": 1792898097.9740996
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 13,
+      "time": 1792898102.1778924
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 13,
+      "time": 1792898102.72735
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 14,
+      "time": 1792898104.9666033
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 14,
+      "time": 1792898104.9981005
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 15,
+      "time": 1792898106.9606981
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 15,
+      "time": 1792898107.0118935
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 16,
+      "time": 1792898108.4501874
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 16,
+      "time": 1792898108.5085404
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 17,
+      "time": 1792898110.0143168
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 17,
+      "time": 1792898110.0641506
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 18,
+      "time": 1792898111.7579195
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 18,
+      "time": 1792898111.8388326
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 19,
+      "time": 1792898113.7817264
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 19,
+      "time": 1792898113.8215916
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 20,
+      "time": 1792898115.3912776
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 20,
+      "time": 1792898115.48552
+    },
+    {
+      "event": "background_wait_before_recall",
+      "case": "accept-chat-b",
+      "seconds": 0.0
+    },
+    {
+      "event": "user_first_token",
+      "case": "accept-chat-b",
+      "turn": 21,
+      "time": 1792898119.764438
+    },
+    {
+      "event": "user_done",
+      "case": "accept-chat-b",
+      "turn": 21,
+      "time": 1792898120.7107556
+    },
+    {
+      "time": 1792898091.8366477,
+      "message": "层1 降级 13294→13306 conversation=5917 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898091.8366477,
+      "message": "summary skip conversation=5917 from=13294 upto=13305 expected=None layer1=13306 request=ff56bf3543854245af45b1d4e1c58bc0 tokens=858 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898093.38224,
+      "message": "summary skip conversation=5917 from=13294 upto=13305 expected=None layer1=13306 request=cbcc6fb9eaa240ff837dc9bbe37a6ae1 tokens=858 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898094.94772,
+      "message": "summary skip conversation=5917 from=13294 upto=13305 expected=None layer1=13306 request=2fed2212defb47d1b8baaf75293ca059 tokens=858 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898096.5497127,
+      "message": "层1 降级 13306→13309 conversation=5917 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898096.5497127,
+      "message": "summary skip conversation=5917 from=13294 upto=13306 expected=None layer1=13309 request=7ec3c05687f84c5aa307b64caba495c4 tokens=1191 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898098.039895,
+      "message": "层1 降级 13309→13311 conversation=5917 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898098.039895,
+      "message": "summary skip conversation=5917 from=13294 upto=13310 expected=None layer1=13311 request=4dc9a7cbaadb4d8486c79e79e0ff0665 tokens=1566 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898102.792806,
+      "message": "层1 降级 13311→13317 conversation=5917 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898102.792806,
+      "message": "summary trigger conversation=5917 from=13294 upto=13316 expected=None layer1=13317 request=a0724bbf2f854a53b2ee82d60917787b tokens=2317 budget=1695 elapsed_ms=0 {'reason': '层2 约 2317 token > 预算 1695'}"
+    },
+    {
+      "time": 1792898102.803319,
+      "message": "summary start conversation=5917 from=13294 upto=13316 expected=None layer1=13317 request=a0724bbf2f854a53b2ee82d60917787b tokens=2317 budget=1695 elapsed_ms=0 {}"
+    },
+    {
+      "time": 1792898103.9575322,
+      "message": "summary usage conversation=5917 schema=SummaryCandidate estimate=2883 usage={'input_tokens': 2203, 'output_tokens': 109, 'total_tokens': 2312, 'input_token_details': {'cache_read': 256}, 'output_token_details': {}}"
+    },
+    {
+      "time": 1792898104.7516267,
+      "message": "summary usage conversation=5917 schema=CoverageCheck estimate=2985 usage={'input_tokens': 2304, 'output_tokens': 14, 'total_tokens': 2318, 'input_token_details': {'cache_read': 256}, 'output_token_details': {}}"
+    },
+    {
+      "time": 1792898104.7854161,
+      "message": "summary done conversation=5917 from=13294 upto=13316 expected=None layer1=13317 request=a0724bbf2f854a53b2ee82d60917787b tokens=2317 budget=1695 elapsed_ms=1984 {'segment': '第1段', 'reason': 'committed'}"
+    },
+    {
+      "time": 1792898105.0694587,
+      "message": "层1 降级 13317→13319 conversation=5917 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898105.070467,
+      "message": "summary skip conversation=5917 from=13317 upto=13318 expected=13316 layer1=13319 request=9f18191d27de4c5cbae55d469ba894d0 tokens=376 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898107.056235,
+      "message": "层1 降级 13319→13324 conversation=5917 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898107.0574114,
+      "message": "summary skip conversation=5917 from=13317 upto=13322 expected=13316 layer1=13324 request=5db6974529ef4ca0bd91097e8bb08346 tokens=1100 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898108.5585403,
+      "message": "summary skip conversation=5917 from=13317 upto=13322 expected=13316 layer1=13324 request=f05f938a32414dbe8873bc7bcb8380b2 tokens=1100 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898110.1344616,
+      "message": "层1 降级 13324→13326 conversation=5917 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898110.1354618,
+      "message": "summary skip conversation=5917 from=13317 upto=13325 expected=13316 layer1=13326 request=bf63de4d9059420ea9d075570524cbe3 tokens=1476 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898111.8955634,
+      "message": "层1 降级 13326→13330 conversation=5917 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898111.8955634,
+      "message": "summary trigger conversation=5917 from=13317 upto=13329 expected=13316 layer1=13330 request=d7a87d7992bb45e6b6f705c524315698 tokens=1851 budget=1695 elapsed_ms=0 {'reason': '层2 约 1851 token > 预算 1695'}"
+    },
+    {
+      "time": 1792898111.9040735,
+      "message": "summary start conversation=5917 from=13317 upto=13329 expected=13316 layer1=13330 request=d7a87d7992bb45e6b6f705c524315698 tokens=1851 budget=1695 elapsed_ms=0 {}"
+    },
+    {
+      "time": 1792898112.8962872,
+      "message": "summary usage conversation=5917 schema=SummaryCandidate estimate=2361 usage={'input_tokens': 1834, 'output_tokens': 96, 'total_tokens': 1930, 'input_token_details': {'cache_read': 128}, 'output_token_details': {}}"
+    },
+    {
+      "time": 1792898113.7610602,
+      "message": "summary usage conversation=5917 schema=CoverageCheck estimate=2464 usage={'input_tokens': 1922, 'output_tokens': 14, 'total_tokens': 1936, 'input_token_details': {'cache_read': 0}, 'output_token_details': {}}"
+    },
+    {
+      "time": 1792898113.7891693,
+      "message": "summary done conversation=5917 from=13317 upto=13329 expected=13316 layer1=13330 request=d7a87d7992bb45e6b6f705c524315698 tokens=1851 budget=1695 elapsed_ms=1875 {'segment': '第2段', 'reason': 'committed'}"
+    },
+    {
+      "time": 1792898113.884869,
+      "message": "层1 降级 13330→13334 conversation=5917 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898113.884869,
+      "message": "summary skip conversation=5917 from=13330 upto=13333 expected=13329 layer1=13334 request=a65582b3cba44756a803dc572b1d6f1e tokens=376 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    },
+    {
+      "time": 1792898115.6034884,
+      "message": "层1 降级 13334→13338 conversation=5917 tokens={'window': 18000, 'system': 2000, 'evidence': 1500, 'summary': 1000, 'output': 2000, 'safety': 850, 'peak': 5000, 'history': 5650, 'layer1': 3954, 'layer2': 1695}"
+    },
+    {
+      "time": 1792898115.604494,
+      "message": "summary skip conversation=5917 from=13330 upto=13337 expected=13329 layer1=13338 request=59e10ee6165c4aa29ba3bcf77e10ac7d tokens=752 budget=1695 elapsed_ms=0 {'reason': 'closed/below_budget/singleflight'}"
+    }
+  ]
+}

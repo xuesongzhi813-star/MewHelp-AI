@@ -4,11 +4,13 @@ from __future__ import annotations
 import json
 import time
 import uuid
+import logging
 from dataclasses import dataclass
 
 from langchain_core.messages import BaseMessage
 
 from app.history import estimate_tokens
+from app.context.tokens import count_model_tokens
 from app.workflow.contracts import BudgetState
 
 
@@ -25,8 +27,15 @@ class CallReservation:
 
 def reserve_call(budget: BudgetState, messages: list[BaseMessage], *, schema_text: str, output_cap: int) -> CallReservation:
     # Full message serialization includes function names, IDs and tool arguments.
-    payload = json.dumps([message.model_dump() for message in messages], ensure_ascii=False, default=str)
-    input_tokens = estimate_tokens(payload + schema_text) + 16
+    if budget.contextual:
+        from app.config import get_settings
+        from app.context.budget import ensure_fits
+        schemas=json.loads(schema_text) if schema_text else []
+        if isinstance(schemas,dict):
+            schemas=[schemas]
+        input_tokens=ensure_fits(messages,schemas=schemas,output_cap=output_cap,settings=get_settings())
+    else:
+        input_tokens = count_model_tokens(messages) + estimate_tokens(schema_text) + 16
     with budget._lock:
         remaining = budget.token_limit - budget.charged_tokens - input_tokens
         if time.time() >= budget.deadline or remaining <= 0 or output_cap <= 0:
@@ -53,3 +62,5 @@ def settle_call(budget: BudgetState, reservation: CallReservation, *, usage: dic
             budget.estimated_calls += 1
         else:
             budget.actual_calls += 1
+        logging.getLogger(__name__).info('model usage estimate_input=%s reserved_output=%s actual=%s charge=%s delta=%s',
+            reservation.input_tokens,reservation.output_cap,usage,charge,charge-reservation.input_tokens)
