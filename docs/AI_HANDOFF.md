@@ -1,3 +1,9 @@
+# Git 交付：ch08/ch09 分支与 PR（2026-10-28）
+
+用户要求分别提交 ch08、ch09 并创建 PR、分析合并方式。已从 ch07-context 建立 `ch08-tools`（4 个提交，HEAD 09485f5），再基于它建立 `ch09-observability-flywheel`（4 个提交，HEAD c73c4d9），两分支均已推送。PR #8（ch08-tools → ch01-pure-chat）与 PR #9（ch09 → ch08-tools，stacked）待评审；建议先合并 #8，再把 #9 base 改为 ch01-pure-chat 后合并。ch08 工作树全量 `pytest tests -q` 947 passed；ch09 全量 `pytest -q` 1111 passed。干净检出存在既有 CRLF/frozen-hash 敏感失败（ch07 基线同样失败），与本两章代码无因果关系。详见 dev-notes/ch09 阶段 34。
+
+---
+
 # 当前运维修复：旧profile启动误用（2026-10-28）
 
 用户按日常文档执行旧demo_ch08 profile校验报code_hash/runtime_corpus_hash差异。已复现，当前ch09 active/profile严格检查有效，不需重校准。OPERATIONS正文已完整切换ch09，旧全文移至docs/history，新增Test-MewHelpProfile及第5节分流；四份手册同步。文档原检查命令、7工具预算、127条一致知识与临时8项HTTP启动验证通过，SDK正常排空，自有8021/8022/8023已停止。没有改profile/知识/.env/业务代码，没有消费旧池。见reports/ch09/profile-startup-fix.md和dev-notes/ch09阶段31–33。
