@@ -93,8 +93,9 @@ def api_client():
 # ---------------------------------------------------------------------------
 
 
-def test_registry_has_seven_jobs():
+def test_registry_has_eight_fixed_jobs_including_ch09_evaluation():
     assert set(jobs.JOBS) == {
+        'ch09-eval',
         "kb-preview",
         "kb-build",
         "seed-conv",

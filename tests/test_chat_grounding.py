@@ -125,14 +125,16 @@ async def test_no_hits_or_low_score_use_retrieval_pool_without_answer_model(grou
     assert model.calls == [] and events[-1]['type'] == 'done'
 
 
-async def test_pool_failure_is_error_without_claiming_recorded(grounded, monkeypatch):
+async def test_pool_failure_keeps_refusal_and_reports_unsaved(grounded, monkeypatch):
     grounded.result = RetrievalResult(grounded.plan, 'hybrid_rerank')
     def fail(*args):
         raise RuntimeError('private DB details')
     monkeypatch.setattr(chat, 'record_low_confidence', fail)
     events = await run(grounded)
-    assert events[-1]['type'] == 'error'
-    assert not any(e['type'] in ('done', 'token', 'citations') for e in events)
+    assert events[-1]['type'] == 'done'
+    assert any(e['type'] == 'collection_status' and e['saved'] is False for e in events)
+    assert ''.join(e['content'] for e in events if e['type'] == 'token') == REFUSAL_TEXT
+    assert not any(e['type'] == 'citations' for e in events)
     assert '已记录' not in str(events) and 'private' not in str(events)
 
 
@@ -242,6 +244,7 @@ async def test_refusal_pool_binds_real_mysql_conversation_and_persists_once(grou
         assert len(rows) == 1
         assert rows[0].raw_question == grounded.raw and rows[0].source == 'retrieval_low_conf'
         assert rows[0].reason and rows[0].created_at
+        assert rows[0].retrieved_chunks['snapshot_status'] == 'no_hits'
     messages = store.get_history(session_id)
     assert [type(m) for m in messages] == [HumanMessage, AIMessage, ToolMessage, AIMessage]
     assert messages[-1].content == REFUSAL_TEXT
