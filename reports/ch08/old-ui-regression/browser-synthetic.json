@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "runner": "Playwright + Chromium, real static assets, synthetic HTTP",
+  "checks": [
+    "two conversations",
+    "raw long history",
+    "continue old",
+    "refresh",
+    "same browser new tab",
+    "summary mark",
+    "sidebar 500",
+    "history 500 preserves chat",
+    "old stream cancelled",
+    "HTML inert",
+    "metadata/history race",
+    "ordinary actions restore",
+    "completed and uncertain disabled",
+    "cancel no write",
+    "restore confirm same action/session once",
+    "390px no overflow"
+  ],
+  "requests": 7,
+  "ticket_requests": 1,
+  "errors": []
+}

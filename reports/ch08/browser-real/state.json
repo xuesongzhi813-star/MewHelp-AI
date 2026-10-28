@@ -1,0 +1,19 @@
+{
+  "user": "b747af54ed8723fbfd3f455c8f2845d8",
+  "checks": [
+    "missing description asks before preview",
+    "follow-up description produces pending preview",
+    "pending survives backend restart and browser refresh",
+    "cancel via browser",
+    "confirm and duplicate rejected",
+    "refresh completed result"
+  ],
+  "provider": "real Chrome/API/model/MySQL",
+  "session": "u:b747af54ed8723fbfd3f455c8f2845d8:c:6972",
+  "preview": "02ac9ccfecc757769533f787e19ae95f",
+  "errors": [],
+  "cancelSession": "u:b747af54ed8723fbfd3f455c8f2845d8:c:6972",
+  "confirmSession": "u:b747af54ed8723fbfd3f455c8f2845d8:c:6973",
+  "confirmPreview": "75f89d3f24a2562390a62c5693b55a68",
+  "passed": true
+}

@@ -82,7 +82,7 @@ class Capture(logging.Handler):
         self.rows.append((time.time(),record.getMessage()))
 
 
-async def evaluate_dialogues(split,profile,settings):
+async def evaluate_dialogues(split,profile,settings,*,checkpoint_dir=None,tool_service=None):
     from app.llm import build_workflow_model
     from app.session_store import MySQLSessionStore
     from app.context.store import ConversationStore
@@ -93,9 +93,10 @@ async def evaluate_dialogues(split,profile,settings):
     model=build_workflow_model(settings)
     capture=Capture();logging.getLogger('app').addHandler(capture)
     try:
-        async with open_checkpointer(str(ROOT/f'log/ch07/eval-{split}-{profile}-{uuid.uuid4().hex[:8]}.sqlite')) as saver:
+        directory=Path(checkpoint_dir) if checkpoint_dir is not None else ROOT/'log/ch07'
+        async with open_checkpointer(str(directory/f'eval-{split}-{profile}-{uuid.uuid4().hex[:8]}.sqlite')) as saver:
             db=ConversationStore(); manager=SummaryManager(db,Summarizer(model,settings=settings),settings=settings)
-            runtime=WorkflowRuntime(saver,MySQLSessionStore(),context_store=db,summary_manager=manager)
+            runtime=WorkflowRuntime(saver,MySQLSessionStore(),context_store=db,summary_manager=manager,tool_service=tool_service)
             try:
                 for case in cases:
                     user=uuid.uuid4().hex;sid='ch07-eval-'+uuid.uuid4().hex;cid=None;rows=[];start_log=len(capture.rows)

@@ -1,0 +1,20 @@
+{
+  "user": "c8f1d5bce02945f4bde025e8f45586f9",
+  "checks": [
+    "missing description asks before preview",
+    "follow-up description produces pending preview",
+    "pending survives backend restart and browser refresh",
+    "cancel via browser",
+    "confirm and duplicate rejected",
+    "refresh completed result"
+  ],
+  "provider": "real Chrome/API/model/MySQL",
+  "session": "u:c8f1d5bce02945f4bde025e8f45586f9:c:6758",
+  "preview": "fd3d9ef130cb5a25874fe526963c99f5",
+  "errors": [],
+  "failure": "page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:8020/\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:8020/\", waiting until \"load\"\u001b[22m\n",
+  "cancelSession": "u:c8f1d5bce02945f4bde025e8f45586f9:c:6758",
+  "confirmSession": "u:c8f1d5bce02945f4bde025e8f45586f9:c:6759",
+  "confirmPreview": "35c7f4f12e0e5cfdb1f823cca2476743",
+  "passed": true
+}
