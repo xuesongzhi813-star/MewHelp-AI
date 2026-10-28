@@ -1,4 +1,85 @@
+# 当前运维修复：旧profile启动误用（2026-10-28）
+
+用户按日常文档执行旧demo_ch08 profile校验报code_hash/runtime_corpus_hash差异。已复现，当前ch09 active/profile严格检查有效，不需重校准。OPERATIONS正文已完整切换ch09，旧全文移至docs/history，新增Test-MewHelpProfile及第5节分流；四份手册同步。文档原检查命令、7工具预算、127条一致知识与临时8项HTTP启动验证通过，SDK正常排空，自有8021/8022/8023已停止。没有改profile/知识/.env/业务代码，没有消费旧池。见reports/ch09/profile-startup-fix.md和dev-notes/ch09阶段31–33。
+
+---
+
+# ch09恢复复核（2026-10-28）
+
+用户已恢复额度并要求完成最后任务。核对当前计划、任务账本、代码及真实验收报告后，Task1–13已完成，没有待续写的功能任务。日本区配置与active的只读启动检查通过，owner_online=false。此前“额度8%暂停”已成为历史快照；不据此重做已验收任务或自动进入下一章。当前演示入口见docs/OPERATIONS.md开头及reports/ch09/demo.md，复核过程见dev-notes/ch09阶段29起。
+
+下文按原样保留各阶段交接；其中“当前”“尚未完成”“暂停”等字样只描述所在日期和阶段，不覆盖本节及最终交付结论。
+
+---
+
+# ch09最终交接（2026-10-27）
+
+本章实现及六项核心验收完成，Native唯一后端review问题已修，保留工作树不做Git集成。后端1111 passed in106.36s；前端Vibe真实浏览器已验，历史重载反馈缺口已修。Cloud由SDK完整读回，用户人工确认Dashboard。真实后端+页面两次合成飞轮通过；eval#12/#13各72题有效，Faithfulness .972701/.991111且judge0失败。原96/24-72不改，原37池未消费，仅两条合成知识。
+
+产品E:/MewHelp AI/.worktrees/ch05-workflow-agent，分支ch07-context/HEAD0de0db1不变；根只共享配置/运行时/阅读副本。用户明确授权仅写本地.env三项Langfuse配置，值未写日志/文档。自有8023/8024已停止，SDK正常shutdown确认；无DDL/清库/提交/推送/合并/部署。
+
+下一步：依docs/OPERATIONS.md当前入口启动正式服务；不会自动运行下一章。额度primary剩8%，按规则停止继续开发，剩余模型质量差异/金额未知见reports/ch09/failures.md，不称模型100%。所有日志/版本/失败记录保留。阶段过程见dev-notes/ch09阶段21–28；交付见reports/ch09/summary.md及demo.md。
+
+---
+
+
+
+## 当前实施状态（阶段25，覆盖历史暂停）
+
+Task1–10完成；Task11全部页面/接线已实现，UI工具策略阻塞故未实点验收。真实合成闭环、三个入口、自动回调、修复后Cloud全树/系统Session/Token与正常停机flush均已验证。唯一后端review0Critical/5Important均作者修复，1110项全量通过后另补共享lease线程串行22项PASS，最终全量待跑。新身份24题真实校准成功；失败#7 judge32/中断#8保留，需再跑两轮完整指标。产品与Native不变，无DDL/清库/提交/部署。
+> **ch09最新恢复状态：** 见CH09_CURRENT_PROGRESS最新条；Task11实现待UI验证，Task12真实24题bootstrap成功，三项Langfuse配置按明确授权写入本地.env。整章未finish。
+
 # MewHelp AI 开发交接文档（面向 OpenAI Codex）
+
+> **2026-10-27 ch09因额度剩9%按规则暂停。** Task1–10完成，Task11仅普通回答down接线、未浏览器验收；后端1092 passed in105.43s在该前端编辑之前。先读CH09_RESUME_HANDOFF.md、CH09_CURRENT_PROGRESS和dev-notes阶段20；额度恢复且用户明确后从Task11继续，不重批Native，不自动续跑。审核/质量页、Task12真实Cloud/整圈飞轮/两轮评估及Task13唯一后端review均待做。原数据/服务/.env/未提交改动/账本保留。
+
+> **2026-10-27 ch09 Task1–10完成，Task11进行中。** 全量1092 passed in105.43s。成本采用SDK5官方Observations v2游标按最终根意图归因，缓存/unknown/限额已验证；Cloud真实读回仍Task12。沿Native从task-11-brief直接Vibe前端，不做前端TDD/独立review。bootstrap/整圈飞轮/两轮真实评估与整章评审尚未完成，无真实.env修改/旧服务启停/真实知识写入。
+
+> **2026-10-27 ch09 Task1–9完成，Task10进行中。** 全量1082 passed in97.77s。当前graph隔离评估/72题分母/单轮记录/上海02点槽去重/同版本趋势具备；真实两轮仍待Task12。沿Native从task-10-brief继续成本统计；bootstrap/Cloud/前端/整圈飞轮尚未验收，真实.env/数据/旧服务保留。
+
+> **2026-10-27 ch09 Task1–8完成，Task9进行中。** 最终全量1068 passed in95.48s。审核API/发布journal/限定双写/维护恢复/owner/整轮读租约/独立8023入口具备，真实bootstrap与发布放Task12核对后执行。沿Native读task-9-brief，不重批；Cloud/前端/完整飞轮/两轮评估仍未验收，无旧服务启停或真实知识写入。
+
+> **2026-10-27 ch09 Task1–7完成，Task8进行中。** 全量1043 passed in98.52s，影响Prompt v3真实8/8；不可变标注/全题人工确认/来源绑定完成。沿Native从task-8-brief接发布状态机/审核API/独立8023入口。真实profile/Cloud/整圈飞轮/前端/两轮评估仍未验收，无真实知识写入或服务启停。
+
+> **2026-10-27 ch09 Task1–6完成，Task7进行中。** 全量1027 passed in90.06s；自动全状态归并/退避/幂等/取消释放已验证，真实查重v2为16/16。沿Native从task-7-brief继续不可变版本与人工影响确认。默认消费者关闭，未运行真实队列补跑；Cloud/真实profile/完整飞轮/两轮评估仍未验收。
+
+> **2026-10-27 ch09 Task1–5完成，Task6进行中。** 全量1014 passed in87.78s，自评真实12/12；首次/后续FAQ同闸与生成前自评已接，默认旧模式兼容。从task-6-brief继续自动标准化/全状态归并；Cloud/真实profile/整圈飞轮/两轮评估仍未验收。
+
+> **2026-10-27 ch09 Task1–4完成，Task5进行中。** 最新全量1002 passed in90.91s；固定证据评分/24题校准算法完成，真实阈值未校准/未激活。沿Native从task-5-brief继续；Cloud与完整飞轮仍未验收。
+
+> **2026-10-27 ch09 Task1–3完成，Task4进行中。** 最新全量987 passed in85.14s。后端反馈/同轮幂等/Top5快照与旧轮checkpoint回捞已实现，前端/自动归并/正式校准/Cloud/两轮评估未验收。先读CH09_CURRENT_PROGRESS、专属账本及Task4 brief/dev-notes阶段12；沿Native连续执行，不重批或重做。真实.env/旧服务/数据保留，无DDL/清库/提交/部署。
+
+> **2026-10-27 ch09 Native已恢复，Task1–2完成、Task3进行中。** 最新全量973 passed in87.54s，含SDK内存导出；主图/续跑/稳定消息身份已接，Cloud及飞轮/两轮评估未验收。先读CH09_CURRENT_PROGRESS、ch09 plan与dev-notes阶段10–11/专属账本；旧主动中断已被恢复覆盖，不重批Native、不重做Task1。默认Langfuse关闭，真实.env/旧服务/原数据保留，无DDL/清库/提交/部署。
+
+> **2026-10-26 整项目运维文档维护。** 用户要求更新启动、暂停及维护说明；统一入口为docs/OPERATIONS.md及根《MelHelp AI日常运行维护手册.md》，新增6.4日常暂停、6.5恢复、6.6开发交接。仍按ch08启动，ch09停在Task2部分实施；本次未恢复功能开发或启停服务。手册/交接阅读副本同步，验证记录见dev-notes/ch09阶段9；下文旧状态按时间保留，最新开发状态以下条Native记录为准。
+
+> **2026-10-26 ch09 Native执行已开始，Task1完成、Task2部分实现，主动中断后已保存。** 基线947、Task1后全量961 passed；Task2辅助上下文/真实SDK内存导出定向17 passed，主图/网关/续跑/checkpoint/SSE尚未接，未完成整章。先读CH09_CURRENT_PROGRESS、dev-notes/ch09阶段7–8及专属账本；明确恢复后从Task2继续，不重批Native、不重做Task1。SDK5.0.4原锁版本不变，root editable已恢复，真实.env/原服务/数据保留，无Cloud验收/DDL/清库/提交/部署。
+
+> **2026-10-26 ch09完整设计已获用户「批准」，实施计划13任务已完成作者自检。** 待用户审阅计划并选择本章Native/Subagent-driven，推荐Native；不沿用ch08旧选择，不重复询问A/版本标注/设计批准。先读CH09_CURRENT_PROGRESS、ch09 spec/plan及dev-notes/ch09阶段5–6。任务1–13尚未执行，无产品测试或云端验收，当前运行仍为ch08；现有工作区/服务/数据保留。
+
+> **2026-10-26 ch09已由用户恢复，方案设计完成、等待完整设计批准。** 用户已选A及“发布前人工确认受影响标签的版本化标注”；独立builder check唯一重要缺口已闭环。先读CH09_CURRENT_PROGRESS、ch09 spec及dev-notes/ch09阶段3–4；批准后再writing-plans，尚未实施/云端验收。旧额度暂停仅为历史，不再询问A/B。当前仍按ch08启动运维，既有工作区/服务/数据保留。
+
+> **2026-10-26 ch09因额度剩9%按用户规则暂停。** 用户已选A（立即落池、后台自动标准化/全量查重），无需重问。完整设计草案及独立builder check已完成收存，尚未设计批准/计划/实现；审阅剩1项：新知识改变评估题可回答性时的标签版本、人工确认和趋势可比性。先读CH09_CURRENT_PROGRESS、dev-notes/ch09及ch09 spec；额度恢复且用户明确恢复后处理此项再审批设计。不自动续跑，不把草案提案当批准。产品仍为ch08现有工作树，未改业务代码/依赖/真实.env或服务。
+
+> **2026-10-26 ch09需求勘察已开始，尚未实现。** Langfuse Cloud Hobby日本区与数据飞轮为本章固定需求；三张MySQL表已只读核对存在。产品仍在.worktrees/ch05-workflow-agent，保留ch08全部未提交内容。先读[CH09_CURRENT_PROGRESS](CH09_CURRENT_PROGRESS.md)与dev-notes/ch09.md；brainstorm待选择处理方式，尚无批准的spec/plan。不把ch08历史测试数当成本章结果，当前启动继续按ch08运维。
+
+> **2026-10-26 ch08 Task0–12完成。** Native实现及唯一整章评审的重要修复已通过作者RED→GREEN验证，最终全量947 passed in60.02s；无第二轮独立复评。2000字中文/转义描述真实2/2完整预览/落库并回复工单号；真实HTTP6/6、Chrome9项及同preview跨重启/取消0/确认及重复1与DB审计核对通过。最终旧75题意图/JSON75/75、订单9/9、有限语义75/75（字面74/75），两组21轮回忆/摘要复跑通过。新语义dev20/24、acceptance30/36及原hotplug5/6保留差异，不称所有模型质量满分。先读CH08_CURRENT_PROGRESS、产品reports/ch08/{summary,review,rulings,demo}.md和dev-notes/ch08阶段17–18；源码仍在.worktrees/ch05-workflow-agent，ch07-context/0de0db1未变，工作树/账本保留，无提交/推送/合并/部署/DDL/清库/真实.env修改。旧暂停/待review为历史，不重做Task5或再派review。后续新章节须有新需求。
+
+> 最终既有6项用户改动hash一致，原锁定依赖无版本漂移，改动/报告扫描未发现当前配置敏感值。先前失败测试曾回显本地凭据，日志已清理且runner改为落盘前脱敏，历史工具输出无法回收；密钥轮换仍需用户处理，文档不记录值。普通沙盒在asyncio.new_event_loop挂起，执行异步测试使用已授权native环境，不把未启动/挂起当测试通过。
+
+> **2026-10-26 ch08最新：Task0–9功能已接入、首轮全量906 passed in58.51s；另补4项SQLite故障测试通过，Task10前端已写、页面2项通过，实际浏览器待验。** Task11真实模型/专属profile/业务集成、Task12整章独立评审未完成，未finish。先读CH08_CURRENT_PROGRESS、dev-notes/ch08阶段14及专属账本；保持Native与现有产品工作树，无需重批。无DDL/清库/真实.env改动/提交/部署。
+
+> **2026-10-26 ch08 Task0–6完成，Task7进行中，未finish。** 主链接入、统一权限/审计/同步兼容、旧按钮引擎化和MCP物流替换已实现，最终全量878 passed in54.37s；新工单草稿/interrupt/前端及真实模型验收尚未完成。先读CH08_CURRENT_PROGRESS、dev-notes/ch08阶段13和专属账本。此前暂停已被用户恢复覆盖，保持Native与现有工作树，无需重批。测试失败报告曾展开配置密钥字段，专属日志已脱敏，runner已改先脱敏落盘；不在文档记值，历史输出无法回收。无DDL/清库/提交/部署。
+
+> **2026-10-26用户已明确恢复ch08 Native开发。** Task0–5完成，Task6主链接入进行中，整章未finish；恢复后13定向、全量861 passed in55.49s，暂停hash核对一致。先读CH08_CURRENT_PROGRESS、dev-notes/ch08阶段12及专属账本，从Task6继续，不重做审批/已完任务。下条暂停已被本次用户恢复覆盖。真实.env、既有6项保护改动、旧服务/数据保留，无提交/DDL/清库。
+
+> **2026-10-25 ch08由用户因网络不稳定主动暂停，禁止自动续跑。** 设计/计划/Native均批准；Task0–4完成，Task5进行中，Task6–12未开始，未finish。Task4后全量848 passed in37.91s；Task5定向11passed，最后全量启动因自动权限审核超时未执行。先读[CH08_RESUME_HANDOFF](CH08_RESUME_HANDOFF.md)、CH08_CURRENT_PROGRESS、dev-notes/ch08阶段8–11及产品专属账本。新框架尚未接客服生产链，旧执行器/内置物流仍在使用；明确恢复后先完成Task5门槛，不重复审批。已建表仅映射，无DDL/清库/提交/部署/真实.env改动；原6hash一致。下文进行中状态为历史。
+
+> **2026-10-25 ch08 Native执行中：Task0–2完成，Task3进行中，未finish。** 用户已批准设计/计划并选Native，无需再询问。基线758、新增Task1后794、Task2修后全量822 passed in32.97s；注册/权限/严格Schema、引擎/capability/投影基础已实现，生产入口仍待Task6，不冒称已具备MCP/审计/前端确认。先读CH08_CURRENT_PROGRESS、dev-notes/ch08阶段5–7及产品专属账本；已建审计表只映射，不DDL。既有包锁版本未变，venv项目editable映射已恢复原根目录。下文“尚未实施/待执行方式”均为历史。
+
+> **2026-10-25 ch08设计已获用户「批准」，实施计划已完成自检。** Task0–12尚未执行，按writing-plans待用户审阅计划并选择Native或Subagent-driven；推荐Native，不沿用ch07旧选择。先读[CH08_CURRENT_PROGRESS](CH08_CURRENT_PROGRESS.md)及ch08 spec/plan、dev-notes/ch08阶段4。HTTP方案、已建审计表和设计无需重复询问。本轮仅文档，未运行产品测试/未改业务代码或依赖/无DDL或业务写入；额度剩余44%/91%为收尾快照。下条设计待审批已被本条覆盖。
+
+> **2026-10-25 ch08进入设计审批，尚未实现。** 用户已选独立HTTP MCP服务，且已提前建立tool_audit_logs；本轮只读核对13列/4索引/无FK，按既有表映射，不建表改表。完整设计及独立builder check作者修订已完成，等用户批准后再writing-plans；HTTP选择与已建表不重复询问。先读[CH08_CURRENT_PROGRESS](CH08_CURRENT_PROGRESS.md)及dev-notes/ch08.md阶段2–3。产品仍在.worktrees/ch05-workflow-agent / ch07-context；本轮仅文档与元数据查询，无产品代码/依赖/DDL/业务写入/提交/服务启停。额度剩余不足10%时优先交接留痕再暂停。
 
 > **2026-10-25 ch07已finish，Task0–11完成。** 独立整章review2项Important均先RED再修复GREEN；最终全量758 passed in35.19s。真实summary18/18、旧路由意图75/75+订单9/9；默认两组21轮0降级0摘要、demo两组21轮11/10次降级各2段并正确回忆最初订单1001/未收货/签收诉求；真实/合成Chrome及日志逐条核对通过。最终独立profile已重校准，8018运行最终demo版本；原8015/8016未动。唯一产品仍在.worktrees/ch05-workflow-agent；交付分支 ch07-context，5 个提交已推送，PR #7（base ch06-router）待评审合并，尚未合并/部署；无DDL/清库/依赖升级/.env修改，未清账本。先读CH07_CURRENT_PROGRESS.md、产品reports/ch07/summary.md和demo.md、dev-notes/ch07.md阶段25；统一运维已覆盖ch07。下文所有ch07进行中/暂停仅历史快照。
 
