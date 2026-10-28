@@ -16,6 +16,7 @@ from typing import Any
 from openai import OpenAI, APITimeoutError, APIConnectionError
 
 from app.config import get_settings
+from app.observability.spans import observed_call, trace_span
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,9 @@ class EmbeddingError(RuntimeError):
 _client: OpenAI | None = None
 
 
+@observed_call(
+    'embedding', input_fields=('texts',),
+    output_selector=lambda result: {'count':len(result),'dimensions':len(result[0]) if result else 0})
 def embed_texts(texts: Sequence[str]) -> list[list[float]]:
     """把一批文本转换为 BGE-M3 向量。
 
@@ -94,10 +98,15 @@ def _embed_batch(client: Any, settings: Any, batch: list[str]) -> list[list[floa
     last_error: Exception | None = None
     for attempt in range(MAX_ATTEMPTS):
         try:
-            response = client.embeddings.create(
-                model=settings.embedding_model,
-                input=batch,
-            )
+            with trace_span('embedding-request', input={'texts':batch}, as_type='embedding') as span:
+                response = client.embeddings.create(model=settings.embedding_model, input=batch)
+                usage = getattr(response, 'usage', None)
+                tokens = getattr(usage, 'prompt_tokens', None)
+                fields = {'model':settings.embedding_model}
+                if isinstance(tokens, int):
+                    fields['usage_details'] = {'input':tokens}
+                span.update(**fields)
+                span.finish(output={'count':len(getattr(response, 'data', []))})
         except Exception as exc:  # noqa: BLE001 - 统一包装成 EmbeddingError
             last_error = exc
             status = getattr(exc, 'status_code', None)

@@ -18,7 +18,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Path as PathParam
+from fastapi import APIRouter, HTTPException, Path as PathParam,Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -38,6 +38,15 @@ from app.kb.sources import get_sources
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/kb", tags=["kb"])
+
+
+async def require_legacy_writer():
+    from app.flywheel.publishing import async_legacy_write_scope,KnowledgeMaintenance
+    from app.flywheel.locks import LockUnavailable
+    try:
+        async with async_legacy_write_scope():yield
+    except (KnowledgeMaintenance,LockUnavailable):
+        raise HTTPException(409,'知识发布由ch09审核入口管理，请勿通过旧入口绕过版本确认。') from None
 
 
 # ---------------------------------------------------------------------------
@@ -349,7 +358,7 @@ def post_preview(payload: PreviewRequest) -> dict:
 # ---------------------------------------------------------------------------
 
 
-@router.post("/ingest")
+@router.post("/ingest",dependencies=[Depends(require_legacy_writer)])
 def post_ingest(payload: IngestRequest):
     """按指纹跳过重复块后入库;可选顺手向量化。
 
@@ -430,7 +439,7 @@ def post_ingest(payload: IngestRequest):
     return result
 
 
-@router.post("/vectorize")
+@router.post("/vectorize",dependencies=[Depends(require_legacy_writer)])
 def post_vectorize(payload: VectorizeRequest | None = None):
     """向量化 pending 切片;异常或仍有失败行时返回 502。"""
     limit = payload.limit if payload is not None else None

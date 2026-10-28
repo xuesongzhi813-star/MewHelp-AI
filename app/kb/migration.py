@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import os
 import tempfile
+import time
 from pathlib import Path
 from threading import RLock
 from typing import Literal
@@ -16,6 +17,7 @@ from app.kb.catalog import infer_product_category
 from app.kb.documents import build_chunks, chunk_fingerprint, embedding_text
 from app.kb.embedding import embed_texts
 from app.kb.sources import get_sources
+from app.flywheel.publishing import legacy_mutation
 
 _lock = RLock()
 
@@ -53,7 +55,13 @@ def _save(manifest: MigrationManifest) -> None:
             handle.write(manifest.model_dump_json(indent=2))
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(temporary, path)
+        for attempt in range(6):
+            try:
+                os.replace(temporary,path)
+                break
+            except PermissionError:
+                if attempt==5:raise
+                time.sleep(.01*(2**attempt))
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
@@ -154,6 +162,7 @@ def _write_batch(rows: list[store.StoredChunk], target: str) -> None:
     store.mark_done([r.id for r in rows if r.vectorize_status != "done"])
 
 
+@legacy_mutation
 def migrate_hybrid() -> dict:
     with _lock:
         prepare_migration(dry_run=False)
@@ -211,6 +220,7 @@ def verify_hybrid() -> dict:
             "orphan_in_milvus": orphan, "stale_ids": stale}
 
 
+@legacy_mutation
 def vectorize_hybrid(*, pending_only: bool = True, limit: int | None = None) -> tuple[int, int, int]:
     """补漏/恢复只触及 eligible；恢复幂等覆盖新集合，不删除集合或重置旧行。"""
     manifest = load_manifest()

@@ -26,6 +26,9 @@ from app.context.store import ConversationStore, InMemoryConversationStore
 from app.context.layers import build_layered_view, summary_batch, summary_text
 from app.context.tokens import count_model_tokens, estimate_text
 from app.context.budget import derive_budget, ContextBudgetError
+from app.flywheel.contracts import TurnIdentity
+from app.observability.spans import traced_stream, tracing_config, current_request_id, bind_turn, update_trace
+from app.flywheel.publishing import knowledge_turn_stream
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +67,13 @@ class SessionLocks:
 
 class WorkflowRuntime:
     def __init__(self, checkpointer, store, *, gateway_factory=ModelGateway, context_store=None, summary_manager=None,
-                 retrieve=retrieve_result, execute=execute_tool_result, record=record_low_confidence,tool_service=None):
+                 retrieve=retrieve_result, execute=execute_tool_result, record=record_low_confidence,tool_service=None,
+                 observability=None, evidence_policy=None, self_check_enabled=False,release_coordinator=None,
+                 read_only=False,trace_purpose='chat'):
+        self.read_only,self.trace_purpose=read_only,trace_purpose
+        self.release_coordinator=release_coordinator
+        self.evidence_policy, self.self_check_enabled = evidence_policy, self_check_enabled
+        self.observability = observability
         self.tool_service=tool_service
         self.checkpointer, self.store = checkpointer, store
         self._explicit_context_store = context_store is not None
@@ -212,14 +221,29 @@ class WorkflowRuntime:
         if target is None:
             raise ValueError('final checkpoint slot missing')
         refs[target.id]={'db_id':row.id,'turn_from_msg_id':turn}
-        await self.graph().aupdate_state(self.config(state['session_id']),{'message_refs':refs},as_node='log_result')
+        identity = self.turn_identity(state, assistant_message_id=row.id)
+        state['turn_identity'] = identity
+        await self.graph().aupdate_state(self.config(state['session_id']),
+            {'message_refs':refs, 'turn_identity':identity},as_node='log_result')
+        if state.get('request_id') == current_request_id():
+            bind_turn(TurnIdentity(**identity))
+            update_trace(state)
+        return identity
+
+    def turn_identity(self, state, *, request_id=None, assistant_message_id=None):
+        request_id = request_id or state['request_id']
+        previous = state.get('turn_identity') or {}
+        return asdict(TurnIdentity(state['session_id'], state['conversation_id'],
+            state['current_turn_from_msg_id'], request_id, request_id,
+            assistant_message_id if assistant_message_id is not None else previous.get('assistant_message_id')))
 
     def config(self, session_id):
-        return {'configurable': {'thread_id': session_id}, 'recursion_limit': 64}
+        return tracing_config({'configurable': {'thread_id': session_id}, 'recursion_limit': 64})
 
     def graph(self, model=None):
         return build_workflow(checkpointer=self.checkpointer, deps=WorkflowDeps(
-            self.gateway_factory(model), self.store, self.retrieve, self.execute, self.record,self.context_store,self.tool_service))
+            self.gateway_factory(model), self.store, self.retrieve, self.execute, self.record,self.context_store,self.tool_service,
+            self.evidence_policy,self.self_check_enabled,self.release_coordinator,self.read_only))
 
     async def get_state(self, session_id):
         return (await self.graph().aget_state(self.config(session_id))).values
@@ -267,8 +291,8 @@ class WorkflowRuntime:
 
     async def stream_tool_confirmation(self,request,*,model):
         from app.workflow.ticket_confirmation import TicketConfirmationCoordinator
-        async for event in TicketConfirmationCoordinator(self).stream(request,model=model):
-            yield event
+        async with aclosing(TicketConfirmationCoordinator(self).stream(request,model=model)) as stream:
+            async for event in stream:yield event
 
     def _check_selection(self, snapshot, request):
         from app.workflow.actions import ActionError
@@ -290,16 +314,22 @@ class WorkflowRuntime:
             snapshot = await self.graph().aget_state(self.config(request.session_id))
             self._check_selection(snapshot, request)
 
+    @traced_stream('order-selection')
+    @knowledge_turn_stream
     async def stream_order_selection(self, request, *, model):
         from app.workflow.actions import ActionError
         async with self.locks.hold(request.session_id):
             graph = self.graph(model)
-            request_id = uuid.uuid4().hex
+            request_id = current_request_id() or uuid.uuid4().hex
             started = False
             completed = False
             try:
                 snapshot = await graph.aget_state(self.config(request.session_id))
                 state = self._check_selection(snapshot, request)
+                turn = self.turn_identity(state, request_id=request_id) if state.get('current_turn_from_msg_id') else None
+                if turn:
+                    bind_turn(TurnIdentity(**turn))
+                    yield {'type':'turn', **turn}
                 old_ids = {message.id for message in state.get('messages', [])}
                 budget = new_budget(contextual=True)
                 ctx={}
@@ -308,7 +338,7 @@ class WorkflowRuntime:
                                             state['current_turn_from_msg_id'],request_id,state.get('tool_snapshot'))
                 data = Command(resume={'selection_id':request.selection_id, 'order_id':request.order_id},
                     update={**ctx,'budget':budget.model_dump(), 'request_id':request_id, 'status':'running',
-                            'continuation_of':state['request_id'],
+                            'continuation_of':state['request_id'], 'turn_identity':turn,
                             'usage_segments':[*state.get('usage_segments', []),
                                               {'request_id':state['request_id'], 'budget':state['budget']}]})
                 started = True
@@ -319,7 +349,9 @@ class WorkflowRuntime:
                                 yield event
                 final = (await graph.aget_state(self.config(request.session_id))).values
                 if final.get('current_turn_from_msg_id'):
-                    await self._archive(final,legacy=parse_canonical(request.session_id) is None)
+                    archived = await self._archive(final,legacy=parse_canonical(request.session_id) is None)
+                    if archived:
+                        yield {'type':'turn', **archived}
                 else:
                     for message in final.get('messages', []):
                         if message.id not in old_ids:
@@ -350,6 +382,8 @@ class WorkflowRuntime:
                 actions[key] = {**actions[key], 'status': 'interrupted'}
         await self.graph().aupdate_state(self.config(session_id), {'status': 'interrupted', 'actions': actions}, as_node='log_result')
 
+    @traced_stream('chat')
+    @knowledge_turn_stream
     async def stream_turn(self, session_id: str, question: str, *, model, user_id=None, conversation_id=None):
         try:
             identity=await self.resolve_identity(session_id,user_id=user_id,conversation_id=conversation_id)
@@ -358,7 +392,7 @@ class WorkflowRuntime:
             return
         session_id=identity.session_id
         async with self.locks.hold(session_id):
-            request_id = uuid.uuid4().hex
+            request_id = current_request_id() or uuid.uuid4().hex
             completed = False
             try:
                 old = await self.get_state(session_id)
@@ -380,6 +414,7 @@ class WorkflowRuntime:
                 if estimate_text(question,cjk_ratio=settings.context_cjk_tokens_per_char)>settings.max_user_input_tokens:
                     raise ContextBudgetError('当前输入超过单轮预算')
                 row=await asyncio.to_thread(self.context_store.append_user,conversation_id,question)
+                bind_turn(TurnIdentity(session_id, conversation_id, row.id, request_id, request_id))
                 human = HumanMessage(content=question, id=f'db:{row.id}')
                 refs[human.id]={'db_id':row.id,'turn_from_msg_id':row.id}
                 if identity.legacy and not isinstance(self.context_store,ConversationStore):
@@ -393,6 +428,9 @@ class WorkflowRuntime:
                         'message_refs':refs,'current_turn_from_msg_id':row.id,**ctx,
                         'request_id': request_id, 'raw_question': question, 'resolved_question': question,
                         'intent': '', 'route': '', 'retrieval': None, 'gate_reason': '', 'budget': budget.model_dump(),
+                        'gap_source':'retrieval_low_conf','evidence_allowed':None,'evidence_checked_hash':None,
+                        'evidence_confidence':None,'sufficiency':None,
+                        'maintenance_reason':None,
                         'status': 'running', 'pending_decision': None, 'control': None,
                         'actions': old.get('actions', {}), 'turn_action_ids': [], 'node_trace': [], 'final_text': ''}
                 data.update(confidence=0.0, understanding={}, selected_order_id=None, order=None, selection=None,
@@ -400,6 +438,9 @@ class WorkflowRuntime:
                             tool_failure=None,ticket_confirmation=None,ticket_flow_closed=False,
                             verified_reference_order_id=None,
                             expansion_queries=[], expansion_fallback=False, continuation_of=None, usage_segments=[])
+                data['turn_identity'] = self.turn_identity(data)
+                bind_turn(TurnIdentity(**data['turn_identity']))
+                yield {'type':'turn', **data['turn_identity']}
                 graph = self.graph(model)
                 async with asyncio.timeout(max(0.001, budget.deadline - time.time())):
                     async with aclosing(graph.astream(data, self.config(session_id), stream_mode=['custom','updates'],durability='sync')) as stream:
@@ -409,7 +450,9 @@ class WorkflowRuntime:
                 snapshot = await graph.aget_state(self.config(session_id))
                 state = snapshot.values
                 if not snapshot.interrupts:
-                    await self._archive(state,legacy=identity.legacy)
+                    archived = await self._archive(state,legacy=identity.legacy)
+                    if archived:
+                        yield {'type':'turn', **archived}
                 completed = True
                 if snapshot.interrupts:
                     yield snapshot.interrupts[0].value

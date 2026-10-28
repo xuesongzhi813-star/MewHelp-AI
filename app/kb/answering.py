@@ -13,6 +13,7 @@ from pydantic import ValidationError
 from app.config import get_settings
 from app.kb.contracts import AnswerDecision, Evidence, Hit, QueryPlan, RetrievalResult
 from app.prompts import EVIDENCE_ANSWER_PROMPT
+from app.observability.spans import model_config_kwargs
 
 REFUSAL_TEXT = "抱歉，现有知识不足以可靠回答这个问题，我无法给出确定答案。建议联系人工客服核实。"
 
@@ -118,7 +119,7 @@ async def generate_answer(plan: QueryPlan, result: RetrievalResult, *, model,
             original = _parsed_decision(await model.ainvoke([
                 SystemMessage(content=EVIDENCE_ANSWER_PROMPT),
                 HumanMessage(content=json.dumps(data, ensure_ascii=False)),
-            ]))
+            ], **model_config_kwargs()))
             validated = validate_answer(original, evidence)
             format_error = validated.reason in {"引用缺失、未知或与实际使用编号不一致", "事实段落缺少引用"}
             allowed = {e.number for e in evidence}
@@ -132,7 +133,7 @@ async def generate_answer(plan: QueryPlan, result: RetrievalResult, *, model,
                               "used_citation_numbers必须与正文数字引用一致。不得新增/删减事实、修改数字/SKU/否定，"
                               "不得为了通过校验给无证据的事实乱贴引用；无法修复则can_answer=false。"),
                 HumanMessage(content=json.dumps(repair_data, ensure_ascii=False)),
-            ]))
+            ], **model_config_kwargs()))
             if repaired.can_answer and _fact_text(repaired.answer) != _fact_text(original.answer):
                 return refuse("引用格式修复改变了事实文字")
             return validate_answer(repaired, evidence)

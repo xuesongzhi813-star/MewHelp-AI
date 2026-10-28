@@ -10,7 +10,8 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import replace
+from dataclasses import replace, asdict
+from app.observability.spans import observed_call
 
 from app.config import get_settings
 from app.kb import milvus, store
@@ -103,6 +104,10 @@ def retrieve(query: str) -> str:
     )
 
 
+@observed_call('knowledge-retrieval', input_fields=('query', 'strategy', 'filters'),
+               output_selector=lambda result: {'strategy':result.strategy,
+                   'candidate_ids':list(result.candidate_ids), 'hits':[asdict(hit) for hit in result.hits],
+                   'reason':result.reason})
 def retrieve_result(query: str, *, strategy: RetrievalStrategy | None = None,
                     plan: QueryPlan | None = None,
                     filters: RetrievalFilters | None = None,

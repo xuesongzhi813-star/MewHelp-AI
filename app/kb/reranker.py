@@ -7,6 +7,7 @@ from collections.abc import Sequence
 import httpx
 
 from app.config import get_settings
+from app.observability.spans import observed_call
 
 _client: httpx.Client | None = None
 
@@ -17,6 +18,8 @@ class RerankError(RuntimeError):
         super().__init__(f"重排服务失败:{kind}" + (f" (HTTP {status_code})" if status_code else ""))
 
 
+@observed_call('rerank', input_fields=('query','documents','top_n'),
+               output_selector=lambda result: {'ranking': result})
 def rerank(query: str, documents: Sequence[str], *, top_n: int = 10) -> list[tuple[int, float]]:
     if not documents:
         return []

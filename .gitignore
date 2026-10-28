@@ -22,3 +22,6 @@ Thumbs.db
 
 # 本地隔离开发工作树
 .worktrees/
+
+# ch09 private release journals, human labels and profiles
+data/local/ch09/

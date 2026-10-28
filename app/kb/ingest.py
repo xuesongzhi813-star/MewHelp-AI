@@ -30,6 +30,7 @@ from app.kb.documents import Chunk, Source, build_chunks, chunk_fingerprint
 from app.kb.dualwrite import VectorizeResult, vectorize_pending
 from app.kb.sources import get_sources
 from app.models import Faq
+from app.flywheel.publishing import legacy_mutation
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,7 @@ def _candidate_from_chunk(chunk: Chunk) -> store.ChunkCandidate:
     )
 
 
+@legacy_mutation
 def ingest_docs() -> IngestResult:
     """把 ``get_sources()`` 的 Markdown 按指纹幂等录入。
 
@@ -142,6 +144,7 @@ def ingest_docs() -> IngestResult:
     )
 
 
+@legacy_mutation
 def ingest_faq() -> IngestResult:
     """把 ``faq`` 表全部行按指纹幂等录入为知识切片。"""
     if get_settings().kb_corpus_version == "ch04":
@@ -180,6 +183,7 @@ def ingest_faq() -> IngestResult:
     )
 
 
+@legacy_mutation
 def build_all() -> IngestResult:
     """按 docs → faq → vectorize 的顺序完成一轮建库。
 

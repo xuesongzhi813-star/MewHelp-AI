@@ -211,3 +211,26 @@ class LowConfidenceQuestion(Base):
     retrieved_chunks: Mapped[Any | None] = mapped_column(JSON(none_as_null=True), nullable=True)
     matched_review_id: Mapped[int | None] = mapped_column(MYSQL_BIGINT(unsigned=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.current_timestamp())
+
+
+class ReviewQueue(Base):
+    """Exact mapping of the externally maintained review_queue table."""
+    __tablename__='review_queue'
+    id: Mapped[int] = mapped_column(MYSQL_BIGINT(unsigned=True),primary_key=True,autoincrement=True)
+    normalized_question: Mapped[str] = mapped_column(String(512),nullable=False)
+    ai_suggested_answer: Mapped[str | None] = mapped_column(Text,nullable=True)
+    occurrence_count: Mapped[int] = mapped_column(Integer,nullable=False,default=1,server_default='1')
+    review_status: Mapped[str] = mapped_column(Enum('待审','通过','驳回',name='review_status'),
+        nullable=False,default='待审',server_default='待审')
+    approved_answer: Mapped[str | None] = mapped_column(Text,nullable=True)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.current_timestamp())
+    updated_at: Mapped[datetime] = mapped_column(server_default=func.current_timestamp())
+
+
+class EvalRun(Base):
+    __tablename__='eval_runs'
+    id: Mapped[int] = mapped_column(BigInteger,primary_key=True,autoincrement=True)
+    triggered_by: Mapped[str] = mapped_column(Enum('定时','手动',name='eval_trigger'),nullable=False,default='定时',server_default='定时')
+    dataset_size: Mapped[int] = mapped_column(Integer,nullable=False)
+    metrics: Mapped[dict] = mapped_column(JSON,nullable=False)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.current_timestamp())

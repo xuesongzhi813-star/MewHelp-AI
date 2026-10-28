@@ -7,6 +7,7 @@ from langgraph.graph import StateGraph, START, END
 
 from app.workflow.contracts import WorkflowState
 from app.workflow.nodes import node_bodies
+from app.observability.spans import update_trace
 
 
 @dataclass
@@ -18,6 +19,10 @@ class WorkflowDeps:
     record_low_confidence: Callable
     context_store: Any = None
     tool_service: Any = None
+    evidence_policy: Any = None
+    self_check_enabled: bool = False
+    release_coordinator: Any = None
+    read_only: bool = False
 
 
 def build_workflow(*, checkpointer, deps: WorkflowDeps):
@@ -27,7 +32,11 @@ def build_workflow(*, checkpointer, deps: WorkflowDeps):
             from app.context.logging import context_scope
             from app.tooling.scope import tool_scope
             with context_scope(state), tool_scope(deps.tool_service,state.get('tool_snapshot'),state):
-                result = await _body(state)
+                from app.flywheel.publishing import KnowledgeMaintenance,MAINTENANCE_TEXT
+                try:result = await _body(state)
+                except KnowledgeMaintenance:
+                    result={'maintenance_reason':MAINTENANCE_TEXT}
+            update_trace({**state, **result})
             if state.get('current_turn_from_msg_id'):
                 turn = state['current_turn_from_msg_id']
                 refs = dict(state.get('message_refs', {}))
@@ -50,13 +59,22 @@ def build_workflow(*, checkpointer, deps: WorkflowDeps):
     builder.add_edge('expand_queries', 'retrieve_policy')
     builder.add_edge('retrieve_policy', 'evidence_gate')
     builder.add_edge('retrieve_knowledge', 'evidence_gate')
-    builder.add_conditional_edges('evidence_gate', lambda state: bool(state['gate_reason']), {True: 'refusal_reply', False: 'agent_decide'})
-    builder.add_conditional_edges('agent_decide', lambda state: 'prepare_tool_call' if state.get('pending_decision') and state['pending_decision'].get('tool_calls') else 'agent_answer')
+    builder.add_conditional_edges('evidence_gate', lambda state: 'maintenance_reply' if state.get('maintenance_reason') else 'refusal_reply' if state['gate_reason'] else
+        'agent_answer' if state.get('control') is not None else 'agent_decide')
+    builder.add_conditional_edges('agent_decide', lambda state: 'maintenance_reply' if state.get('maintenance_reason') else 'prepare_tool_call' if state.get('pending_decision') and state['pending_decision'].get('tool_calls') else 'agent_answer')
     builder.add_edge('prepare_tool_call','agent_tools')
-    builder.add_conditional_edges('agent_tools', lambda state: 'prepare_ticket_write' if (state.get('ticket_confirmation') or {}).get('status')=='confirmed' else 'agent_answer' if state.get('control') is not None else 'agent_decide')
+    def after_tools(state):
+        if state.get('maintenance_reason'):return 'maintenance_reply'
+        from app.workflow.knowledge import retrieval_digest
+        if ((deps.evidence_policy is not None or deps.self_check_enabled) and state.get('retrieval')
+                and retrieval_digest(state['retrieval']) != state.get('evidence_checked_hash')):
+            return 'evidence_gate'
+        return ('prepare_ticket_write' if (state.get('ticket_confirmation') or {}).get('status')=='confirmed'
+                else 'agent_answer' if state.get('control') is not None else 'agent_decide')
+    builder.add_conditional_edges('agent_tools', after_tools)
     builder.add_edge('prepare_ticket_write','execute_ticket_write')
     builder.add_edge('execute_ticket_write','agent_decide')
-    for name in ('agent_answer', 'complaint_reply', 'chat_reply', 'other_reply', 'refusal_reply'):
+    for name in ('agent_answer', 'complaint_reply', 'chat_reply', 'other_reply', 'refusal_reply','maintenance_reply'):
         builder.add_edge(name, 'log_result')
     builder.add_edge('log_result', END)
     return builder.compile(checkpointer=checkpointer)

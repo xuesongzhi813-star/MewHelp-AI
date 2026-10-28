@@ -60,6 +60,7 @@ class JobState:
 
 
 JOBS: dict[str, JobSpec] = {
+    'ch09-eval':JobSpec(name='ch09-eval',target='ch09-eval',heavy=False,description='运行当前确认版本72题评估（实际调用模型）'),
     "kb-preview": JobSpec(
         name="kb-preview",
         target="kb-preview",
@@ -166,6 +167,11 @@ def start_job(name: str, *, confirm: bool = False) -> JobState:
 
     if spec.heavy and not confirm:
         raise ConfirmationRequired(f"作业 {name} 需要二次确认(confirm=true)")
+
+    if name in {'kb-build','kb-vectorize','kb-rebuild','kb-reset'}:
+        from app.flywheel.publishing import guard_legacy_write,KnowledgeMaintenance
+        try:guard_legacy_write()
+        except KnowledgeMaintenance as exc:raise JobAlreadyRunning(str(exc)) from None
 
     settings = get_settings()
     make_path: str | None = None

@@ -30,3 +30,18 @@ kb-rebuild:
 
 kb-reset:
 	uv run python -m app.kb.ingest reset --yes
+
+ch09-check:
+	uv run python scripts/demo_ch09.py check
+
+ch09-bootstrap:
+	uv run python scripts/demo_ch09.py bootstrap
+
+ch09-calibrate:
+	uv run python scripts/demo_ch09.py calibrate
+
+ch09-serve:
+	uv run python scripts/demo_ch09.py serve --port 8023
+
+ch09-eval:
+	uv run python scripts/eval_ch09.py --trigger 手动

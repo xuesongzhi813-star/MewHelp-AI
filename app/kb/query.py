@@ -5,9 +5,12 @@ import re
 import unicodedata
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
+from contextvars import copy_context
 from typing import Literal
 
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.runnables import Runnable
+from app.observability.spans import model_config_kwargs
 from pydantic import BaseModel, ConfigDict
 
 from app.config import get_settings
@@ -117,8 +120,9 @@ def build_query_plan(raw_query: str, *, filters: RetrievalFilters | None = None,
         if model is None:
             from app.llm import build_query_model
             model = build_query_model(get_settings())
-        future = _executor.submit(model.invoke, [SystemMessage(content=QUERY_UNDERSTANDING_PROMPT),
-                                                HumanMessage(content=original)])
+        kwargs = model_config_kwargs() if isinstance(model, Runnable) else {}
+        future = _executor.submit(copy_context().run, model.invoke,
+            [SystemMessage(content=QUERY_UNDERSTANDING_PROMPT), HumanMessage(content=original)], **kwargs)
         response = future.result(timeout=get_settings().query_timeout)
         response = QueryRewrite.model_validate(response)
         if not validate_rewrite(original, response.normalized_query):

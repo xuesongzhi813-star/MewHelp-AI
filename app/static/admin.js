@@ -9,6 +9,8 @@
   const NAV = [
     { key: "admin", label: "总览", href: "/admin" },
     { key: "kb", label: "知识库", href: "/kb" },
+    { key: "review", label: "待审队列", href: "/review" },
+    { key: "quality", label: "质量与成本", href: "/quality" },
     { key: "chat", label: "客服对话", href: "/" },
   ];
 

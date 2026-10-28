@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from app.db import get_session_local
 from app.kb.documents import chunk_fingerprint, normalize_text
 from app.models import Conversation, KnowledgeChunk, Message, QaExtractionStaging
+from app.observability.spans import observed_call
 
 
 @dataclass(frozen=True)
@@ -207,6 +208,10 @@ def mark_done(ids: Sequence[int], session: Session | None = None) -> None:
             )
 
 
+@observed_call(
+    'mysql-knowledge-read', input_fields=('ids',),
+    output_selector=lambda result: {'rows':[{'id':r.id,'questions':r.questions,'answer':r.answer}
+                                          for r in result.values()]})
 def fetch_by_ids(
     ids: Sequence[int], session: Session | None = None
 ) -> dict[int, StoredChunk]:
