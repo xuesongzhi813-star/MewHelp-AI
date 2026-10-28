@@ -1,0 +1,41 @@
+{
+  "provider": "real model; no tool execution",
+  "rows": [
+    {
+      "case": "cjk2000",
+      "characters": 2000,
+      "passed": false,
+      "returned_characters": 1976,
+      "usage": {
+        "contextual": true,
+        "token_limit": 50000,
+        "charged_tokens": 5219,
+        "tool_calls": 0,
+        "decision_calls": 1,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792982891.9501252,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    },
+    {
+      "case": "escaped_literal",
+      "characters": 2000,
+      "passed": false,
+      "returned_characters": 1934,
+      "usage": {
+        "contextual": true,
+        "token_limit": 50000,
+        "charged_tokens": 5435,
+        "tool_calls": 0,
+        "decision_calls": 1,
+        "max_tool_calls": 6,
+        "max_decisions": 10,
+        "deadline": 1792982896.8292685,
+        "actual_calls": 1,
+        "estimated_calls": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "passed": true,
+  "provider": "synthetic HTTP + real Chrome",
+  "checks": [
+    "untrusted description rendered as text",
+    "double click creates one request",
+    "refresh completed state",
+    "cancel zero writes",
+    "network failure no automatic retry",
+    "switch session ignores late stream",
+    "390px no overflow",
+    "known legacy validation refusal stays rejected",
+    "known refund validation refusal stays rejected"
+  ],
+  "requests": [
+    {
+      "session_id": "u:88888888888888888888888888888888:c:1",
+      "preview_id": "p1",
+      "decision": "confirm"
+    },
+    {
+      "session_id": "u:88888888888888888888888888888888:c:1",
+      "preview_id": "p2",
+      "decision": "cancel"
+    },
+    {
+      "session_id": "u:88888888888888888888888888888888:c:1",
+      "preview_id": "p3",
+      "decision": "confirm"
+    },
+    {
+      "session_id": "u:88888888888888888888888888888888:c:1",
+      "preview_id": "p4",
+      "decision": "confirm"
+    }
+  ],
+  "writes": 2,
+  "errors": []
+}

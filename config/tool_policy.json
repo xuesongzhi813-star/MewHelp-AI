@@ -1,0 +1,151 @@
+{
+  "servers": {
+    "logistics": {
+      "url": "http://127.0.0.1:8021/mcp",
+      "enabled": true
+    },
+    "aftersales": {
+      "url": "http://127.0.0.1:8022/mcp",
+      "enabled": true
+    }
+  },
+  "rules": {
+    "builtin/query_order": {
+      "enabled": true,
+      "effect": "read",
+      "routing_intents": [
+        "订单",
+        "其他"
+      ],
+      "output_fields": [
+        "order_id",
+        "status",
+        "product",
+        "amount",
+        "placed_at",
+        "signed_at",
+        "is_demo"
+      ]
+    },
+    "builtin/query_product": {
+      "enabled": true,
+      "effect": "read",
+      "routing_intents": [
+        "商品咨询",
+        "其他"
+      ],
+      "output_fields": [
+        "product_name",
+        "price",
+        "stock",
+        "in_stock",
+        "specs",
+        "is_demo"
+      ]
+    },
+    "builtin/query_faq": {
+      "enabled": true,
+      "effect": "read",
+      "routing_intents": []
+    },
+    "builtin/create_ticket": {
+      "enabled": true,
+      "effect": "write",
+      "routing_intents": []
+    },
+    "logistics/query_logistics": {
+      "enabled": true,
+      "effect": "read",
+      "alias": "query_logistics",
+      "routing_intents": [
+        "物流",
+        "订单",
+        "其他"
+      ],
+      "output_fields": [
+        "found",
+        "reason",
+        "order_id",
+        "carrier",
+        "current_status",
+        "eta",
+        "events.time",
+        "events.status",
+        "events.location",
+        "is_demo"
+      ],
+      "enum_map": {
+        "current_status": {
+          "picked_up": "已揽收",
+          "transit": "运输中",
+          "out_for_delivery": "派送中",
+          "delivered": "已签收"
+        },
+        "events.status": {
+          "picked_up": "已揽收",
+          "transit": "运输中",
+          "out_for_delivery": "派送中",
+          "delivered": "已签收"
+        }
+      }
+    },
+    "aftersales/query_warranty": {
+      "enabled": true,
+      "effect": "read",
+      "alias": "query_warranty",
+      "routing_intents": [
+        "售后",
+        "退款退货",
+        "订单",
+        "其他"
+      ],
+      "output_fields": [
+        "found",
+        "reason",
+        "order_id",
+        "warranty_status",
+        "coverage_note",
+        "expires_at",
+        "is_demo"
+      ],
+      "enum_map": {
+        "warranty_status": {
+          "covered": "在保障期内",
+          "expired": "已过保障期",
+          "no_record": "没有保障记录"
+        }
+      }
+    },
+    "aftersales/query_return_progress": {
+      "enabled": true,
+      "effect": "read",
+      "alias": "query_return_progress",
+      "routing_intents": [
+        "售后",
+        "退款退货",
+        "订单",
+        "其他"
+      ],
+      "output_fields": [
+        "found",
+        "reason",
+        "order_id",
+        "return_no",
+        "status",
+        "updated_at",
+        "next_step",
+        "is_demo"
+      ],
+      "enum_map": {
+        "status": {
+          "requested": "已申请",
+          "approved": "审核通过",
+          "in_transit": "退货运输中",
+          "received": "已收到退货",
+          "refunded": "已退款",
+          "rejected": "审核未通过"
+        }
+      }
+    }
+  }
+}

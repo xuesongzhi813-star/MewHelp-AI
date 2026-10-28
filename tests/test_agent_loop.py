@@ -74,8 +74,17 @@ async def run(rounds, *, budget=None):
         executed.append((name, args))
         return "订单已发货" if name == "query_order" else "物流运输中"
 
-    result = await run_agent_loop("订单1001的状态和物流", gateway=ModelGateway(provider), execute=execute,
-                                  context={"conversation_id": 1}, budget=budget)
+    # The logistics schema now comes from an injected external catalog, never a builtin.
+    from app.tools import get_tools
+    from app.tooling.scope import tool_scope
+    from app.tooling.contracts import ToolSnapshot
+    from langchain_core.utils.function_calling import convert_to_openai_tool
+    schemas=[convert_to_openai_tool(t) for t in get_tools()]
+    schemas.append({'type':'function','function':{'name':'query_logistics','description':'测试MCP物流',
+        'parameters':{'type':'object','properties':{'order_id':{'type':'string'}},'required':['order_id']}}})
+    with tool_scope(None,ToolSnapshot('test-mcp','local',(),tuple(schemas))):
+        result = await run_agent_loop("订单1001的状态和物流", gateway=ModelGateway(provider), execute=execute,
+                                      context={"conversation_id": 1}, budget=budget)
     return result, provider, executed
 
 
@@ -123,7 +132,7 @@ async def test_unknown_tool_is_never_executed():
 
 
 async def test_six_calls_or_ten_decisions_stop_without_extra_model():
-    result, provider, executed = await run([[call("query_order", {"order_id": "1001"}, f"t{i}")] for i in range(7)])
+    result, provider, executed = await run([[call("query_order", {"order_id": "1001"}, f"t{i}")] for i in range(7)],budget=BudgetState(token_limit=100000))
     assert len(executed) == 6
     assert len(provider.received) == 6
     assert result["stop_reason"] == "budget"

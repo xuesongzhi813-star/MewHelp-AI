@@ -324,6 +324,7 @@
 <script src="/static/chat-citations.js"></script>
 <script src="/static/chat-actions.js"></script>
 <script src="/static/chat-refund.js"></script>
+<script src="/static/chat-tool-confirmation.js"></script>
 <script>
 (() => {
   const chatArea = document.getElementById("chatArea");
@@ -385,12 +386,24 @@
     return { row, bubble };
   }
 
+  function ticketView(container, wantedSession, version) {
+    let reply = null;
+    return createToolConfirmationView({container,sessionId:wantedSession,
+      isCurrent:()=>sessionId===wantedSession && viewVersion===version,
+      onEvent:event=>{
+        if(event.type==='token') {
+          if(!reply)reply=addRow('ai','ETHAN_LEO').bubble;
+          reply.textContent+=event.content;scrollBottom();
+        }
+      }});
+  }
+
   async function sendMessage(text, selectionRequest = null) {
     if (busy || (!selectionRequest && !text.trim())) return false;
     viewVersion++;
     const responseVersion = viewVersion;
     const controller = new AbortController(); activeController = controller;
-    if (!selectionRequest) ChatRefundUI.expireSelections();
+    if (!selectionRequest) { ChatRefundUI.expireSelections(); ToolConfirmationUI.expireAll(); }
     busy = true;
     sendBtn.disabled = true;
     input.value = "";
@@ -415,6 +428,7 @@
     let failed = false;
     let restoreSelection = false;
     let waitingForOrder = false;
+    let ticket = null;
     const typing = document.createElement("span");
     typing.className = "typing";
     typing.innerHTML = "<i></i><i></i><i></i>";
@@ -468,6 +482,10 @@
           } else if (payload.type === "actions") {
             actionView.setActions(payload.items);
             refundView.setActions(payload.items);
+          } else if (payload.type === 'tool_confirmation') {
+            waitingForOrder = true; typing.remove(); cursor.remove();
+            ticket = ticketView(bubble,turnSessionId,responseVersion);ticket.setPreview(payload);
+            scrollBottom();
           } else if (payload.type === 'order_selection') {
             waitingForOrder = true; typing.remove(); cursor.remove();
             refundView.setSelection(payload);
@@ -499,6 +517,7 @@
               }
             }
           } else if (payload.type === "error") {
+            ticket?.fail();
             failed = true; refundView.fail();
             terminal = true; responseView.fail(); actionView.fail();
             typing.remove(); cursor.remove();
@@ -519,6 +538,7 @@
             body.textContent = "⚠ 生成失败:" + payload.message;
             scrollBottom();
           } else if (payload.type === "done") {
+            ticket?.complete();
             refundView.complete();
             terminal = true; responseView.complete(); actionView.complete();
             cursor.remove();
@@ -535,6 +555,7 @@
     } catch (err) {
       if (responseVersion !== viewVersion || err.name === 'AbortError') return false;
       failed = true; refundView.fail();
+      ticket?.fail();
       responseView.fail(); actionView.fail();
       typing.remove(); cursor.remove();
       badges.querySelectorAll(".tool-badge.running").forEach(b => {
@@ -585,6 +606,7 @@
     b.addEventListener("click", () => sendMessage(b.dataset.q))
   );
   function stopOldView() {
+    ToolConfirmationUI.disposeAll();
     viewVersion++; activeController?.abort(); activeController = null; busy = false; sendBtn.disabled = false;
     ChatRefundUI.expireSelections();
     document.querySelectorAll('.ticket-confirm').forEach(d => d.remove());
@@ -608,8 +630,9 @@
       const response=await fetch('/api/chat/actions/state?session_id='+encodeURIComponent(wantedSession));
       if(!response.ok)return;
       const state=await response.json();
-      if(busy||sessionId!==wantedSession||version!==viewVersion||(!state.selection&&!state.actions?.length))return;
+      if(busy||sessionId!==wantedSession||version!==viewVersion||(!state.selection&&!state.actions?.length&&!state.ticket_confirmation))return;
       const {bubble}=addRow('ai','恢复待处理操作');
+      if(state.ticket_confirmation){const ticket=ticketView(bubble,wantedSession,version);ticket.setPreview(state.ticket_confirmation);ticket.complete();}
       const view=ChatRefundUI.create({container:bubble,sessionId:wantedSession,isBusy:()=>busy,onSelect:request=>sendMessage('',request)});
       if(state.selection)view.setSelection(state.selection);
       view.setActions(state.actions);view.complete();

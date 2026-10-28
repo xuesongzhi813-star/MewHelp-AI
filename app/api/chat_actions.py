@@ -2,13 +2,31 @@ import json
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import StreamingResponse
 
-from app.schemas import ConfirmTicketRequest, TicketActionResult
+from app.schemas import ConfirmTicketRequest, TicketActionResult, ToolConfirmationRequest
 from app.workflow.actions import confirm_ticket, ActionError
 from app.schemas import SelectOrderRequest, SubmitRefundRequest
 from app.workflow.refund_actions import confirm_refund
 from app.dependencies import get_chat_model
 
 router = APIRouter(prefix='/api/chat/actions', tags=['chat-actions'])
+
+
+@router.post('/tool-confirmation')
+async def tool_confirmation(request: ToolConfirmationRequest,
+                            http_request: Request,model=Depends(get_chat_model)):
+    runtime=getattr(http_request.app.state,'workflow_runtime',None)
+    if runtime is None or runtime.tool_service is None:
+        raise HTTPException(503,'工具服务尚未初始化。')
+    try:
+        await runtime.validate_tool_confirmation(request)
+    except (ValueError,LookupError):
+        raise HTTPException(404,'会话不存在。') from None
+    except ActionError as exc:
+        raise HTTPException(exc.status_code,str(exc)) from None
+    async def events():
+        async for event in runtime.stream_tool_confirmation(request,model=model):
+            yield 'data: '+json.dumps(event,ensure_ascii=False)+'\n\n'
+    return StreamingResponse(events(),media_type='text/event-stream')
 
 
 @router.post('/refund', response_model=TicketActionResult)

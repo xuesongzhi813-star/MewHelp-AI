@@ -1,0 +1,794 @@
+{
+  "provider": "real HTTP/model/native interrupt/MySQL",
+  "user_id": "5b3ba2220449495bb9c4fb5c26d1fc72",
+  "rows": [
+    {
+      "case": "cjk2000",
+      "characters": 2000,
+      "conversation_id": 6903,
+      "session_id": "u:5b3ba2220449495bb9c4fb5c26d1fc72:c:6903",
+      "first": [
+        {
+          "type": "conversation",
+          "user_id": "5b3ba2220449495bb9c4fb5c26d1fc72",
+          "session_id": "u:5b3ba2220449495bb9c4fb5c26d1fc72:c:6903",
+          "conversation_id": 6903
+        },
+        {
+          "type": "workflow",
+          "stage": "question_understood",
+          "question": "帮我建一个售后工单"
+        },
+        {
+          "type": "token",
+          "content": "请"
+        },
+        {
+          "type": "token",
+          "content": "补充"
+        },
+        {
+          "type": "token",
+          "content": "一下"
+        },
+        {
+          "type": "token",
+          "content": "具体"
+        },
+        {
+          "type": "token",
+          "content": "问题"
+        },
+        {
+          "type": "token",
+          "content": "描述"
+        },
+        {
+          "type": "token",
+          "content": "（"
+        },
+        {
+          "type": "token",
+          "content": "比如"
+        },
+        {
+          "type": "token",
+          "content": "订单"
+        },
+        {
+          "type": "token",
+          "content": "号"
+        },
+        {
+          "type": "token",
+          "content": "、"
+        },
+        {
+          "type": "token",
+          "content": "商品"
+        },
+        {
+          "type": "token",
+          "content": "和"
+        },
+        {
+          "type": "token",
+          "content": "遇到的问题"
+        },
+        {
+          "type": "token",
+          "content": "），"
+        },
+        {
+          "type": "token",
+          "content": "我"
+        },
+        {
+          "type": "token",
+          "content": "才能"
+        },
+        {
+          "type": "token",
+          "content": "为您"
+        },
+        {
+          "type": "token",
+          "content": "创建"
+        },
+        {
+          "type": "token",
+          "content": "售后"
+        },
+        {
+          "type": "token",
+          "content": "工"
+        },
+        {
+          "type": "token",
+          "content": "单"
+        },
+        {
+          "type": "token",
+          "content": "。"
+        },
+        {
+          "type": "actions",
+          "items": [
+            {
+              "kind": "create_ticket",
+              "description": "需要您补充具体问题描述（如订单号、商品、遇到的问题），才能创建售后工单。",
+              "ticket_type": "售后",
+              "action_id": "3685096f50274bd4a608221d5117c87e",
+              "status": "available",
+              "label": "建工单"
+            }
+          ]
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "description_turn": [
+        {
+          "type": "conversation",
+          "user_id": "5b3ba2220449495bb9c4fb5c26d1fc72",
+          "session_id": "u:5b3ba2220449495bb9c4fb5c26d1fc72:c:6903",
+          "conversation_id": 6903
+        },
+        {
+          "type": "tool_confirmation",
+          "preview_id": "f3f286d609045f289195af89beef81e4",
+          "status": "available",
+          "ticket_type": "售后",
+          "description": "订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单1001未收到包裹，系统却显示已签收。订单100",
+          "is_demo": true
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "resume": [
+        {
+          "type": "token",
+          "content": "售后"
+        },
+        {
+          "type": "token",
+          "content": "工"
+        },
+        {
+          "type": "token",
+          "content": "单"
+        },
+        {
+          "type": "token",
+          "content": "已"
+        },
+        {
+          "type": "token",
+          "content": "创建"
+        },
+        {
+          "type": "token",
+          "content": "成功"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "工"
+        },
+        {
+          "type": "token",
+          "content": "单"
+        },
+        {
+          "type": "token",
+          "content": "号为"
+        },
+        {
+          "type": "token",
+          "content": " T"
+        },
+        {
+          "type": "token",
+          "content": "202"
+        },
+        {
+          "type": "token",
+          "content": "610"
+        },
+        {
+          "type": "token",
+          "content": "260"
+        },
+        {
+          "type": "token",
+          "content": "004"
+        },
+        {
+          "type": "token",
+          "content": "。\n\n"
+        },
+        {
+          "type": "token",
+          "content": "工"
+        },
+        {
+          "type": "token",
+          "content": "单"
+        },
+        {
+          "type": "token",
+          "content": "内容"
+        },
+        {
+          "type": "token",
+          "content": "："
+        },
+        {
+          "type": "token",
+          "content": "订单"
+        },
+        {
+          "type": "token",
+          "content": " "
+        },
+        {
+          "type": "token",
+          "content": "100"
+        },
+        {
+          "type": "token",
+          "content": "1"
+        },
+        {
+          "type": "token",
+          "content": " "
+        },
+        {
+          "type": "token",
+          "content": "未"
+        },
+        {
+          "type": "token",
+          "content": "收到"
+        },
+        {
+          "type": "token",
+          "content": "包裹"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "但"
+        },
+        {
+          "type": "token",
+          "content": "系统"
+        },
+        {
+          "type": "token",
+          "content": "显示"
+        },
+        {
+          "type": "token",
+          "content": "已"
+        },
+        {
+          "type": "token",
+          "content": "签"
+        },
+        {
+          "type": "token",
+          "content": "收"
+        },
+        {
+          "type": "token",
+          "content": "。"
+        },
+        {
+          "type": "token",
+          "content": "系统"
+        },
+        {
+          "type": "token",
+          "content": "显示"
+        },
+        {
+          "type": "token",
+          "content": "签"
+        },
+        {
+          "type": "token",
+          "content": "收"
+        },
+        {
+          "type": "token",
+          "content": "并不"
+        },
+        {
+          "type": "token",
+          "content": "代表"
+        },
+        {
+          "type": "token",
+          "content": "您"
+        },
+        {
+          "type": "token",
+          "content": "反馈"
+        },
+        {
+          "type": "token",
+          "content": "的"
+        },
+        {
+          "type": "token",
+          "content": "未"
+        },
+        {
+          "type": "token",
+          "content": "收到"
+        },
+        {
+          "type": "token",
+          "content": "货"
+        },
+        {
+          "type": "token",
+          "content": "问题"
+        },
+        {
+          "type": "token",
+          "content": "已"
+        },
+        {
+          "type": "token",
+          "content": "解决"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "客服"
+        },
+        {
+          "type": "token",
+          "content": "会"
+        },
+        {
+          "type": "token",
+          "content": "进一步"
+        },
+        {
+          "type": "token",
+          "content": "核实"
+        },
+        {
+          "type": "token",
+          "content": "处理"
+        },
+        {
+          "type": "token",
+          "content": "。"
+        },
+        {
+          "type": "tool_confirmation_result",
+          "preview_id": "f3f286d609045f289195af89beef81e4",
+          "status": "completed",
+          "result": "工单创建成功,工单号 T202610260004"
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "database": {
+        "tickets": [
+          "T202610260004"
+        ],
+        "audit": [
+          {
+            "tool_call_id": "call_00_xv9ZF6Y6Zh1qcSXEpWMl9907",
+            "tool_name": "create_ticket",
+            "status": "成功",
+            "tool_source": "builtin",
+            "retry_count": 0,
+            "duration_ms": 31
+          }
+        ]
+      },
+      "persisted_characters": 2000,
+      "passed": true
+    },
+    {
+      "case": "escaped2000",
+      "characters": 2000,
+      "conversation_id": 6905,
+      "session_id": "u:5b3ba2220449495bb9c4fb5c26d1fc72:c:6905",
+      "first": [
+        {
+          "type": "conversation",
+          "user_id": "5b3ba2220449495bb9c4fb5c26d1fc72",
+          "session_id": "u:5b3ba2220449495bb9c4fb5c26d1fc72:c:6905",
+          "conversation_id": 6905
+        },
+        {
+          "type": "workflow",
+          "stage": "question_understood",
+          "question": "帮我建一个售后工单"
+        },
+        {
+          "type": "token",
+          "content": "请"
+        },
+        {
+          "type": "token",
+          "content": "补充"
+        },
+        {
+          "type": "token",
+          "content": "一下"
+        },
+        {
+          "type": "token",
+          "content": "具体的"
+        },
+        {
+          "type": "token",
+          "content": "售后"
+        },
+        {
+          "type": "token",
+          "content": "问题"
+        },
+        {
+          "type": "token",
+          "content": "描述"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "比如"
+        },
+        {
+          "type": "token",
+          "content": "订单"
+        },
+        {
+          "type": "token",
+          "content": "号"
+        },
+        {
+          "type": "token",
+          "content": "、"
+        },
+        {
+          "type": "token",
+          "content": "涉及"
+        },
+        {
+          "type": "token",
+          "content": "的商品"
+        },
+        {
+          "type": "token",
+          "content": "以及"
+        },
+        {
+          "type": "token",
+          "content": "遇到的问题"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "我再"
+        },
+        {
+          "type": "token",
+          "content": "帮你"
+        },
+        {
+          "type": "token",
+          "content": "建"
+        },
+        {
+          "type": "token",
+          "content": "工"
+        },
+        {
+          "type": "token",
+          "content": "单"
+        },
+        {
+          "type": "token",
+          "content": "。"
+        },
+        {
+          "type": "actions",
+          "items": [
+            {
+              "kind": "create_ticket",
+              "description": "请补充具体售后问题描述（如订单号、商品、遇到的问题）。",
+              "ticket_type": "售后",
+              "action_id": "7022d7f8728043dc9599ed50d098acb7",
+              "status": "available",
+              "label": "建工单"
+            }
+          ]
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "description_turn": [
+        {
+          "type": "conversation",
+          "user_id": "5b3ba2220449495bb9c4fb5c26d1fc72",
+          "session_id": "u:5b3ba2220449495bb9c4fb5c26d1fc72:c:6905",
+          "conversation_id": 6905
+        },
+        {
+          "type": "tool_confirmation",
+          "preview_id": "5593bf07e2b354818a972c6f7036c27a",
+          "status": "available",
+          "ticket_type": "售后",
+          "description": "问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核实。问题包含字符\\u4e00和双引号\"，请核",
+          "is_demo": true
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "resume": [
+        {
+          "type": "token",
+          "content": "工"
+        },
+        {
+          "type": "token",
+          "content": "单"
+        },
+        {
+          "type": "token",
+          "content": "已"
+        },
+        {
+          "type": "token",
+          "content": "创建"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "工"
+        },
+        {
+          "type": "token",
+          "content": "单"
+        },
+        {
+          "type": "token",
+          "content": "号"
+        },
+        {
+          "type": "token",
+          "content": "："
+        },
+        {
+          "type": "token",
+          "content": "T"
+        },
+        {
+          "type": "token",
+          "content": "202"
+        },
+        {
+          "type": "token",
+          "content": "610"
+        },
+        {
+          "type": "token",
+          "content": "260"
+        },
+        {
+          "type": "token",
+          "content": "005"
+        },
+        {
+          "type": "token",
+          "content": "。\n\n"
+        },
+        {
+          "type": "token",
+          "content": "不过"
+        },
+        {
+          "type": "token",
+          "content": "您"
+        },
+        {
+          "type": "token",
+          "content": "提交"
+        },
+        {
+          "type": "token",
+          "content": "的内容"
+        },
+        {
+          "type": "token",
+          "content": "是"
+        },
+        {
+          "type": "token",
+          "content": "重复"
+        },
+        {
+          "type": "token",
+          "content": "的"
+        },
+        {
+          "type": "token",
+          "content": "同一"
+        },
+        {
+          "type": "token",
+          "content": "句话"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "没有"
+        },
+        {
+          "type": "token",
+          "content": "说明"
+        },
+        {
+          "type": "token",
+          "content": "具体的"
+        },
+        {
+          "type": "token",
+          "content": "售后"
+        },
+        {
+          "type": "token",
+          "content": "问题"
+        },
+        {
+          "type": "token",
+          "content": "（"
+        },
+        {
+          "type": "token",
+          "content": "如"
+        },
+        {
+          "type": "token",
+          "content": "订单"
+        },
+        {
+          "type": "token",
+          "content": "号"
+        },
+        {
+          "type": "token",
+          "content": "、"
+        },
+        {
+          "type": "token",
+          "content": "商品"
+        },
+        {
+          "type": "token",
+          "content": "、"
+        },
+        {
+          "type": "token",
+          "content": "遇到的问题"
+        },
+        {
+          "type": "token",
+          "content": "）。"
+        },
+        {
+          "type": "token",
+          "content": "如需"
+        },
+        {
+          "type": "token",
+          "content": "补充"
+        },
+        {
+          "type": "token",
+          "content": "实际"
+        },
+        {
+          "type": "token",
+          "content": "诉求"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "可以"
+        },
+        {
+          "type": "token",
+          "content": "告诉我"
+        },
+        {
+          "type": "token",
+          "content": "，"
+        },
+        {
+          "type": "token",
+          "content": "我再"
+        },
+        {
+          "type": "token",
+          "content": "帮"
+        },
+        {
+          "type": "token",
+          "content": "您"
+        },
+        {
+          "type": "token",
+          "content": "处理"
+        },
+        {
+          "type": "token",
+          "content": "。"
+        },
+        {
+          "type": "tool_confirmation_result",
+          "preview_id": "5593bf07e2b354818a972c6f7036c27a",
+          "status": "completed",
+          "result": "工单创建成功,工单号 T202610260005"
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "database": {
+        "tickets": [
+          "T202610260005"
+        ],
+        "audit": [
+          {
+            "tool_call_id": "call_00_wSocXo0QOSh1WZV8FKuO9835",
+            "tool_name": "create_ticket",
+            "status": "成功",
+            "tool_source": "builtin",
+            "retry_count": 0,
+            "duration_ms": 15
+          }
+        ]
+      },
+      "persisted_characters": 2000,
+      "passed": true
+    }
+  ]
+}

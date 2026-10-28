@@ -14,13 +14,17 @@
         method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
       });
       const result = await response.json();
-      if (!response.ok || result.status !== 'completed') throw new Error('工单结果待核实，请勿重复提交。');
+      if (!response.ok || result.status !== 'completed') {
+        const error=new Error(typeof result.detail==='string'?result.detail:'工单结果待核实，请勿重复提交。');
+        error.rejected=[422,403].includes(response.status);throw error;
+      }
       return result;
     });
 
     function paint() {
       root.replaceChildren();
       for (const item of states.values()) {
+        if(item.state==='rejected')status.textContent=item.result||'校验未通过，未创建工单。';
         const button = document.createElement('button'); button.type = 'button';
         button.textContent = item.state === 'completed' ? (item.kind === 'handoff' ? '已转接' : '工单已创建') : item.label;
         button.disabled = !complete || failed || item.state !== 'available';
@@ -55,8 +59,10 @@
         try {
           const result = await submit({session_id: typeof sessionId === 'function' ? sessionId() : sessionId, action_id: item.action_id, confirmed: true});
           item.state = 'completed'; status.textContent = result.result;
-        } catch (_) {
-          item.state = 'uncertain'; status.textContent = '工单结果待核实，请联系客服核实，请勿重复提交。';
+        } catch (error) {
+          item.state = error.rejected ? 'rejected' : 'uncertain';
+          item.result = error.rejected ? error.message : '工单结果待核实，请联系客服核实，请勿重复提交。';
+          status.textContent = item.result;
         }
         paint();
       });

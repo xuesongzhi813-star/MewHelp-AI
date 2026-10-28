@@ -8,20 +8,37 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from app.workflow.router_prompts import UNDERSTANDING_PROMPT
 
 
+class DescriptionSource(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    message_id: str
+    quote: str = Field(default='',max_length=2000)
+    whole_message: bool = False
+
+
 class UnderstandingResult(BaseModel):
     model_config = ConfigDict(extra='forbid')
     standalone_question: str = Field(min_length=1, max_length=32000)
     reference_status: Literal['unchanged', 'resolved', 'ambiguous']
     order_id: str | None = Field(default=None, max_length=64)
     source_message_id: str | None = None
+    requested_operation: Literal['none', 'create_ticket', 'read_tool'] = 'none'
+    candidate_tool: str | None = Field(default=None, max_length=64)
+    request_source_id: str | None = None
+    request_quote: str | None = Field(default=None, max_length=2000)
+    description_sources: list[DescriptionSource] = Field(default_factory=list, max_length=8)
+    ticket_type: Literal['售后', '投诉', '咨询'] | None = None
 
 
-async def understand_question(question, *, history, gateway, budget, context=None, source_lookup=None):
+async def understand_question(question, *, history, gateway, budget, context=None, source_lookup=None, current_message_id=None, draft=None):
     if context is not None:
         history=[HumanMessage(s.content,id=f'summary:{s.id}') for s in context.summaries]+context.messages
+    from app.tooling.scope import current_tools
+    snapshot=current_tools()[1]
+    catalog=[{'name':d['name'],'description':d['description']} for d in snapshot.definitions] if snapshot else []
     messages = [SystemMessage(content=UNDERSTANDING_PROMPT), HumanMessage(content=json.dumps({
         'history': context.text if context is not None else [{'id': m.id, 'role': m.type, 'content': m.content} for m in history],
-        'question': question}, ensure_ascii=False))]
+        'question': question, 'question_id':current_message_id, 'tool_catalog':catalog,
+        'collecting_ticket':draft}, ensure_ascii=False))]
     result = None
     for attempt in range(2):
         try:
@@ -30,6 +47,11 @@ async def understand_question(question, *, history, gateway, budget, context=Non
         except ValueError:
             messages.append(HumanMessage(content='上次格式无效。只输出要求字段的JSON，订单与来源未知填null。'))
     fallback = UnderstandingResult(standalone_question=question, reference_status='ambiguous')
+    if result is not None and result.requested_operation=='create_ticket':
+        # Rewriting/order ambiguity cannot authenticate or invalidate ticket
+        # provenance. The server separately validates these actual-user sources.
+        fallback=fallback.model_copy(update={key:getattr(result,key) for key in (
+            'requested_operation','request_source_id','request_quote','description_sources','ticket_type')})
     if result is None or result.reference_status == 'ambiguous':
         return fallback
     if result.reference_status == 'unchanged':

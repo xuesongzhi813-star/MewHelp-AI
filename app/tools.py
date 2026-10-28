@@ -1,7 +1,7 @@
-"""ch02 业务工具集:五个 @tool 工具 + TOOL_REGISTRY 注册表。
+"""内置业务工具声明；模型可见目录由 app.tooling 注册中心提供。
 
 分工:
-- query_order / query_product / query_logistics:Mock 数据——模块级 random.Random
+- query_order / query_product:Mock 数据——模块级 random.Random
   随机生成,dict 缓存保证「同一参数同进程内结果稳定」;返回
   json.dumps(ensure_ascii=False) 的 JSON 字符串。
 - query_faq:委托 app.kb.retriever.retrieve 做语义检索(embedding + Milvus
@@ -32,7 +32,7 @@ from app.kb.contracts import QueryPlan
 from app.kb.retriever import retrieve
 from app.kb.retriever import retrieve_result
 from app.models import Ticket
-from app.demo_orders import get_demo_order, get_demo_logistics
+from app.demo_orders import get_demo_order
 
 # ---------------------------------------------------------------------------
 # Mock 数据源(订单/商品/物流):进程内共享一个随机源即可,不需要跨进程可复现
@@ -51,9 +51,6 @@ PRODUCT_NAMES_POOL: tuple[str, ...] = (
     "复古运动拉链外套",
     "高腰直筒牛仔裤",
 )
-# 物流公司池(顺丰/中通/圆通)与物流节点池
-LOGISTICS_CARRIERS: tuple[str, ...] = ("顺丰速运", "中通快递", "圆通速递")
-LOGISTICS_NODES: tuple[str, ...] = ("已揽收", "运输中", "到达转运中心", "派送中", "已签收")
 # 商品规格池(二手古着:尺码 + 颜色)
 PRODUCT_SPECS_POOL: tuple[str, ...] = (
     "S码 黑色",
@@ -67,7 +64,6 @@ PRODUCT_SPECS_POOL: tuple[str, ...] = (
 # 「同一参数同进程内稳定」的简单 dict 缓存:order_id / product_name -> JSON 字符串
 _order_cache: dict[str, str] = {}
 _product_cache: dict[str, str] = {}
-_logistics_cache: dict[str, str] = {}
 
 
 # ---------------------------------------------------------------------------
@@ -87,12 +83,6 @@ class QueryProductArgs(BaseModel):
     product_name: str = Field(description="商品名称,尽量使用用户原话中的完整商品名,例如 复古水洗牛仔夹克")
 
 
-class QueryLogisticsArgs(BaseModel):
-    """query_logistics 的入参 schema。"""
-
-    order_id: str = Field(description="订单号,用户想查询物流进度的订单编号")
-
-
 class QueryFaqArgs(BaseModel):
     """query_faq 的入参 schema。"""
 
@@ -103,7 +93,7 @@ class QueryFaqArgs(BaseModel):
 class CreateTicketArgs(BaseModel):
     """create_ticket 的入参 schema。"""
 
-    description: str = Field(description="工单内容:完整转述用户的问题,包含订单号、商品名等关键上下文")
+    description: str = Field(min_length=1, max_length=2000, description="工单内容:完整转述用户的问题,包含订单号、商品名等关键上下文")
     ticket_type: Literal["售后", "投诉", "咨询"] = Field(
         description="工单类型:售后(退换货/维修类)、投诉(不满/纠纷类)、咨询(其他疑问类)"
     )
@@ -168,33 +158,6 @@ def query_product(product_name: str) -> str:
         }
         _product_cache[product_name] = json.dumps(data, ensure_ascii=False)
     return _product_cache[product_name]
-
-
-# ---------------------------------------------------------------------------
-# 工具三:query_logistics(Mock)
-# ---------------------------------------------------------------------------
-
-
-@tool(args_schema=QueryLogisticsArgs)
-def query_logistics(order_id: str) -> str:
-    """根据订单号查询物流信息:承运快递公司、当前配送节点与预计送达日期。
-
-    用户询问「包裹到哪了/什么时候能送到/是什么快递」等物流类问题时调用;
-    输入订单号,返回 JSON 文本;查订单状态/金额请改用 query_order。
-    """
-    demo = get_demo_logistics(order_id)
-    if demo is not None:
-        return json.dumps(demo, ensure_ascii=False)
-    if order_id not in _logistics_cache:
-        eta = date.today() + timedelta(days=_RNG.randint(1, 7))
-        data = {
-            "order_id": order_id,
-            "carrier": _RNG.choice(LOGISTICS_CARRIERS),
-            "current_node": _RNG.choice(LOGISTICS_NODES),
-            "eta": eta.strftime("%Y-%m-%d"),
-        }
-        _logistics_cache[order_id] = json.dumps(data, ensure_ascii=False)
-    return _logistics_cache[order_id]
 
 
 # ---------------------------------------------------------------------------
@@ -277,12 +240,16 @@ def create_ticket(
 TOOL_REGISTRY: dict[str, BaseTool] = {
     "query_order": query_order,
     "query_product": query_product,
-    "query_logistics": query_logistics,
     "query_faq": query_faq,
     "create_ticket": create_ticket,
 }
 
 
-def get_tools() -> list[BaseTool]:
+def get_tools() -> list[BaseTool | dict]:
     """全部业务工具列表,供 LLM bind_tools 使用。"""
+    from app.tooling.scope import current_tools
+    from copy import deepcopy
+    snapshot=current_tools()[1]
+    if snapshot is not None:
+        return list(deepcopy(snapshot.schemas))
     return list(TOOL_REGISTRY.values())

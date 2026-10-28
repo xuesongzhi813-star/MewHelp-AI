@@ -50,6 +50,7 @@
             const note=el('p','仅提交申请，是否符合退款条件仍需审核；不会执行真实退款。','refund-note');panel.append(button,note);
             const status=action.status||'available';
             if(status==='completed'){button.textContent='申请已提交';note.textContent='演示申请已提交，待审核；未执行真实退款。'+(action.result||'');}
+            else if(status==='rejected'){note.textContent=action.result||'校验未通过，未提交申请。';}
             else if(status!=='available'){note.textContent='申请结果待核实，请联系客服，请勿重复提交。';}
             action.button=button;action.available=status==='available';
             button.addEventListener('click',()=>{
@@ -70,9 +71,9 @@
                 try{
                   const response=await fetch('/api/chat/actions/refund',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:sessionId,action_id:action.action_id,reason:select.value,note:textarea.value,confirmed:true})});
                   const result=await response.json();
-                  if(!response.ok)throw new Error(typeof result.detail==='string'?result.detail:'提交未完成，请核实申请状态。');
+                  if(!response.ok){const error=new Error(typeof result.detail==='string'?result.detail:'提交未完成，请核实申请状态。');error.rejected=[422,403].includes(response.status);throw error;}
                   note.textContent=result.result;button.textContent='申请已提交';form.remove();
-                }catch(error){note.textContent=error.message+' 请联系客服核实，请勿重复提交。';}
+                }catch(error){note.textContent=error.message+(error.rejected?'':' 请联系客服核实，请勿重复提交。');}
               });
             });
           }

@@ -1,0 +1,32 @@
+{
+  "cancel": {
+    "conversation_id": 6972,
+    "tickets": [],
+    "audit": [
+      {
+        "tool_call_id": "call_00_sIdEqRXwkFKx8J5fGxmz8976",
+        "tool_name": "create_ticket",
+        "status": "权限拒绝",
+        "tool_source": "builtin",
+        "retry_count": 0,
+        "duration_ms": 0
+      }
+    ]
+  },
+  "confirm": {
+    "conversation_id": 6973,
+    "tickets": [
+      "T202610260006"
+    ],
+    "audit": [
+      {
+        "tool_call_id": "call_00_p2JOXl9Hs8yp34KZlNQE1512",
+        "tool_name": "create_ticket",
+        "status": "成功",
+        "tool_source": "builtin",
+        "retry_count": 0,
+        "duration_ms": 30
+      }
+    ]
+  }
+}

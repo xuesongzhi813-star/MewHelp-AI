@@ -43,6 +43,11 @@ class BudgetState(BaseModel):
 
 
 class WorkflowState(TypedDict, total=False):
+    ticket_draft: dict | None
+    ticket_confirmation: dict | None
+    ticket_flow_closed: bool
+    tool_snapshot: dict
+    tool_failure: dict | None
     messages: Annotated[list[BaseMessage], add_messages]
     message_refs: dict
     summary_upto_msg_id: int | None

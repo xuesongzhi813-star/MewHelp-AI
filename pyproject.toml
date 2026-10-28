@@ -19,6 +19,8 @@ dependencies = [
     "uvicorn[standard]>=0.54.0",
     "langgraph==1.2.15",
     "langgraph-checkpoint-sqlite>=3.1.2",
+    "mcp==1.30.0",
+    "jsonschema==4.25.1",
 ]
 
 [build-system]

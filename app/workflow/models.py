@@ -65,7 +65,8 @@ class ModelGateway:
 
     async def understand(self, messages, budget):
         from app.workflow.understanding import UnderstandingResult
-        return await self._json(UnderstandingResult, messages, budget, output_cap=512)
+        from app.tooling.scope import current_tools
+        return await self._json(UnderstandingResult, messages, budget, output_cap=2600 if current_tools()[0] else 512)
 
     async def expand(self, messages, budget):
         from app.kb.multi_query import QueryExpansion
@@ -107,17 +108,20 @@ class ModelGateway:
         return QueryAdapter()
 
     async def decide(self, messages, budget):
+        from app.tooling.scope import current_tools
+        scoped=current_tools()[1] is not None
         preloaded = any(message.additional_kwargs.get('workflow_evidence') for message in messages)
         refund = any(message.additional_kwargs.get('workflow_refund') for message in messages)
-        tools = [tool for tool in get_tools() if tool.name != "create_ticket" and not (preloaded and tool.name == 'query_faq')]
+        tools = [tool for tool in get_tools() if (tool['function']['name'] if isinstance(tool,dict) else tool.name) != "create_ticket" and not (preloaded and (tool['function']['name'] if isinstance(tool,dict) else tool.name) == 'query_faq')]
         if refund:
             tools = []
-        schemas = [tool.tool_call_schema.model_json_schema() for tool in tools] + [RESPOND_SCHEMA]
-        if budget.contextual:
+        schemas = [tool if isinstance(tool,dict) else tool.tool_call_schema.model_json_schema() for tool in tools] + [RESPOND_SCHEMA]
+        if budget.contextual or scoped:
             from app.context.assembly import fixed_agent_schemas
             schemas=fixed_agent_schemas()
         from app.config import get_settings
-        output_cap=get_settings().agent_decision_max_tokens if budget.contextual else 512
+        from app.tooling.scope import model_settings
+        output_cap=model_settings(get_settings()).agent_decision_max_tokens if budget.contextual else 512
         with budget._lock:
             if budget.decision_calls >= budget.max_decisions:
                 raise BudgetExceeded("本轮决策次数已达上限")
@@ -127,17 +131,19 @@ class ModelGateway:
         from app.context.logging import log_gateway_call
         log_gateway_call(messages,schemas,'decide',reservation.output_cap)
         async with asyncio.timeout(kwargs["timeout"]):
-            response = await self.model.bind_tools(schemas if budget.contextual else [*tools, RESPOND_SCHEMA], parallel_tool_calls=False).ainvoke(messages, **kwargs)
+            response = await self.model.bind_tools(schemas if budget.contextual or scoped else [*tools, RESPOND_SCHEMA], parallel_tool_calls=False).ainvoke(messages, **kwargs)
         if not isinstance(response, AIMessage):
             raise ValueError("模型决策消息非法")
         settle_call(budget, reservation, usage=response.usage_metadata, output_text=json.dumps(response.model_dump(), ensure_ascii=False, default=str))
         return response
 
     async def stream_answer(self, messages, budget):
+        from app.tooling.scope import current_tools
+        scoped=current_tools()[1] is not None
         # Keep tool schemas visible but provider-side disabled (ch02 DSML finding).
-        tools = [tool for tool in get_tools() if tool.name != "create_ticket"]
-        schemas = [tool.tool_call_schema.model_json_schema() for tool in tools]
-        if budget.contextual:
+        tools = [tool for tool in get_tools() if (tool['function']['name'] if isinstance(tool,dict) else tool.name) != "create_ticket"]
+        schemas = [tool if isinstance(tool,dict) else tool.tool_call_schema.model_json_schema() for tool in tools]
+        if budget.contextual or scoped:
             from app.context.assembly import fixed_agent_schemas
             schemas=fixed_agent_schemas()
         from app.config import get_settings
@@ -147,7 +153,7 @@ class ModelGateway:
         log_gateway_call(messages,schemas,'answer',reservation.output_cap)
         gathered = None
         async with asyncio.timeout(kwargs["timeout"]):
-            async for chunk in self.model.bind_tools(schemas if budget.contextual else tools, tool_choice="none", parallel_tool_calls=False).astream(messages, **kwargs):
+            async for chunk in self.model.bind_tools(schemas if budget.contextual or scoped else tools, tool_choice="none", parallel_tool_calls=False).astream(messages, **kwargs):
                 if getattr(chunk, "tool_call_chunks", None) or getattr(chunk, "tool_calls", None):
                     raise ValueError("回答阶段不允许调用工具")
                 gathered = chunk if gathered is None else gathered + chunk

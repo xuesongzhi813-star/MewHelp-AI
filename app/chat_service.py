@@ -89,7 +89,22 @@ def _drop_leading_orphan_tool_messages(
     return kept
 
 
-async def stream_chat(
+
+async def stream_chat(session_id,message,*,store,model,planner=None,answer_model=None,
+                      workflow_runtime=None,user_id=None,conversation_id=None,tool_service=None):
+    """Keep one catalog for legacy rounds; workflow runtime owns its own round scope."""
+    from app.tooling.scope import tool_scope
+    import uuid
+    snapshot=await tool_service.refresh() if tool_service is not None and workflow_runtime is None else None
+    state={'session_id':session_id,'request_id':uuid.uuid4().hex}
+    with tool_scope(tool_service,snapshot,state):
+        async with aclosing(_stream_chat(session_id,message,store=store,model=model,planner=planner,
+            answer_model=answer_model,workflow_runtime=workflow_runtime,user_id=user_id,conversation_id=conversation_id)) as stream:
+            async for event in stream:
+                yield event
+
+
+async def _stream_chat(
     session_id: str,
     message: str,
     *,
@@ -186,7 +201,7 @@ async def stream_chat(
         yield _sse({"type": "tool", "name": tool_name, "phase": "start"})
         # 执行器是同步函数,丢线程池;契约保证永不抛异常、永远返回 str
         result = await asyncio.to_thread(
-            execute_tool, tool_name, tool_args, context=context
+            execute_tool, tool_name, tool_args, context=context,tool_call_id=tool_call['id']
         )
         tool_msg = ToolMessage(content=result, tool_call_id=tool_call["id"])
         # 两条 append 必须都在工具执行后、回灌调用前落库
