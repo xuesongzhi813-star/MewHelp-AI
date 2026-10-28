@@ -1,0 +1,48 @@
+{
+  "start": "2026-10-27T09:00:00+00:00",
+  "end": "2026-10-27T09:49:00+00:00",
+  "purpose": "chat",
+  "rows": [
+    {
+      "cost_complete": false,
+      "cost_source": "Langfuse observation.totalCost (USD)",
+      "cost_usd": null,
+      "generation_count": 13,
+      "input_tokens": 19189,
+      "intent": "商品咨询",
+      "output_tokens": 711,
+      "pricing_date": null,
+      "request_count": 3,
+      "total_tokens": 19900,
+      "unknown_cost_count": 13,
+      "unknown_usage_count": 0,
+      "usage_complete": true,
+      "usage_source": "generation.usageDetails"
+    },
+    {
+      "cost_complete": false,
+      "cost_source": "Langfuse observation.totalCost (USD)",
+      "cost_usd": null,
+      "generation_count": 4,
+      "input_tokens": 4822,
+      "intent": "闲聊",
+      "output_tokens": 156,
+      "pricing_date": null,
+      "request_count": 2,
+      "total_tokens": 4978,
+      "unknown_cost_count": 4,
+      "unknown_usage_count": 0,
+      "usage_complete": true,
+      "usage_source": "generation.usageDetails"
+    }
+  ],
+  "complete": true,
+  "as_of": "2026-10-27T09:57:51.364776+00:00",
+  "cached": true,
+  "stale": false,
+  "error_code": null,
+  "retry_at": null,
+  "unassigned_generations": 0,
+  "source": "langfuse-observations-v2-root-join",
+  "currency": "USD"
+}

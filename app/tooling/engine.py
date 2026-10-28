@@ -16,6 +16,7 @@ from app.tooling.contracts import (
 )
 from app.tooling.formatting import format_result
 from app.tooling.validation import json_text, validate_arguments
+from app.observability.spans import observed_call
 
 logger = logging.getLogger(__name__)
 
@@ -149,6 +150,9 @@ class ToolEngine:
             return await self.finish(call, ctx, prepared.result)
         return await self.invoke(prepared, ctx, nonce=nonce)
 
+    @observed_call('tool-execution', input_selector=lambda args, kw:
+        {'name':args[1].call.name, 'arguments':args[1].resolved_args},
+        output_selector=lambda result: {'status':result.status, 'outcome':result.outcome,'content':result.content})
     async def invoke(self, prepared, ctx, *, nonce=None):
         started = time.monotonic()
         ctx = _audit_context(ctx, prepared.source, prepared.remote_name)

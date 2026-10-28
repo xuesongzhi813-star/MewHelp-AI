@@ -11,6 +11,7 @@ from app.context.budget import ensure_fits, ContextBudgetError
 from app.context.tokens import model_payload, count_model_tokens
 from app.context.prompts import SUMMARY_PROMPT, COVERAGE_PROMPT
 from app.context.layers import summary_text
+from app.observability.spans import traced_operation, model_config_kwargs
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +39,9 @@ def entities_valid(batch, candidate):
 
 
 class Summarizer:
-    def __init__(self, model, *, settings):
+    def __init__(self, model, *, settings, observability=None):
         self.model, self.settings = model, settings
+        self.observability = observability
         self.calls = []
 
     async def _call(self, batch, schema, prompt, candidate=None):
@@ -52,7 +54,7 @@ class Summarizer:
         started=time.monotonic()
         async with asyncio.timeout(self.settings.answer_timeout):
             response = await self.model.with_structured_output(schema,method='json_mode',include_raw=True,
-                max_tokens=output_cap).ainvoke(messages,max_tokens=output_cap)
+                max_tokens=output_cap).ainvoke(messages,max_tokens=output_cap, **model_config_kwargs())
         raw = response.get('raw')
         usage = getattr(raw,'usage_metadata',None)
         self.calls.append(dict(schema=schema.__name__,estimate=count_model_tokens(messages),usage=usage,
@@ -139,6 +141,7 @@ class SummaryManager:
             return False
         return await self._process(children[1],started)
 
+    @traced_operation('summary', purpose='summary')
     async def _run(self,batch):
         started=time.monotonic()
         self._log('start',batch,started)

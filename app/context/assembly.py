@@ -53,7 +53,7 @@ def history_from_state(state):
 
 
 def dynamic_data(state, *, settings):
-    from app.workflow.knowledge import load_retrieval, evidence_gate
+    from app.workflow.knowledge import load_retrieval, state_evidence_allowed
     extra={}
     draft=state.get('ticket_draft')
     if draft:
@@ -76,7 +76,7 @@ def dynamic_data(state, *, settings):
         raise ContextBudgetError('本轮订单或已核验指代附注超过证据额度')
     if state.get('retrieval'):
         result=load_retrieval(state['retrieval'])
-        if not evidence_gate(result):
+        if state_evidence_allowed(state):
             for hit in result.hits[:settings.rerank_top_k]:
                 item=dict(number=len(evidence)+1,chunk_id=hit.chunk_id,section_path=hit.section_path,
                           text=bounded_text(hit.answer,max(32,settings.context_evidence_tokens_per_hit-90),settings=settings))

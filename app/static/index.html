@@ -387,14 +387,19 @@
   }
 
   function ticketView(container, wantedSession, version) {
-    let reply = null;
+    let reply = null, view = null, text = '', turn = null;
     return createToolConfirmationView({container,sessionId:wantedSession,
       isCurrent:()=>sessionId===wantedSession && viewVersion===version,
       onEvent:event=>{
+        if(event.type==='turn') {turn=event;view?.setTurn(event);}
         if(event.type==='token') {
-          if(!reply)reply=addRow('ai','ETHAN_LEO').bubble;
-          reply.textContent+=event.content;scrollBottom();
+          if(!reply){reply=addRow('ai','ETHAN_LEO').bubble;const body=document.createElement('span');reply.append(body);
+            view=ChatResponseView.create({bubble:reply,body,sessionId:wantedSession});if(turn)view.setTurn(turn);}
+          text+=event.content;view.render(text);scrollBottom();
         }
+        if(event.type==='citations')view?.setCitations(event.items);
+        if(event.type==='done')view?.complete();
+        if(event.type==='error')view?.fail();
       }});
   }
 
@@ -469,6 +474,8 @@
             refundView.fail(); refundView.root.remove();
             refundView = ChatRefundUI.create({container:bubble, sessionId:turnSessionId,isBusy:()=>busy,onSelect:request=>sendMessage('',request)});
             responseView = ChatResponseView.create({bubble, body, sessionId});
+          } else if (payload.type === 'turn') {
+            responseView.setTurn(payload);
           } else if (payload.type === "token") {
             if (typing.isConnected) typing.remove();
             if (badges.children.length && !badges.isConnected) bubble.appendChild(badges);
@@ -621,7 +628,16 @@
   }, async onSelect(data) {
     stopOldView(); sessionId = data.session_id; sessionIdText.textContent = sessionId;
     chatArea.replaceChildren();
-    for (const message of data.messages) addRow(message.role === 'user' ? 'user' : 'ai', message.role === 'user' ? 'YOU' : 'ETHAN_LEO').bubble.textContent = message.content;
+    let userMessageId=null;
+    for (const message of data.messages) {
+      const {bubble}=addRow(message.role==='user'?'user':'ai',message.role==='user'?'YOU':'ETHAN_LEO');
+      if(message.role==='user') {userMessageId=message.id;bubble.textContent=message.content;continue;}
+      const body=document.createElement('span');bubble.append(body);
+      const view=ChatResponseView.create({bubble,body,sessionId:data.session_id,key:'message-'+message.id});
+      if(Number.isInteger(userMessageId) && Number.isInteger(message.id))view.setTurn({
+        session_id:data.session_id,user_message_id:userMessageId,assistant_message_id:message.id});
+      view.render(message.content);view.complete();
+    }
     await restoreChatActions(); input.focus();
   }});
   async function restoreChatActions(){

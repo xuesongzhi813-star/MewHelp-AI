@@ -43,6 +43,7 @@ class BudgetState(BaseModel):
 
 
 class WorkflowState(TypedDict, total=False):
+    turn_identity: dict | None
     ticket_draft: dict | None
     ticket_confirmation: dict | None
     ticket_flow_closed: bool
@@ -75,6 +76,12 @@ class WorkflowState(TypedDict, total=False):
     route: str
     retrieval: dict | None
     gate_reason: str
+    gap_source: str
+    evidence_allowed: bool | None
+    evidence_checked_hash: str | None
+    evidence_confidence: dict | None
+    sufficiency: dict | None
+    maintenance_reason: str | None
     budget: dict
     status: str
     pending_decision: dict | None

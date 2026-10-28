@@ -36,7 +36,10 @@ async def test_interrupted_turn_not_replayed(tmp_path):
     async with open_checkpointer(str(tmp_path / 'cancel.sqlite')) as saver:
         runtime = await make_runtime(saver)
         async with aclosing(runtime.stream_turn('s', '订单', model=Gateway())) as stream:
-            assert (await anext(stream))['type'] == 'token'
+            first = await anext(stream)
+            while first['type'] == 'turn':
+                first = await anext(stream)
+            assert first['type'] == 'token'
         assert (await runtime.get_state('s'))['status'] == 'interrupted'
         _ = [e async for e in runtime.stream_turn('s', '你好', model=Gateway('闲聊'))]
         state = await runtime.get_state('s')

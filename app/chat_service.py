@@ -40,6 +40,7 @@ from app.kb.low_confidence import record_low_confidence
 from app.kb.answering import (REFUSAL_TEXT, generate_answer, has_forbidden_promise,
                               make_evidence, retrieval_rejection_reason)
 from app.kb.contracts import AnswerDecision, QueryPlan, RetrievalResult
+from app.observability.spans import traced_stream, model_config_kwargs
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,7 @@ def _drop_leading_orphan_tool_messages(
 
 
 async def stream_chat(session_id,message,*,store,model,planner=None,answer_model=None,
-                      workflow_runtime=None,user_id=None,conversation_id=None,tool_service=None):
+                      workflow_runtime=None,user_id=None,conversation_id=None,tool_service=None,observability=None):
     """Keep one catalog for legacy rounds; workflow runtime owns its own round scope."""
     from app.tooling.scope import tool_scope
     import uuid
@@ -99,11 +100,13 @@ async def stream_chat(session_id,message,*,store,model,planner=None,answer_model
     state={'session_id':session_id,'request_id':uuid.uuid4().hex}
     with tool_scope(tool_service,snapshot,state):
         async with aclosing(_stream_chat(session_id,message,store=store,model=model,planner=planner,
-            answer_model=answer_model,workflow_runtime=workflow_runtime,user_id=user_id,conversation_id=conversation_id)) as stream:
+            answer_model=answer_model,workflow_runtime=workflow_runtime,user_id=user_id,conversation_id=conversation_id,
+            observability=observability)) as stream:
             async for event in stream:
                 yield event
 
 
+@traced_stream('legacy-chat')
 async def _stream_chat(
     session_id: str,
     message: str,
@@ -115,6 +118,7 @@ async def _stream_chat(
     workflow_runtime=None,
     user_id=None,
     conversation_id=None,
+    observability=None,
 ) -> AsyncIterator[str]:
     """编排一次完整对话轮:可能含一轮工具调用,产出 SSE 帧字符串流。
 
@@ -163,7 +167,7 @@ async def _stream_chat(
         gathered = None
         async for chunk in model.bind_tools(
             get_tools(), parallel_tool_calls=False
-        ).astream(msgs):
+        ).astream(msgs, **model_config_kwargs()):
             content = chunk.content
             if content:
                 yield _sse({"type": "token", "content": content})
@@ -222,7 +226,7 @@ async def _stream_chat(
         final_content = ""
         async for chunk in model.bind_tools(
             get_tools(), parallel_tool_calls=False, tool_choice="none"
-        ).astream([*msgs, ai_tool_msg, tool_msg]):
+        ).astream([*msgs, ai_tool_msg, tool_msg], **model_config_kwargs()):
             content = chunk.content
             if content:
                 final_content += content
@@ -244,7 +248,7 @@ async def _gather_round(model, messages, *, final: bool = False):
     chunks = []
     gathered = None
     async with asyncio.timeout(get_settings().answer_timeout):
-        async for chunk in model.bind_tools(get_tools(), **kwargs).astream(messages):
+        async for chunk in model.bind_tools(get_tools(), **kwargs).astream(messages, **model_config_kwargs()):
             if chunk.content:
                 chunks.append(str(chunk.content))
             gathered = chunk if gathered is None else gathered + chunk
@@ -327,8 +331,18 @@ async def _stream_grounded(session_id: str, message: str, *, store, model,
         if pool_source:
             if conversation_id is None:
                 conversation_id = store.get_or_create_conversation(session_id)
-            await asyncio.to_thread(record_low_confidence, message, conversation_id,
-                                    pool_source, decision.reason)
+            from app.flywheel.contracts import PoolEvent
+            from app.flywheel.snapshots import snapshot_from_retrieval
+            from app.flywheel.store import event_scope
+            event = PoolEvent(None, pool_source, message, decision.reason,
+                snapshot_from_retrieval(None, evidence_result), conversation_id)
+            try:
+                with event_scope(event):
+                    await asyncio.to_thread(record_low_confidence, message, conversation_id,
+                                            pool_source, decision.reason)
+            except Exception as exc:
+                logger.warning('problem pool collection failed exception=%s', type(exc).__name__)
+                yield _sse({'type':'collection_status', 'saved':False})
         # 持久化只接受验证后的文本；池写入或持久化失败时不能先展示成功正文。
         store.append_message(session_id, AIMessage(content=final_text))
         if decision is not None and decision.can_answer and evidence_result is not None:

@@ -22,8 +22,23 @@ async def retrieve_knowledge(question, *, gateway, budget, retrieve, already_und
         return await asyncio.to_thread(retrieve, question, plan=plan)
 
 
-def evidence_gate(result):
+def evidence_gate(result, policy=None):
+    if policy is not None:
+        from app.kb.evidence import score_evidence
+        return score_evidence(result, policy).reason
     return retrieval_rejection_reason(result)
+
+
+def retrieval_digest(data):
+    import hashlib
+    import json
+    return hashlib.sha256(json.dumps(data,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
+
+
+def state_evidence_allowed(state):
+    if state.get('evidence_allowed') is not None:
+        return state['evidence_allowed']
+    return bool(state.get('retrieval')) and not evidence_gate(load_retrieval(state['retrieval']))
 
 
 def dump_retrieval(result: RetrievalResult) -> dict:

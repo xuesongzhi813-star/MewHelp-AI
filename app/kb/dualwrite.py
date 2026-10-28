@@ -20,6 +20,7 @@ from app.config import get_settings
 from app.kb import milvus, store
 from app.kb.documents import embedding_text
 from app.kb.embedding import embed_texts
+from app.flywheel.publishing import legacy_mutation
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ class Consistency:
     note: str
 
 
+@legacy_mutation
 def vectorize_pending(limit: int | None = None) -> VectorizeResult:
     """批量向量化 pending 切片,失败批次保持 pending 供下次续跑。
 
@@ -117,6 +119,33 @@ def vectorize_pending(limit: int | None = None) -> VectorizeResult:
     )
 
 
+@legacy_mutation
+def vectorize_ids(ids: list[int],*,boundary=lambda phase:None) -> VectorizeResult:
+    """Only these approved IDs, including retrying a flush-before-done crash."""
+    from app.flywheel.publishing import guard_legacy_write
+    guard_legacy_write()
+    from app.kb.migration import load_manifest,eligible_chunk_ids,record_for
+    ids=sorted(set(ids))
+    if any(type(i) is not int or i<=0 for i in ids):raise ValueError('invalid chunk ids')
+    target=load_manifest().target_collection
+    if not set(ids)<=eligible_chunk_ids():raise ValueError('chunk outside publication corpus')
+    rows=list(store.iter_chunks_by_ids(ids))
+    if {r.id for r in rows}!=set(ids):raise ValueError('publication chunk missing')
+    size=max(1,get_settings().embedding_batch_size)
+    for start in range(0,len(rows),size):
+        batch=rows[start:start+size]
+        records=[record_for(row) for row in batch]
+        if any(len(r['text'].encode('utf-8'))>65535 for r in records):raise ValueError('retrieval text exceeds byte limit')
+        vectors=embed_texts([r['text'] for r in records])
+        if len(vectors)!=len(records):raise ValueError('embedding count mismatch')
+        milvus.upsert_records([dict(r,vector=v) for r,v in zip(records,vectors)],collection_name=target)
+        milvus.get_client().flush(target);boundary('flush')
+        guard_legacy_write()
+        store.mark_done([row.id for row in batch if row.vectorize_status!='done']);boundary('done')
+    return VectorizeResult(len(rows),0,0)
+
+
+@legacy_mutation
 def rebuild_all() -> VectorizeResult:
     """清空 Milvus 后按 MySQL 全量重建向量索引。"""
     if getattr(get_settings(), "kb_corpus_version", "ch03") == "ch04":
@@ -128,6 +157,7 @@ def rebuild_all() -> VectorizeResult:
     return vectorize_pending()
 
 
+@legacy_mutation
 def reset_all() -> None:
     """删除全部知识切片并清空 Milvus 集合。"""
     if getattr(get_settings(), "kb_corpus_version", "ch03") == "ch04":

@@ -17,6 +17,7 @@ from pymilvus.milvus_client.index import IndexParams
 from app.config import get_settings
 from app.kb.contracts import RetrievalFilters
 from app.kb.filters import compile_filter
+from app.observability.spans import observed_call
 
 
 class MilvusUnavailable(RuntimeError):
@@ -271,18 +272,24 @@ def _search_field(data: Any, field: str, metric: str, limit: int, *,
     ))
 
 
+@observed_call('milvus-dense', input_fields=('limit','collection_name','filters'),
+               output_selector=lambda result: {'candidates':result})
 def search_dense(vector: Sequence[float], limit: int, *, collection_name: str,
                   filters: RetrievalFilters) -> list[tuple[str, float]]:
     return _search_field(list(vector), 'vector', 'COSINE', limit,
                          collection_name=collection_name, filters=filters)
 
 
+@observed_call('milvus-bm25', input_fields=('text','limit','collection_name','filters'),
+               output_selector=lambda result: {'candidates':result})
 def search_bm25(text: str, limit: int, *, collection_name: str,
                  filters: RetrievalFilters) -> list[tuple[str, float]]:
     return _search_field(text, 'sparse', 'BM25', limit,
                          collection_name=collection_name, filters=filters)
 
 
+@observed_call('milvus-hybrid', input_fields=('text','collection_name','filters'),
+               output_selector=lambda result: {'candidates':result})
 def search_hybrid(vector: Sequence[float], text: str, *, collection_name: str,
                    filters: RetrievalFilters) -> list[tuple[str, float]]:
     expr, params = compile_filter(filters)

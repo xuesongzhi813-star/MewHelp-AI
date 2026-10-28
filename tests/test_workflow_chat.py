@@ -23,6 +23,8 @@ async def test_first_token_arrives_before_model_release(tmp_path):
         runtime = await make_runtime(saver)
         async with aclosing(runtime.stream_turn('one', '订单', model=Streaming())) as stream:
             first = await asyncio.wait_for(anext(stream), 2)
+            while first['type'] == 'turn':
+                first = await asyncio.wait_for(anext(stream), 2)
             assert first == {'type': 'token', 'content': '首字'}
             assert not release.is_set()
             release.set()

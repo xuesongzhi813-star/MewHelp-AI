@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     llm_model: str
     llm_extra_body: Annotated[dict, NoDecode]
     llm_temperature: float = 0.7
+    flywheel_enabled: bool = False
+    ch09_enabled: bool = False
+    ch09_data_root: str = 'data/local/ch09'
+    ch09_eval_enabled: bool = True
+    ch09_eval_hour: int = Field(default=2,ge=0,le=23)
+    ch09_eval_minute: int = Field(default=0,ge=0,le=59)
     history_token_budget: int = 4000
     model_context_window: int = Field(default=128000, gt=0)
     max_output_tokens: int = Field(default=4000, gt=0)
@@ -33,6 +39,12 @@ class Settings(BaseSettings):
     context_turn_token_budget: int | None = Field(default=None, gt=0)
     max_sessions: int = 1000
     chat_workflow_enabled: bool = False
+    langfuse_enabled: bool = False
+    langfuse_public_key: str = Field(default='', repr=False)
+    langfuse_secret_key: str = Field(default='', repr=False)
+    langfuse_base_url: str = ''
+    langfuse_timeout: int = Field(default=5, gt=0, le=30)
+    langfuse_shutdown_timeout: int = Field(default=10, gt=0, le=60)
     intent_model: str | None = None
     intent_min_confidence: float = Field(default=0.7, ge=0, le=1, allow_inf_nan=False)
     # Seeds for a future chapter only. No small-model/upgrade execution path in ch06.
