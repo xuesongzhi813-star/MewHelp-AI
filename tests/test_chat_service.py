@@ -169,13 +169,13 @@ async def test_tool_round_second_call_messages_and_bind_params():
     """
     fake = FakeChatModel(
         rounds=[
-            [*tool_call_chunks("query_logistics", '{"order_id": "1001"}', "call_1")],
+            [*tool_call_chunks("query_order", '{"order_id": "1001"}', "call_1")],
             [AIMessageChunk(content="查到了")],
         ]
     )
     store = FakeStore()
 
-    await collect(stream_chat("s-msgs", "物流", store=store, model=fake))
+    await collect(stream_chat("s-msgs", "订单", store=store, model=fake))
 
     # 调用①绑工具且 parallel_tool_calls=False、不指定 tool_choice;
     # 调用②再 bind 一次:tool_choice="none"(服务器侧拒绝工具调用)
@@ -193,16 +193,16 @@ async def test_tool_round_second_call_messages_and_bind_params():
     second = fake.received[1]
     assert len(second) == 4
     assert isinstance(second[0], SystemMessage)
-    assert isinstance(second[1], HumanMessage) and second[1].content == "物流"
+    assert isinstance(second[1], HumanMessage) and second[1].content == "订单"
     ai_msg = second[2]
     assert isinstance(ai_msg, AIMessage)
     assert len(ai_msg.tool_calls) == 1
-    assert ai_msg.tool_calls[0]["name"] == "query_logistics"
+    assert ai_msg.tool_calls[0]["name"] == "query_order"
     assert ai_msg.tool_calls[0]["args"] == {"order_id": "1001"}
     tool_msg = second[3]
     assert isinstance(tool_msg, ToolMessage)
     assert tool_msg.tool_call_id == "call_1"
-    # 真实执行器跑了 Mock 的 query_logistics,结果是非空 JSON 文本
+    # 真实执行器跑了 Mock 的 query_order,结果是非空 JSON 文本
     assert tool_msg.content and "order_id" in tool_msg.content
 
     # 调用①的消息不含回灌的 AIMessage/ToolMessage
@@ -220,7 +220,8 @@ async def test_tool_round_injects_conversation_id_context(monkeypatch):
     """
     calls: list = []
 
-    def fake_execute_tool(name, args, *, context=None):
+    def fake_execute_tool(name, args, *, context=None,tool_call_id=None):
+        assert tool_call_id=='call_1'
         calls.append((name, args, context))
         return "工具结果"
 

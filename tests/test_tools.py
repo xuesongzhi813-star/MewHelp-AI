@@ -1,7 +1,7 @@
-"""业务工具集测试:五个 @tool 工具 + TOOL_REGISTRY 注册表。
+"""业务工具集测试:四个内置 @tool 工具 + TOOL_REGISTRY 注册表。
 
 关键设计:
-- 三个 Mock 工具不连库,只断言 JSON 可解析、字段齐全、同参数结果稳定;
+- 两个内置 Mock 工具不连库,只断言 JSON 可解析、字段齐全、同参数结果稳定;
 - query_faq 已切换为语义检索,只测试「委托给 retriever」与模型可见描述,
   不再连库或依赖种子数据;
 - create_ticket 走真实 MySQL,用「外层事务 + SAVEPOINT」回滚:
@@ -30,7 +30,6 @@ from app.tools import TOOL_REGISTRY, get_tools, query_faq as query_faq_tool
 EXPECTED_ARGS: dict[str, set[str]] = {
     "query_order": {"order_id"},
     "query_product": {"product_name"},
-    "query_logistics": {"order_id"},
     "query_faq": {"keyword"},
     "create_ticket": {"description", "ticket_type"},
 }
@@ -93,18 +92,12 @@ def test_query_product_returns_stable_json():
     assert data["specs"] in tools_mod.PRODUCT_SPECS_POOL
 
 
-def test_query_logistics_returns_stable_json():
-    """query_logistics:返回可解析 JSON,快递公司/节点/预计送达日期齐全。"""
-    result = TOOL_REGISTRY["query_logistics"].invoke({"order_id": "ORD-TEST-0002"})
-    data = json.loads(result)
-    assert data["order_id"] == "ORD-TEST-0002"
-    assert data["carrier"] in tools_mod.LOGISTICS_CARRIERS
-    assert data["current_node"] in tools_mod.LOGISTICS_NODES
-    # 预计送达日期格式合法(具体日期不约束,随机生成)
-    assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", data["eta"])
-
-
-# ---------- query_faq(委托语义检索)----------
+def test_logistics_tool_is_owned_only_by_mcp_server():
+    import asyncio
+    from app.mcp_servers.logistics import build_server
+    assert "query_logistics" not in TOOL_REGISTRY
+    tools=asyncio.run(build_server().list_tools())
+    assert [tool.name for tool in tools]==["query_logistics"]
 
 
 def test_query_faq_delegates_to_retriever(monkeypatch):
@@ -197,50 +190,21 @@ def test_create_ticket_sequence_increments(tools_tx):
     assert int(no2[8:]) == int(no1[8:]) + 1
 
 
-def test_execute_tool_injects_real_conversation_id_over_forged_arg(tools_tx):
-    """端到端锁死执行器的**合并方向**:上游把同名 conversation_id 塞进 args 时,
-    落库用的是 context 注入的真值。
-
-    锁的是执行器 `{**args, **context}` 的合并顺序(context 在后覆盖 args),
-    而非「模型能伪造 conversation_id」——该参数不在模型可见 schema 里,模型侧
-    根本产不出它。若日后有人把合并顺序写反成 `{**context, **args}`,伪造值会
-    静默落到 tickets 表(伪造 id 是合法存在的会话,FK 不报错),这条用例即变红;
-    这正是删掉它会失去的保护。用真实 execute_tool(非直接 invoke)才覆盖合并逻辑。
-    """
-    real_id = _seed_conversation(tools_tx, "ticket-inject-real")
-    forged_id = _seed_conversation(tools_tx, "ticket-inject-forged")
-
-    result = execute_tool(
-        "create_ticket",
-        {
-            "description": "端到端注入验证",
-            "ticket_type": "投诉",
-            "conversation_id": forged_id,  # 上游塞入的伪造值
-        },
-        context={"conversation_id": real_id},  # 系统注入的真值
-    )
-
-    assert "工单创建成功" in result
-    ticket_no = re.search(r"工单创建成功,工单号 (T\d{12})", result).group(1)
-
+def test_execute_tool_rejects_forged_conversation_without_writing(tools_tx):
+    real_id=_seed_conversation(tools_tx,"ticket-inject-real")
+    forged_id=_seed_conversation(tools_tx,"ticket-inject-forged")
+    result=execute_tool("create_ticket",{"description":"端到端注入验证","ticket_type":"投诉","conversation_id":forged_id},context={"conversation_id":real_id})
+    assert "工单创建成功" not in result
     with Session(tools_tx) as session:
-        row = session.get(Ticket, ticket_no)
-        assert row is not None
-        # 落表用的是 context 注入的真值,而非 args 里的伪造值
-        assert row.conversation_id == real_id
-        assert row.conversation_id != forged_id
-        # 伪造 id 在 tickets 表里查不到任何行
-        forged_rows = session.scalars(
-            select(Ticket).where(Ticket.conversation_id == forged_id)
-        ).all()
-        assert forged_rows == []
+        rows=session.scalars(select(Ticket).where(Ticket.conversation_id.in_([real_id,forged_id]))).all()
+        assert rows==[]
 
 
 # ---------- TOOL_REGISTRY 注册表 ----------
 
 
-def test_tool_registry_contains_all_five_tools():
-    """注册表五工具齐,键与工具名一一对应。"""
+def test_builtin_seed_contains_four_tools():
+    """内置声明四工具齐,键与工具名一一对应。"""
     assert set(TOOL_REGISTRY) == set(EXPECTED_ARGS)
     for name, instance in TOOL_REGISTRY.items():
         assert instance.name == name  # @tool 默认取函数名
@@ -303,6 +267,6 @@ def test_create_ticket_openai_payload_hides_injected_arg():
 def test_get_tools_returns_registry_values():
     """get_tools() 返回注册表全部实例,供 bind_tools 使用。"""
     tools = get_tools()
-    assert len(tools) == 5
+    assert len(tools) == 4
     # StructuredTool 不可哈希,按工具名对比(顺序与注册表一致)
     assert [t.name for t in tools] == list(TOOL_REGISTRY)

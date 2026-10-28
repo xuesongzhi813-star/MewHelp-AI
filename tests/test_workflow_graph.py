@@ -74,8 +74,16 @@ def dependencies(gateway, *, evidence=None):
 async def invoke(gateway, *, evidence=None):
     deps, seen, pool = dependencies(gateway, evidence=evidence)
     graph = build_workflow(checkpointer=InMemorySaver(), deps=deps)
+    from app.tools import get_tools
+    from app.tooling.contracts import ToolSnapshot
+    from langchain_core.utils.function_calling import convert_to_openai_tool
+    from dataclasses import asdict
+    schemas=[convert_to_openai_tool(t) for t in get_tools()]
+    schemas.append({'type':'function','function':{'name':'query_logistics','description':'测试MCP物流',
+        'parameters':{'type':'object','properties':{'order_id':{'type':'string'}}}}})
     state = await graph.ainvoke({'messages': [HumanMessage(content='订单1001能退吗')], 'raw_question': '订单1001能退吗',
-                                'conversation_id': 42, 'request_id':'r', 'budget': new_budget().model_dump(), 'actions': {}, 'node_trace': []},
+                                'conversation_id': 42, 'request_id':'r', 'budget': new_budget().model_dump(), 'actions': {}, 'node_trace': [],
+                                'tool_snapshot':asdict(ToolSnapshot('test-mcp','local',(),tuple(schemas)))},
                                {'configurable': {'thread_id': 'test'}, 'recursion_limit': 64})
     return state, seen, pool
 

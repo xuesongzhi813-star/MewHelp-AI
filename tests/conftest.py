@@ -25,3 +25,11 @@ async def client():
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def isolate_default_tool_audit(monkeypatch):
+    # Explicit MySQL audit tests inject their own rollback connection separately.
+    import app.tooling.service as service_module
+    from tests.tooling_fakes import FakeAuditSink
+    monkeypatch.setattr(service_module,'MySQLAuditSink',FakeAuditSink)

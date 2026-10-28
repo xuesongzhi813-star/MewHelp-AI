@@ -2,7 +2,8 @@ import importlib
 import json
 
 import app.demo_orders as demo
-from app.tools import query_order, query_logistics
+from app.tools import query_order
+from app.mcp_servers.common import MockBusinessData
 from app.workflow.orders import verified_order_id
 from langchain_core.messages import HumanMessage
 
@@ -25,8 +26,9 @@ def test_cards_and_tools_share_order_and_shipping_state():
         assert order['status'] == card['status']
         assert order['amount'] == card['amount']
         assert order['is_demo'] is True
-    assert json.loads(query_logistics.invoke({'order_id': '1001'}))['current_node'] == '已签收'
-    assert json.loads(query_logistics.invoke({'order_id': '1002'}))['current_node'] == '运输中'
+    logistics=MockBusinessData(seed=0)
+    assert logistics.logistics('1001')['current_status']=='delivered'
+    assert logistics.logistics('1002')['current_status'] in {'picked_up','transit','out_for_delivery'}
 
 
 def test_unknown_id_is_not_in_demo_customer_list():
