@@ -17,7 +17,7 @@ from app.workflow.agent import (AGENT_PROMPT, BUDGET_TEXT, answer_step, decide_s
 from app.workflow.budget import BudgetExceeded
 from app.workflow.contracts import BudgetState
 from app.workflow.knowledge import retrieve_knowledge, evidence_gate, dump_retrieval, load_retrieval
-from app.workflow.routing import classify_intent, route_intent, resolve_reference, CHAT_TEXT, COMPLAINT_TEXT
+from app.workflow.routing import classify_intent, route_intent, route_with_tools, resolve_reference, CHAT_TEXT, COMPLAINT_TEXT
 from app.workflow.understanding import understand_question
 from app.workflow.orders import verified_order_id, prepare_order_selection
 from app.kb.multi_query import expand_policy_queries, retrieve_policy_queries
@@ -111,23 +111,33 @@ def node_bodies(deps):
 
     async def read_order(state):
         budget = BudgetState.model_validate(state['budget'])
-        if budget.tool_calls >= budget.max_tool_calls or time.time() >= budget.deadline:
+        blocked=budget.tool_calls >= budget.max_tool_calls or time.time() >= budget.deadline
+        if blocked and deps.tool_service is None:
             raise BudgetExceeded(BUDGET_TEXT)
-        budget.tool_calls += 1
+        if not blocked:
+            budget.tool_calls += 1
         key = state['selected_order_id']
         writer = get_stream_writer()
         writer({'type':'workflow','stage':'read_order'})
         writer({'type':'tool', 'name':'query_order', 'phase':'start'})
-        result = await asyncio.to_thread(deps.execute, 'query_order', {'order_id':key},
-                                         context={'conversation_id':state['conversation_id']})
+        from app.workflow.tool_execution import call_identity,failure_trace
+        call_id=call_identity(state,'preloaded-order')
+        if deps.tool_service is not None:
+            result=await deps.tool_service.execute('query_order',{'order_id':key},tool_call_id=call_id,
+                context={'deadline':budget.deadline,'trusted':{'budget_exhausted':blocked}})
+        else:
+            result = await asyncio.to_thread(deps.execute, 'query_order', {'order_id':key},
+                                             context={'conversation_id':state['conversation_id']})
         writer({'type':'tool', 'name':'query_order', 'phase':'end'})
         if getattr(result, 'status', 'success') != 'success':
+            if deps.tool_service is not None:
+                return {**failure_trace(state,'query_order',{'order_id':key},result,label='preloaded-order'),
+                    'order':None,'budget':budget.model_dump()}
             raise RuntimeError('订单读取失败')
         content = getattr(result, 'content', str(result))
         order = json.loads(content)
         if not isinstance(order, dict) or order.get('order_id') != key:
             raise ValueError('订单结果无效')
-        call_id = uuid.uuid4().hex
         from app.context.assembly import bounded_observation
         messages = [AIMessage(content='', additional_kwargs={'preloaded_order':True},tool_calls=[{'name':'query_order', 'args':{'order_id':key}, 'id':call_id}]),
                     ToolMessage(content=bounded_observation(content,settings=get_settings()) if budget.contextual else content,
@@ -150,6 +160,16 @@ def node_bodies(deps):
             if time.time() >= budget.deadline:
                 raise BudgetExceeded(BUDGET_TEXT)
             return deps.retrieve(*args, **kwargs)
+        if deps.tool_service is not None:
+            from app.workflow.tool_execution import execute_knowledge,failure_trace
+            async def runner(question):
+                plan=build_understood_query_plan(question)
+                return await asyncio.to_thread(retrieve_policy_queries,question,state['expansion_queries'],
+                    plan=plan,retrieve=checked_retrieve,rerank=rerank)
+            result=await execute_knowledge(deps,state,budget,runner,label='policy-faq')
+            if result.status!='success':
+                return {**failure_trace(state,'query_faq',{'keyword':state['resolved_question']},result,label='policy-faq'),'budget':budget.model_dump()}
+            return {'retrieval':dump_retrieval(result.artifact),'tool_failure':None,'budget':budget.model_dump()}
         plan = build_understood_query_plan(state['resolved_question'])
         result = await asyncio.to_thread(retrieve_policy_queries, state['resolved_question'],
             state['expansion_queries'], plan=plan, retrieve=checked_retrieve, rerank=rerank)
@@ -167,8 +187,20 @@ def node_bodies(deps):
         async def lookup(from_id,upto_id):
             return await asyncio.to_thread(deps.context_store.read_messages,state['conversation_id'],from_id=from_id,upto_id=upto_id)
         result = await understand_question(state['raw_question'], history=history, gateway=deps.gateway, budget=budget,
-                                           context=context,source_lookup=lookup if deps.context_store else None)
-        return {'resolved_question': result.standalone_question, 'understanding': result.model_dump(),
+            context=context,source_lookup=lookup if deps.context_store else None,
+            current_message_id=f"db:{state.get('current_turn_from_msg_id')}",draft=state.get('ticket_draft'))
+        draft=None
+        understood=result.model_dump()
+        if deps.tool_service is not None and deps.context_store is not None:
+            from app.workflow.ticket_draft import validate_ticket_draft
+            from dataclasses import asdict
+            rows=await asyncio.to_thread(deps.context_store.read_messages,state['conversation_id'])
+            verified=validate_ticket_draft(understood,user_rows=rows,prior_draft=state.get('ticket_draft'),
+                current_turn=state.get('current_turn_from_msg_id'))
+            draft=asdict(verified) if verified else None
+            if verified:
+                understood.update(requested_operation='create_ticket',ticket_request_verified=True)
+        return {'resolved_question': result.standalone_question, 'understanding': understood,'ticket_draft':draft,
                 'verified_reference_order_id':result.order_id if result.source_message_id and result.source_message_id.startswith('summary:') else None,
                 'budget': budget.model_dump()}
 
@@ -183,14 +215,24 @@ def node_bodies(deps):
                 payload['question'] = state['resolved_question']
             get_stream_writer()(payload)
         return {'intent': intent.intent, 'confidence': intent.confidence,
-                'route': route_intent(intent.intent), 'budget': budget.model_dump()}
+                'route': route_with_tools(intent.intent,state.get('understanding',{}),state.get('tool_snapshot'),deps.tool_service.policy_loader.load()) if deps.tool_service else route_intent(intent.intent), 'budget': budget.model_dump()}
 
     async def retrieve(state):
         budget = BudgetState.model_validate(state['budget'])
+        if deps.tool_service is not None:
+            from app.workflow.tool_execution import execute_knowledge,failure_trace
+            async def runner(question):
+                return await retrieve_knowledge(question,gateway=deps.gateway,budget=budget,retrieve=deps.retrieve)
+            result=await execute_knowledge(deps,state,budget,runner,label='preloaded-faq')
+            if result.status!='success':
+                return {**failure_trace(state,'query_faq',{'keyword':state['resolved_question']},result,label='preloaded-faq'),'budget':budget.model_dump()}
+            return {'retrieval':dump_retrieval(result.artifact),'tool_failure':None,'budget':budget.model_dump()}
         result = await retrieve_knowledge(state['resolved_question'], gateway=deps.gateway, budget=budget, retrieve=deps.retrieve)
         return {'retrieval': dump_retrieval(result), 'budget': budget.model_dump()}
 
     async def gate(state):
+        if state.get('tool_failure'):
+            return {'gate_reason':''}
         return {'gate_reason': evidence_gate(load_retrieval(state['retrieval']))}
 
     async def decide(state):
@@ -209,8 +251,35 @@ def node_bodies(deps):
             return {'pending_decision': None, 'control': {'response_mode': 'budget'}, 'budget': budget.model_dump()}
 
     async def tools(state):
+        confirmation=state.get('ticket_confirmation')
+        if confirmation and confirmation['status']=='available':
+            from app.workflow.tool_calls import public_preview,reject_ticket
+            choice=interrupt(public_preview(confirmation))
+            if (not isinstance(choice,dict) or set(choice)!={'preview_id','decision'}
+                    or choice['preview_id']!=confirmation['preview_id'] or choice['decision'] not in {'confirm','cancel'}):
+                raise ValueError('工单确认无效')
+            if choice['decision']=='cancel' or time.time()>confirmation['expires_at']:
+                return await reject_ticket(state,deps.tool_service)
+            return {'ticket_confirmation':{**confirmation,'status':'confirmed'},'status':'running'}
         budget = BudgetState.model_validate(state['budget'])
         response = AIMessage.model_validate(state['pending_decision'])
+        if deps.tool_service is not None:
+            from app.tooling.contracts import RawToolResult
+            from app.workflow.tool_calls import trusted_ticket
+            async def knowledge(args,ctx):
+                result=await retrieve_knowledge(args['keyword'],gateway=deps.gateway,budget=budget,retrieve=deps.retrieve,already_understood=False)
+                content='\n\n'.join(f'{i}. {hit.questions}\n→ {hit.answer}' for i,hit in enumerate(result.hits,1)) if result.hits else REFUSAL_TEXT
+                return RawToolResult(content,result,'success' if result.hits else 'not_found')
+            observations,suggestions=await execute_step(response,budget=budget,
+                context={'conversation_id':state['conversation_id'],'trusted':{**trusted_ticket(state),'knowledge_handler':knowledge,
+                    'preloaded_refund':state.get('route')=='refund','faq_already_retrieved':bool(state.get('retrieval'))}},
+                execute=deps.execute,emit=get_stream_writer())
+            retrieval=state.get('retrieval')
+            from app.kb.contracts import RetrievalResult
+            for observation in observations:
+                if isinstance(observation.artifact,RetrievalResult):
+                    retrieval=dump_retrieval(observation.artifact)
+            return {'messages':observations,'budget':budget.model_dump(),'retrieval':retrieval,**add_suggestions(state,suggestions)}
         if state.get('route') == 'refund' and any(call['name'] != 'respond_to_user' for call in response.tool_calls):
             return {'messages':[ToolMessage(content='本轮前置订单与政策已提供，不再执行工具；请基于证据判断或说明缺失信息。',
                                              tool_call_id=call['id']) for call in response.tool_calls]}
@@ -293,7 +362,20 @@ def node_bodies(deps):
                     state['budget'].get('tool_calls'), state['budget'].get('charged_tokens'), state.get('gate_reason', ''))
         return {'status': 'completed'}
 
-    return dict(order_context=order_context, await_order=await_order, read_order=read_order,
+    async def prepare_call(state):
+        from app.workflow.tool_calls import prepare_tool_call
+        return prepare_tool_call(state,deps.tool_service)
+
+    async def prepare_write(state):
+        from app.workflow.tool_calls import prepare_ticket_write
+        return prepare_ticket_write(state,deps.tool_service)
+
+    async def execute_write(state):
+        from app.workflow.tool_calls import execute_ticket_write
+        return await execute_ticket_write(state,deps.tool_service)
+
+    return dict(prepare_tool_call=prepare_call,prepare_ticket_write=prepare_write,execute_ticket_write=execute_write,
+                order_context=order_context, await_order=await_order, read_order=read_order,
                 expand_queries=expand_queries, retrieve_policy=retrieve_policy,
                 resolve_reference=resolve, classify_intent=classify, retrieve_knowledge=retrieve,
                 evidence_gate=gate, agent_decide=decide, agent_tools=tools, agent_answer=answer,

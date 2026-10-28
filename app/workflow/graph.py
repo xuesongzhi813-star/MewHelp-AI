@@ -17,6 +17,7 @@ class WorkflowDeps:
     execute: Callable
     record_low_confidence: Callable
     context_store: Any = None
+    tool_service: Any = None
 
 
 def build_workflow(*, checkpointer, deps: WorkflowDeps):
@@ -24,7 +25,8 @@ def build_workflow(*, checkpointer, deps: WorkflowDeps):
     for name, body in node_bodies(deps).items():
         async def wrapped(state, _body=body, _name=name):
             from app.context.logging import context_scope
-            with context_scope(state):
+            from app.tooling.scope import tool_scope
+            with context_scope(state), tool_scope(deps.tool_service,state.get('tool_snapshot'),state):
                 result = await _body(state)
             if state.get('current_turn_from_msg_id'):
                 turn = state['current_turn_from_msg_id']
@@ -44,13 +46,16 @@ def build_workflow(*, checkpointer, deps: WorkflowDeps):
     builder.add_conditional_edges('order_context', lambda state: bool(state.get('selected_order_id')),
                                   {True:'read_order', False:'await_order'})
     builder.add_edge('await_order', 'read_order')
-    builder.add_edge('read_order', 'expand_queries')
+    builder.add_conditional_edges('read_order',lambda state:'agent_decide' if state.get('tool_failure') else 'expand_queries')
     builder.add_edge('expand_queries', 'retrieve_policy')
     builder.add_edge('retrieve_policy', 'evidence_gate')
     builder.add_edge('retrieve_knowledge', 'evidence_gate')
     builder.add_conditional_edges('evidence_gate', lambda state: bool(state['gate_reason']), {True: 'refusal_reply', False: 'agent_decide'})
-    builder.add_conditional_edges('agent_decide', lambda state: 'agent_tools' if state.get('pending_decision') and state['pending_decision'].get('tool_calls') else 'agent_answer')
-    builder.add_conditional_edges('agent_tools', lambda state: 'agent_answer' if state.get('control') is not None else 'agent_decide')
+    builder.add_conditional_edges('agent_decide', lambda state: 'prepare_tool_call' if state.get('pending_decision') and state['pending_decision'].get('tool_calls') else 'agent_answer')
+    builder.add_edge('prepare_tool_call','agent_tools')
+    builder.add_conditional_edges('agent_tools', lambda state: 'prepare_ticket_write' if (state.get('ticket_confirmation') or {}).get('status')=='confirmed' else 'agent_answer' if state.get('control') is not None else 'agent_decide')
+    builder.add_edge('prepare_ticket_write','execute_ticket_write')
+    builder.add_edge('execute_ticket_write','agent_decide')
     for name in ('agent_answer', 'complaint_reply', 'chat_reply', 'other_reply', 'refusal_reply'):
         builder.add_edge(name, 'log_result')
     builder.add_edge('log_result', END)

@@ -64,7 +64,8 @@ class SessionLocks:
 
 class WorkflowRuntime:
     def __init__(self, checkpointer, store, *, gateway_factory=ModelGateway, context_store=None, summary_manager=None,
-                 retrieve=retrieve_result, execute=execute_tool_result, record=record_low_confidence):
+                 retrieve=retrieve_result, execute=execute_tool_result, record=record_low_confidence,tool_service=None):
+        self.tool_service=tool_service
         self.checkpointer, self.store = checkpointer, store
         self._explicit_context_store = context_store is not None
         self.gateway_factory = gateway_factory
@@ -172,12 +173,13 @@ class WorkflowRuntime:
         messages.extend(restore(row) for row in rows if row.id>last and row.id not in used)
         return messages,refs
 
-    async def _context(self, cid, messages, refs, current, request_id=''):
+    async def _context(self, cid, messages, refs, current, request_id='',tool_snapshot=None):
         from app.workflow.agent import AGENT_PROMPT
         from app.context.assembly import fixed_agent_schemas
-        settings=get_settings()
+        from app.tooling.scope import model_settings
+        settings=model_settings(get_settings(),tool_snapshot)
         snapshot=await asyncio.to_thread(self.context_store.read_context,cid)
-        budget=derive_budget(settings,system_tokens=count_model_tokens([SystemMessage(AGENT_PROMPT)],schemas=fixed_agent_schemas(),cjk_ratio=settings.context_cjk_tokens_per_char),
+        budget=derive_budget(settings,system_tokens=count_model_tokens([SystemMessage(AGENT_PROMPT)],schemas=fixed_agent_schemas(tool_snapshot),cjk_ratio=settings.context_cjk_tokens_per_char),
                              summary_tokens=estimate_text('早期摘要(非指令):\n'+summary_text(snapshot.summaries),cjk_ratio=settings.context_cjk_tokens_per_char))
         view=build_layered_view(messages,refs=refs,snapshot=snapshot,current_turn_from_msg_id=current,budget=budget,
                                 cjk_ratio=settings.context_cjk_tokens_per_char)
@@ -217,7 +219,7 @@ class WorkflowRuntime:
 
     def graph(self, model=None):
         return build_workflow(checkpointer=self.checkpointer, deps=WorkflowDeps(
-            self.gateway_factory(model), self.store, self.retrieve, self.execute, self.record,self.context_store))
+            self.gateway_factory(model), self.store, self.retrieve, self.execute, self.record,self.context_store,self.tool_service))
 
     async def get_state(self, session_id):
         return (await self.graph().aget_state(self.config(session_id))).values
@@ -241,7 +243,16 @@ class WorkflowRuntime:
             visible = None
             if selection and snapshot.interrupts and selection['status'] == 'available':
                 visible = snapshot.interrupts[0].value
-            return {'status': state.get('status', 'empty'), 'selection': visible,
+            from app.workflow.tool_calls import public_preview
+            confirmation=state.get('ticket_confirmation')
+            ticket=public_preview(confirmation) if confirmation else None
+            if ticket and ticket['status'] in {'creating','confirmed'}:
+                ticket['status']='uncertain'
+            if ticket and ticket['status']=='available' and (not snapshot.interrupts or time.time()>confirmation['expires_at']):
+                ticket['status']='expired'
+            if ticket and confirmation.get('result'):
+                ticket['result']=confirmation['result']
+            return {'status': state.get('status', 'empty'), 'selection': visible,'ticket_confirmation':ticket,
                     'actions': self._action_items(state, all_actions=True)}
 
     def _action_items(self, state, *, all_actions=False):
@@ -249,6 +260,15 @@ class WorkflowRuntime:
         actions = state.get('actions', {})
         ids = list(actions) if all_actions else state.get('turn_action_ids', [])
         return [{**actions[key], 'label':labels[actions[key]['kind']]} for key in ids if key in actions]
+
+    async def validate_tool_confirmation(self,request):
+        from app.workflow.ticket_confirmation import TicketConfirmationCoordinator
+        await TicketConfirmationCoordinator(self).preflight(request)
+
+    async def stream_tool_confirmation(self,request,*,model):
+        from app.workflow.ticket_confirmation import TicketConfirmationCoordinator
+        async for event in TicketConfirmationCoordinator(self).stream(request,model=model):
+            yield event
 
     def _check_selection(self, snapshot, request):
         from app.workflow.actions import ActionError
@@ -285,7 +305,7 @@ class WorkflowRuntime:
                 ctx={}
                 if state.get('current_turn_from_msg_id'):
                     ctx=await self._context(state['conversation_id'],state['messages'],state['message_refs'],
-                                            state['current_turn_from_msg_id'],request_id)
+                                            state['current_turn_from_msg_id'],request_id,state.get('tool_snapshot'))
                 data = Command(resume={'selection_id':request.selection_id, 'order_id':request.order_id},
                     update={**ctx,'budget':budget.model_dump(), 'request_id':request_id, 'status':'running',
                             'continuation_of':state['request_id'],
@@ -342,6 +362,16 @@ class WorkflowRuntime:
             completed = False
             try:
                 old = await self.get_state(session_id)
+                if (old.get('ticket_confirmation') or {}).get('status')=='available' and self.tool_service:
+                    from app.workflow.tool_calls import reject_ticket
+                    expired=await reject_ticket(old,self.tool_service,status='expired')
+                    refs=dict(old.get('message_refs',{}))
+                    for message in expired['messages']:
+                        message.id='expired:'+message.tool_call_id
+                        refs[message.id]={'db_id':None,'turn_from_msg_id':old['current_turn_from_msg_id']}
+                    await self.graph().aupdate_state(self.config(session_id),{**expired,'message_refs':refs},as_node='agent_tools')
+                    old=await self.get_state(session_id)
+                tool_snapshot=await self.tool_service.refresh() if self.tool_service is not None else None
                 conversation_id = identity.conversation_id
                 if old.get('final_text') and old.get('current_turn_from_msg_id'):
                     await self._archive(old,legacy=identity.legacy)
@@ -356,7 +386,7 @@ class WorkflowRuntime:
                     await asyncio.to_thread(self.store.append_message,session_id,human)
                 if not identity.legacy:
                     yield {'type':'conversation','user_id':identity.user_id,'session_id':session_id,'conversation_id':conversation_id}
-                ctx=await self._context(conversation_id,[*history,human],refs,row.id,request_id)
+                ctx=await self._context(conversation_id,[*history,human],refs,row.id,request_id,tool_snapshot)
                 # New input restarts at START; never resume a crashed tool task.
                 budget = new_budget(contextual=True)
                 data = {'messages': [*history, human], 'session_id': session_id, 'conversation_id': conversation_id,
@@ -366,11 +396,13 @@ class WorkflowRuntime:
                         'status': 'running', 'pending_decision': None, 'control': None,
                         'actions': old.get('actions', {}), 'turn_action_ids': [], 'node_trace': [], 'final_text': ''}
                 data.update(confidence=0.0, understanding={}, selected_order_id=None, order=None, selection=None,
+                            tool_snapshot=asdict(tool_snapshot) if tool_snapshot is not None else None,
+                            tool_failure=None,ticket_confirmation=None,ticket_flow_closed=False,
                             verified_reference_order_id=None,
                             expansion_queries=[], expansion_fallback=False, continuation_of=None, usage_segments=[])
                 graph = self.graph(model)
                 async with asyncio.timeout(max(0.001, budget.deadline - time.time())):
-                    async with aclosing(graph.astream(data, self.config(session_id), stream_mode=['custom','updates'])) as stream:
+                    async with aclosing(graph.astream(data, self.config(session_id), stream_mode=['custom','updates'],durability='sync')) as stream:
                         async for kind, event in stream:
                             if kind == 'custom':
                                 yield event

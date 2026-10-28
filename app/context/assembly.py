@@ -8,7 +8,13 @@ from app.context.tokens import estimate_text, count_model_tokens
 from app.context.budget import ContextBudgetError, derive_budget
 
 
-def fixed_agent_schemas():
+def fixed_agent_schemas(snapshot=None):
+    from app.tooling.scope import current_tools,snapshot_object
+    from copy import deepcopy
+    from app.workflow.models import RESPOND_SCHEMA
+    snapshot=snapshot_object(snapshot) if snapshot is not None else current_tools()[1]
+    if snapshot is not None:
+        return [*deepcopy(snapshot.schemas),deepcopy(RESPOND_SCHEMA)]
     from app.tools import get_tools
     from app.workflow.models import RESPOND_SCHEMA
     return [convert_to_openai_tool(t) for t in get_tools() if t.name!='create_ticket']+[RESPOND_SCHEMA]
@@ -49,6 +55,13 @@ def history_from_state(state):
 def dynamic_data(state, *, settings):
     from app.workflow.knowledge import load_retrieval, evidence_gate
     extra={}
+    draft=state.get('ticket_draft')
+    if draft:
+        extra['verified_ticket_draft']={k:draft[k] for k in ('status','missing','ticket_type')}
+        if draft['status']=='ready':
+            from app.workflow.ticket_draft import draft_reference
+            extra['verified_ticket_draft']['draft_id']=draft_reference(draft)
+            extra['verified_ticket_draft']['description']=draft['description']
     understanding=state.get('understanding') or {}
     if understanding.get('reference_status')=='resolved' and understanding.get('order_id'):
         extra['reference']={k:understanding.get(k) for k in ('order_id','source_message_id')}

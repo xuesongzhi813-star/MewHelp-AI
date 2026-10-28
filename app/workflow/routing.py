@@ -14,6 +14,28 @@ COMPLAINT_TEXT = '很抱歉给您带来不好的体验。您可以选择转人�
 def resolve_reference(question: str) -> str:
     return question
 
+def route_with_tools(intent,understanding,snapshot,policy):
+    """Only locally allowed candidates override deterministic routes."""
+    from app.tooling.scope import snapshot_object
+    def get(key,default=None):
+        return understanding.get(key,default) if isinstance(understanding,dict) else getattr(understanding,key,default)
+    original=route_intent(intent)
+    if get('requested_operation')=='create_ticket' and get('ticket_request_verified') is True:
+        return 'business'
+    if intent in {'投诉','闲聊'} or get('requested_operation')!='read_tool' or snapshot is None:
+        return original
+    snapshot=snapshot_object(snapshot)
+    metadata=next((d for d in snapshot.definitions if d['name']==get('candidate_tool')),None)
+    if metadata is None:
+        return original
+    rule=policy.rule(metadata['source'],metadata['remote_name'])
+    if not rule.enabled or rule.effect!='read' or intent not in rule.routing_intents:
+        return original
+    if metadata['source']!='builtin' and policy.servers.get(metadata['source'],{}).get('url')!=metadata.get('endpoint'):
+        return original
+    return 'business'
+
+
 
 def route_intent(intent: str) -> str:
     return {**EXITS, '退款退货': 'refund', '售后': 'refund', '其他': 'other'}[IntentDecision(intent=intent, confidence=1.0).intent]

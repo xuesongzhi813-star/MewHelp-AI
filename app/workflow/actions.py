@@ -12,10 +12,12 @@ class ActionError(RuntimeError):
         self.status_code = status_code
 
 
+class _ActionRejected(ActionError):
+    """The engine refused admission, so no business write was attempted."""
+
+
 def create_ticket_once(description, ticket_type, *, conversation_id):
-    # Direct existing tool invocation; no generic executor timeout/retry loop.
-    return tools.create_ticket.invoke({'description': description, 'ticket_type': ticket_type,
-                                       'conversation_id': conversation_id})
+    raise ActionError('建工单需要已初始化的工具服务和服务器确认上下文。')
 
 
 async def confirm_ticket(request, *, runtime, store, create_once=create_ticket_once,
@@ -35,6 +37,8 @@ async def confirm_ticket(request, *, runtime, store, create_once=create_ticket_o
             raise ActionError('此会话没有可确认的工单建议。', 404)
         if action['status'] == 'completed':
             return TicketActionResult(action_id=request.action_id, status='completed', result=action['result'])
+        if action['status']=='rejected':
+            raise ActionError(action.get('result','校验未通过，未创建工单。'),action.get('error_status_code',422))
         if action['status'] != 'available':
             raise ActionError('工单结果尚未确认，请联系客服核实，请勿重复提交。')
         conversation_id = identity.conversation_id if identity else await asyncio.to_thread(store.get_or_create_conversation, request.session_id)
@@ -50,9 +54,28 @@ async def confirm_ticket(request, *, runtime, store, create_once=create_ticket_o
             raise ActionError('无法保存确认状态，尚未调用建工单操作。') from None
         try:
             async with asyncio.timeout(get_settings().tool_timeout):
-                result = await asyncio.to_thread(create_once, action['description'], action['ticket_type'], conversation_id=conversation_id)
+                service=getattr(runtime,'tool_service',None)
+                if service is not None and create_once is create_ticket_once:
+                    execution=await service.confirmed_action(request.session_id,conversation_id,request.action_id,
+                        action['description'],action['ticket_type'])
+                    if execution.status!='success':
+                        if execution.outcome in {'invalid_arguments','permission_denied'}:
+                            raise _ActionRejected(execution.content+' 未创建工单。',
+                                422 if execution.outcome=='invalid_arguments' else 403)
+                        raise ActionError(execution.content)
+                    result=execution.content
+                else:
+                    result = await asyncio.to_thread(create_once, action['description'], action['ticket_type'], conversation_id=conversation_id)
             actions[request.action_id] = {**action, 'status': 'completed', 'result': result}
             await runtime.save_actions(request.session_id, actions)
+        except _ActionRejected as exc:
+            actions[request.action_id]={**action,'status':'rejected','result':str(exc),
+                'error_status_code':exc.status_code}
+            try:
+                await runtime.save_actions(request.session_id,actions)
+            except Exception:
+                pass
+            raise ActionError(str(exc),exc.status_code) from None
         except (Exception, asyncio.CancelledError) as exc:
             actions[request.action_id] = {**action, 'status': 'uncertain'}
             try:

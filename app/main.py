@@ -22,19 +22,36 @@ def create_app() -> FastAPI:
     async def lifespan(application):
         from app.context.logging import configure_context_logging
         configure_context_logging(Path('log/app.log'))
+        from app.tooling.service import ToolService
+        from app.tooling.policy import PolicyLoader
+        from app.tooling.scope import model_settings
+        service=ToolService(PolicyLoader(get_settings().tool_policy_path))
+        await service.start()
+        application.state.tool_service=service
+        try:
+            async with workflow_lifespan(application,service):
+                yield
+        finally:
+            await service.aclose()
+            application.state.tool_service=None
+
+    @asynccontextmanager
+    async def workflow_lifespan(application,service):
         if get_settings().chat_workflow_enabled:
             from app.workflow.runtime import open_checkpointer, WorkflowRuntime
             from app.context.budget import validate_startup
             from app.context.summary import SummaryManager, Summarizer
             from app.llm import build_workflow_model
             from app.context.assembly import fixed_agent_schemas
-            settings=get_settings()
-            budget=validate_startup(settings,schemas=fixed_agent_schemas())
+            snapshot=service.registry.snapshot(service.policy_loader.load())
+            from app.tooling.scope import model_settings
+            settings=model_settings(get_settings(),snapshot)
+            budget=validate_startup(settings,schemas=fixed_agent_schemas(snapshot))
             import logging
             from app.context.budget import cumulative_turn_limit
             logging.getLogger(__name__).info('context startup budget=%s cumulative_turn_limit=%s',budget.to_dict(),cumulative_turn_limit(settings))
             async with open_checkpointer(get_settings().workflow_checkpoint_path) as saver:
-                application.state.workflow_runtime = WorkflowRuntime(saver, application.state.session_store)
+                application.state.workflow_runtime = WorkflowRuntime(saver, application.state.session_store,tool_service=service)
                 manager=SummaryManager(application.state.workflow_runtime.context_store,
                     Summarizer(build_workflow_model(settings),settings=settings),settings=settings)
                 application.state.workflow_runtime.summary_manager=manager
@@ -60,6 +77,7 @@ def create_app() -> FastAPI:
     # config.max_sessions 仅内存版 store 的 FIFO 淘汰参数,MySQL 版不淘汰,字段保留不删。
     application.state.session_store = MySQLSessionStore()
     application.state.workflow_runtime = None
+    application.state.tool_service = None
 
     @application.get("/health")
     async def health() -> dict[str, str]:
@@ -100,7 +118,7 @@ def create_app() -> FastAPI:
         return StreamingResponse(
             stream_chat(request.session_id, request.message, store=store, model=llm, answer_model=answer_llm,
                         workflow_runtime=application.state.workflow_runtime,user_id=request.user_id,
-                        conversation_id=request.conversation_id),
+                        conversation_id=request.conversation_id,tool_service=application.state.tool_service),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )

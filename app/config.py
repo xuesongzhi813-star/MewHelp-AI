@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     # 数据库连接串:默认值不含密码,真实密码只存在于本地 .env 的 DB_URL,绝不入库
     db_url: str = "mysql+pymysql://root@127.0.0.1:3306/melhelp"
     tool_timeout: int = 10
+    tool_policy_path: str = "config/tool_policy.json"
     faq_max_results: int = 3
     # 向量化与语义检索(真实 EMBEDDING_API_KEY 只存在于本地 .env,绝不入库)
     embedding_base_url: str = "https://api.siliconflow.cn/v1"

@@ -9,10 +9,31 @@ from typing import Any
 
 from sqlalchemy import BigInteger, Boolean, Enum, ForeignKey, Integer, JSON, String, Text, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.dialects.mysql import BIGINT as MYSQL_BIGINT, INTEGER as MYSQL_INTEGER, TINYINT as MYSQL_TINYINT
 
 
 class Base(DeclarativeBase):
     """declarative 基类。"""
+
+class ToolAuditLog(Base):
+    """Map the existing user-created audit table; never create or alter it."""
+
+    __tablename__ = "tool_audit_logs"
+    id: Mapped[int] = mapped_column(MYSQL_BIGINT(unsigned=True), primary_key=True, autoincrement=True)
+    conversation_id: Mapped[int | None] = mapped_column(MYSQL_BIGINT(unsigned=True), nullable=True)
+    tool_call_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    tool_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    tool_source: Mapped[str] = mapped_column(Enum("builtin", "mcp", name="tool_audit_source"), nullable=False)
+    mcp_server: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    arguments: Mapped[Any | None] = mapped_column(JSON, nullable=True)
+    result_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(
+        Enum("成功", "失败", "超时", "校验拦下", "权限拒绝", name="tool_audit_status"), nullable=False)
+    error_message: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    retry_count: Mapped[int] = mapped_column(MYSQL_TINYINT(unsigned=True), nullable=False, server_default="0")
+    duration_ms: Mapped[int | None] = mapped_column(MYSQL_INTEGER(unsigned=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.current_timestamp())
+
 
 
 class Conversation(Base):
@@ -186,4 +207,7 @@ class LowConfidenceQuestion(Base):
         nullable=False,
     )
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Nullable compatibility fields already present in the externally managed table.
+    retrieved_chunks: Mapped[Any | None] = mapped_column(JSON(none_as_null=True), nullable=True)
+    matched_review_id: Mapped[int | None] = mapped_column(MYSQL_BIGINT(unsigned=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.current_timestamp())
